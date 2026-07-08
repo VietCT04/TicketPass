@@ -16,7 +16,7 @@ This repository is a monorepo.
 - `apps/web`: frontend application
 - `apps/api`: backend API
 - `packages/shared`: shared types, DTOs, enums, validation schemas, and constants
-- `docs`: product, architecture, API, database, security, flows, ADRs, tickets, concerns, and continuity docs
+- `docs`: product, architecture, API, database, security, flows, ADRs, concerns, and continuity docs
 
 ## Mandatory Working Rule
 
@@ -34,7 +34,7 @@ Make the smallest correct change possible.
 
 Do not refactor unrelated code.
 
-Do not rename files, move folders, rewrite modules, or introduce new patterns unless the ticket explicitly requires it.
+Do not rename files, move folders, rewrite modules, or introduce new patterns unless the GitHub Issue explicitly requires it.
 
 Prefer surgical fixes over broad redesigns.
 
@@ -61,36 +61,26 @@ Update these docs when relevant:
 
 If no documentation update is needed, explicitly mention why in the final response.
 
-## Ticket Workflow
+## GitHub Issues Workflow
 
-All implementation work should be linked to a ticket under:
+All implementation work should be linked to a GitHub Issue in the project repository.
 
-```txt
-docs/tickets/open/
-```
+Open GitHub Issues represent unresolved work. Closed GitHub Issues represent completed work.
 
-Open tickets represent unresolved work.
+Do not create local ticket files under `docs/tickets/`. Use GitHub Issues instead.
 
-Closed tickets must be moved to:
-
-```txt
-docs/tickets/closed/
-```
-
-Do not delete completed tickets.
-
-When completing a ticket:
+When completing an issue:
 
 1. Implement the smallest correct change.
 2. Update all affected docs.
 3. Add concerns to `docs/CONCERNS.md` if any remain.
 4. Update `docs/CONTINUITY.md`.
-5. Move the ticket from `docs/tickets/open/` to `docs/tickets/closed/`.
-6. Add completion notes inside the ticket.
+5. Add completion notes in the GitHub Issue or linked pull request.
+6. Close the GitHub Issue only when the work is complete and verified.
 
-## Ticket Creation Rule
+## Issue Creation Rule
 
-If a new task comes from an accepted ADR, create a ticket from that ADR.
+If a new task comes from an accepted ADR, create a GitHub Issue from that ADR.
 
 Accepted ADRs live in:
 
@@ -98,26 +88,10 @@ Accepted ADRs live in:
 docs/adr/accepted/
 ```
 
-Ticket files should be created in:
-
-```txt
-docs/tickets/open/
-```
-
-Ticket filename format:
-
-```txt
-TICKET-0001.md
-```
-
-Each ticket should include:
+Each GitHub Issue should include:
 
 ```md
-# TICKET-0001: Short Title
-
-## Status
-
-Open
+# Short Title
 
 ## Source
 
@@ -134,17 +108,13 @@ Explain the desired outcome.
 ## Concerns
 
 List known risks, uncertainties, or decisions that need human review.
-
-## Completion Notes
-
-Filled when the ticket is closed.
 ```
 
 ## ADR Workflow
 
 ADRs are for important decisions, not normal tasks.
 
-For normal tasks just create tickets.
+For normal tasks, create GitHub Issues.
 
 Use ADRs for decisions involving:
 
@@ -194,12 +164,12 @@ What decision was made?
 - Tradeoff 1
 - Tradeoff 2
 
-## Follow-up Tickets
+## Follow-up Issues
 
-- `docs/tickets/open/TICKET-0001-example.md`
+- GitHub Issue: `#123`
 ```
 
-When an ADR becomes accepted, create follow-up implementation tickets if work is required.
+When an ADR becomes accepted, create follow-up GitHub Issues if work is required.
 
 ## CONCERNS.md Rule
 
@@ -236,13 +206,13 @@ Brief summary of what currently works.
 ## Latest Completed Work
 
 - Date
-- Ticket
+- GitHub Issue
 - Summary
 - Files changed
 
 ## Active Work
 
-- Current ticket
+- Current GitHub Issue
 - Current goal
 - Current blocker if any
 
