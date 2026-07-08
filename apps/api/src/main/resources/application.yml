@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: ticketpass-api
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ticketpass
+    username: ticketpass
+    password: ticketpass
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
