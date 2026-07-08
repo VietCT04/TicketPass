@@ -16,7 +16,7 @@ This repository is a monorepo.
 - `apps/web`: frontend application
 - `apps/api`: backend API
 - `packages/shared`: shared types, DTOs, enums, validation schemas, and constants
-- `docs`: product, architecture, API, database, security, flows, ADRs, concerns, and continuity docs
+- `docs`: product, architecture, API, database, security, flows, user stories, concerns, and continuity docs
 
 ## Mandatory Working Rule
 
@@ -55,7 +55,7 @@ Update these docs when relevant:
 | API endpoint/request/response | `docs/API.md` |
 | Database schema/model/status enum | `docs/DATABASE.md` |
 | Security/auth/permissions | `docs/SECURITY.md` |
-| Architecture/design decision | `docs/adr/accepted/*.md` |
+| User story/product requirement | `docs/user-stories/*.md` |
 | Unresolved risk/uncertainty | `docs/CONCERNS.md` |
 | Work handoff/progress | `docs/CONTINUITY.md` |
 
@@ -80,12 +80,12 @@ When completing an issue:
 
 ## Issue Creation Rule
 
-If a new task comes from an accepted ADR, create a GitHub Issue from that ADR.
+If a new task comes from a user story, create a GitHub Issue from that user story.
 
-Accepted ADRs live in:
+User stories live in:
 
 ```txt
-docs/adr/accepted/
+docs/user-stories/
 ```
 
 Each GitHub Issue should include:
@@ -95,7 +95,7 @@ Each GitHub Issue should include:
 
 ## Source
 
-ADR: `docs/adr/accepted/0001-example.md`
+User Story: `docs/user-stories/US-0001-example.md`
 
 ## Context
 
@@ -110,66 +110,61 @@ Explain the desired outcome.
 List known risks, uncertainties, or decisions that need human review.
 ```
 
-## ADR Workflow
+## User Story Workflow
 
-ADRs are for important decisions, not normal tasks.
+User stories describe product behavior from a user's perspective and are the source for implementation issues.
 
-For normal tasks, create GitHub Issues.
+Use user stories for product-facing behavior involving:
 
-Use ADRs for decisions involving:
+- Buyer workflows
+- Seller workflows
+- Admin workflows
+- Payment and escrow behavior
+- Ticket listing, purchase, reveal, and dispute behavior
+- Authentication and authorization behavior
+- Notifications, audit logs, and trust/safety behavior
 
-- Monorepo structure
-- Tech stack
-- Database choice
-- Payment/escrow model
-- Ticket reveal model
-- Dispute model
-- Authentication model
-- Major architecture changes
-
-ADR folders:
+User story folder:
 
 ```txt
-docs/adr/accepted/
+docs/user-stories/
 ```
 
-ADR filename format:
+User story filename format:
 
 ```txt
-0001-use-monorepo.md
+US-0001-short-title.md
 ```
 
-ADR template:
+User story template:
 
 ```md
-# ADR 0001: Decision Title
+# US-0001: Short Title
+
+## User Story
+
+As a [user type], I want [goal], so that [benefit].
 
 ## Context
 
-What problem are we solving?
+Explain why this behavior matters.
 
-## Decision
+## Acceptance Criteria
 
-What decision was made?
+- [ ] Criterion 1
+- [ ] Criterion 2
+- [ ] Sensitive flows are handled server-side where relevant
+- [ ] Relevant docs are updated
 
-## Consequences
 
-### Positive
-
-- Benefit 1
-- Benefit 2
-
-### Negative
-
-- Tradeoff 1
-- Tradeoff 2
+## Risks
 
 ## Follow-up Issues
 
 - GitHub Issue: `#123`
 ```
 
-When an ADR becomes accepted, create follow-up GitHub Issues if work is required.
+When a user story is ready for implementation, create follow-up GitHub Issues if work is required.
 
 ## CONCERNS.md Rule
 
@@ -216,10 +211,10 @@ Brief summary of what currently works.
 - Current goal
 - Current blocker if any
 
-## Important Decisions
+## Important User Stories
 
-- ADR links
-- Summary of decisions
+- User story links
+- Summary of active or recently completed product stories
 
 ## Known Concerns
 
