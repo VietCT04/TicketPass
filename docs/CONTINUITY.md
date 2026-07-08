@@ -2,7 +2,7 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, and initial seller listing contract docs.
+TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, initial seller listing contract docs, and an approved authentication user story.
 
 ## Latest Completed Work
 
@@ -18,13 +18,14 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 ## Active Work
 
-- Current GitHub Issue: `#3` - Implement authenticated seller listing creation API
-- Current goal: Implement the authenticated seller listing creation endpoint using the documented contract from issue `#2`.
-- Current blocker: None.
+- Current GitHub Issue: None for authentication yet.
+- Current goal: Create focused GitHub Issues from `US-0002: Authenticate User` before implementing seller-owned APIs.
+- Current blocker: Seller listing API issue `#3` should wait until authentication is implemented.
 
 ## Important User Stories
 
 - `docs/user-stories/US-0001-list-transferable-ticket.md`: Seller can list a transferable ticket safely without exposing sensitive ticket data too early.
+- `docs/user-stories/US-0002-authenticate-user.md`: User can sign up, log in, log out, maintain secure sessions, and access protected TicketPass account features.
 
 ## Known Concerns
 
@@ -35,6 +36,6 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 ## Next Recommended Steps
 
-1. Read `docs/user-stories/US-0001-list-transferable-ticket.md`.
-2. Implement GitHub Issue `#3` using the listing API and database contract from `docs/API.md` and `docs/DATABASE.md`.
-3. Continue with GitHub Issues `#4` through `#7` in focused slices.
+1. Create focused GitHub Issues from `docs/user-stories/US-0002-authenticate-user.md`.
+2. Implement the authentication foundation.
+3. Return to GitHub Issue `#3` and derive `seller_id` from the authenticated user.
