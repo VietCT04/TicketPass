@@ -77,6 +77,12 @@ Each implementation issue should usually have one primary outcome, one main affe
 
 Split an issue when it includes multiple deployable steps, multiple sensitive business rules, or changes across unrelated layers.
 
+Before resolving a GitHub Issue, write a proposal in the conversation first and wait for user approval.
+
+The proposal should summarize the intended scope, files to update, contract or schema decisions, open questions, and what will be commented back to the GitHub Issue.
+
+After approval, update the related files, update `docs/CONTINUITY.md`, and comment on the GitHub Issue with the completed work or proposed next steps.
+
 When completing an issue:
 
 1. Implement the smallest correct change.

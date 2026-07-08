@@ -8,7 +8,7 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 - Date: 2026-07-08
 - GitHub Issue: `#1` - https://github.com/VietCT04/TicketPass/issues/1
-- Summary: Split broad seller listing tracker `#1` into focused implementation issues `#2` through `#7`, added issue-sizing rules to `AGENTS.md`, and linked the split issues back to `US-0001`.
+- Summary: Split broad seller listing tracker `#1` into focused implementation issues `#2` through `#7`, added issue-sizing and approval-before-resolution rules to `AGENTS.md`, and linked the split issues back to `US-0001`.
 - Files changed:
   - `AGENTS.md`
   - `docs/user-stories/US-0001-list-transferable-ticket.md`
