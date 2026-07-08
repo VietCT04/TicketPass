@@ -69,6 +69,14 @@ Open GitHub Issues represent unresolved work. Closed GitHub Issues represent com
 
 Do not create local ticket files under `docs/tickets/`. Use GitHub Issues instead.
 
+User stories may describe broad product behavior, but GitHub Issues should be small implementation slices.
+
+Prefer several focused issues over one large issue when work spans multiple areas such as database, API, frontend, security, audit logging, payments, escrow, ticket reveal, or disputes.
+
+Each implementation issue should usually have one primary outcome, one main affected area, and acceptance criteria that can be verified independently.
+
+Split an issue when it includes multiple deployable steps, multiple sensitive business rules, or changes across unrelated layers.
+
 When completing an issue:
 
 1. Implement the smallest correct change.
@@ -80,7 +88,7 @@ When completing an issue:
 
 ## Issue Creation Rule
 
-If a new task comes from a user story, create a GitHub Issue from that user story.
+If a new task comes from a user story, create one or more focused GitHub Issues from that user story.
 
 User stories live in:
 
@@ -104,6 +112,14 @@ Explain why this task exists.
 ## Goal
 
 Explain the desired outcome.
+
+## Scope
+
+Describe the narrow implementation slice this issue covers.
+
+## Out of Scope
+
+List related work that should be handled by separate issues.
 
 ## Concerns
 

@@ -35,4 +35,10 @@ Sellers need a controlled way to create ticket listings without exposing sensiti
 
 ## Follow-up Issues
 
-- GitHub Issue: TBD
+- Parent tracker: `#1` - https://github.com/VietCT04/TicketPass/issues/1
+- `#2` Define listing data model and API contract - https://github.com/VietCT04/TicketPass/issues/2
+- `#3` Implement authenticated seller listing creation API - https://github.com/VietCT04/TicketPass/issues/3
+- `#4` Add listing status rules to prevent duplicate sale - https://github.com/VietCT04/TicketPass/issues/4
+- `#5` Add audit log for seller listing creation - https://github.com/VietCT04/TicketPass/issues/5
+- `#6` Build seller listing form - https://github.com/VietCT04/TicketPass/issues/6
+- `#7` Document seller listing flow and security rules - https://github.com/VietCT04/TicketPass/issues/7
