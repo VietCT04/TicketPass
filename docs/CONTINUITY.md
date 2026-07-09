@@ -7,19 +7,16 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 ## Latest Completed Work
 
 - Date: 2026-07-09
-- GitHub Issue: `#2` - https://github.com/VietCT04/TicketPass/issues/2
-- Summary: Defined the seller listing API contract, normalized `events` and `listings` database contract, listing statuses, transfer methods, security rules, and open concerns for platform-specific transferability.
+- GitHub Issues: `#9` through `#14`
+- Summary: Created focused authentication issues from `US-0002: Authenticate User` and linked them back to the user story.
 - Files changed:
-  - `docs/API.md`
-  - `docs/DATABASE.md`
-  - `docs/SECURITY.md`
-  - `docs/CONCERNS.md`
+  - `docs/user-stories/US-0002-authenticate-user.md`
   - `docs/CONTINUITY.md`
 
 ## Active Work
 
-- Current GitHub Issue: None for authentication yet.
-- Current goal: Create focused GitHub Issues from `US-0002: Authenticate User` before implementing seller-owned APIs.
+- Current GitHub Issue: `#9` - Define authentication model and API contract
+- Current goal: Define the auth model, session strategy, and API contract before backend implementation.
 - Current blocker: Seller listing API issue `#3` should wait until authentication is implemented.
 
 ## Important User Stories
@@ -36,6 +33,6 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 ## Next Recommended Steps
 
-1. Create focused GitHub Issues from `docs/user-stories/US-0002-authenticate-user.md`.
-2. Implement the authentication foundation.
+1. Complete GitHub Issue `#9` to define the authentication model and API contract.
+2. Implement GitHub Issues `#10` through `#14` in order.
 3. Return to GitHub Issue `#3` and derive `seller_id` from the authenticated user.

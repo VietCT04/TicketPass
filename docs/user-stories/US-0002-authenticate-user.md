@@ -27,4 +27,9 @@ TicketPass requires trusted user identity before users can create listings, buy 
 
 ## Follow-up Issues
 
-- GitHub Issue: TBD
+- `#9` Define authentication model and API contract - https://github.com/VietCT04/TicketPass/issues/9
+- `#10` Implement backend signup and login API - https://github.com/VietCT04/TicketPass/issues/10
+- `#11` Implement backend session handling and protected current-user endpoint - https://github.com/VietCT04/TicketPass/issues/11
+- `#12` Build frontend signup login logout flow - https://github.com/VietCT04/TicketPass/issues/12
+- `#13` Protect authenticated frontend pages - https://github.com/VietCT04/TicketPass/issues/13
+- `#14` Integrate authenticated user identity into seller-owned API work - https://github.com/VietCT04/TicketPass/issues/14
