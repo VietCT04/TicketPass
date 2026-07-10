@@ -11,6 +11,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.Optional;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -69,6 +70,33 @@ public class AuthService {
         return createSession(user);
     }
 
+    @Transactional
+    public Optional<AuthenticatedUser> authenticateSession(String rawToken) {
+        if (rawToken == null || rawToken.isBlank()) {
+            return Optional.empty();
+        }
+
+        Instant now = Instant.now(clock);
+        return authSessionRepository.findByTokenHash(hashToken(rawToken))
+                .filter(session -> isActive(session, now))
+                .map(session -> {
+                    session.setLastUsedAt(now);
+                    return AuthenticatedUser.from(session.getUser());
+                });
+    }
+
+    @Transactional
+    public void logout(String rawToken) {
+        if (rawToken == null || rawToken.isBlank()) {
+            return;
+        }
+
+        Instant now = Instant.now(clock);
+        authSessionRepository.findByTokenHash(hashToken(rawToken))
+                .filter(session -> isActive(session, now))
+                .ifPresent(session -> session.setRevokedAt(now));
+    }
+
     private AuthResult createSession(UserEntity user) {
         String rawToken = generateToken();
         Instant now = Instant.now(clock);
@@ -81,6 +109,10 @@ public class AuthService {
         authSessionRepository.save(session);
 
         return new AuthResult(user, rawToken, SESSION_TTL);
+    }
+
+    private static boolean isActive(AuthSessionEntity session, Instant now) {
+        return session.getRevokedAt() == null && session.getExpiresAt().isAfter(now);
     }
 
     private String generateToken() {

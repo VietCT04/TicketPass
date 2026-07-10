@@ -91,7 +91,9 @@ POST /api/auth/logout
 
 Revokes the current session server-side and clears the session cookie.
 
-Authentication is required. If the session is already missing, invalid, expired, or revoked, the endpoint should still leave the client signed out.
+Returns `204 No Content` regardless of whether the provided session was valid. If a matching active session exists, the server sets `auth_sessions.revoked_at`; the row is not deleted.
+
+The response always sends a cookie-clearing header for `ticketpass_session`.
 
 ### Current User
 
@@ -114,7 +116,7 @@ Returns the authenticated user for the current session.
 }
 ```
 
-Returns `401` when the session is missing, invalid, expired, or revoked.
+Returns `401` when the session is missing, malformed, unknown, expired, or revoked.
 
 ### Session Cookie
 
@@ -124,7 +126,11 @@ Returns `401` when the session is missing, invalid, expired, or revoked.
 - Cookie is `HttpOnly`.
 - Cookie is `SameSite=Lax`.
 - Cookie is `Secure` in production.
-- Logout revokes the session server-side.
+- Cookie uses path `/`.
+- Cookie domain may be configured per environment.
+- Cookie creation and clearing use the same centralized cookie configuration.
+- Logout revokes the session server-side by setting `auth_sessions.revoked_at`.
+- Logout clears the cookie using the same name, path, domain if configured, `HttpOnly`, `Secure`, and `SameSite` attributes, with `Max-Age=0`.
 
 ## Listings
 

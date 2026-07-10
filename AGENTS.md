@@ -307,6 +307,16 @@ Do not change API response shapes without updating all consumers.
 - Never trust client-provided payment status.
 - Never trust client-provided ownership status.
 
+## Testing Rules
+
+Add or update tests when practical, especially for security-sensitive, payment, escrow, ticket reveal, dispute, authorization, and API validation behavior.
+
+Run relevant local tests when the environment supports them.
+
+If the user explicitly approves review at the pull-request or CI level, or explicitly says local testing is not needed, do not keep attempting local test runs. In that case, clearly state in the final response and pull request that local tests were not run by user direction.
+
+If local tests cannot run because of environment limitations, dependency access, toolchain mismatch, or another blocker, document the reason in the final response and add or update `docs/CONCERNS.md` when the risk is meaningful.
+
 ## Shared Package Rules
 
 Use `packages/shared` for:
