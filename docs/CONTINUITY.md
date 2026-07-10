@@ -2,21 +2,25 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, initial seller listing contract docs, and an approved authentication user story.
+TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, initial seller listing contract docs, and an authentication contract based on email/password plus server-side opaque sessions.
 
 ## Latest Completed Work
 
-- Date: 2026-07-09
-- GitHub Issues: `#9` through `#14`
-- Summary: Created focused authentication issues from `US-0002: Authenticate User` and linked them back to the user story.
+- Date: 2026-07-10
+- GitHub Issue: `#9` - https://github.com/VietCT04/TicketPass/issues/9
+- Summary: Defined the authentication API contract, user/session database contract, opaque session strategy, security rules, and auth concerns for `US-0002`; corrected `AGENTS.md` so future GitHub Issue comments preserve the approved proposal as the source of truth.
 - Files changed:
-  - `docs/user-stories/US-0002-authenticate-user.md`
+  - `AGENTS.md`
+  - `docs/API.md`
+  - `docs/DATABASE.md`
+  - `docs/SECURITY.md`
+  - `docs/CONCERNS.md`
   - `docs/CONTINUITY.md`
 
 ## Active Work
 
-- Current GitHub Issue: `#9` - Define authentication model and API contract
-- Current goal: Define the auth model, session strategy, and API contract before backend implementation.
+- Current GitHub Issue: `#10` - Implement backend signup and login API
+- Current goal: Implement backend signup and login using the documented auth contract from issue `#9`.
 - Current blocker: Seller listing API issue `#3` should wait until authentication is implemented.
 
 ## Important User Stories
@@ -27,12 +31,15 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 ## Known Concerns
 
 - See `docs/CONCERNS.md`.
+- Password policy needs review.
+- Session cookie CSRF hardening needs review.
+- Account recovery and verification features are deferred.
 - Platform-specific transferability rules are unresolved.
 - Seller transferability confirmation is not proof.
 - Event reuse and deduplication rules are not defined for MVP.
 
 ## Next Recommended Steps
 
-1. Complete GitHub Issue `#9` to define the authentication model and API contract.
-2. Implement GitHub Issues `#10` through `#14` in order.
+1. Implement GitHub Issue `#10` using the auth API and database contract from `docs/API.md` and `docs/DATABASE.md`.
+2. Implement GitHub Issues `#11` through `#14` in order.
 3. Return to GitHub Issue `#3` and derive `seller_id` from the authenticated user.
