@@ -127,6 +127,8 @@ Returns `401` when the session is missing, invalid, expired, or revoked.
 
 Listings let authenticated sellers offer one transferable ticket for resale.
 
+Flow details and security expectations are documented in `docs/flows/SELLER_LISTING_FLOW.md`.
+
 ### Create Listing
 
 ```http

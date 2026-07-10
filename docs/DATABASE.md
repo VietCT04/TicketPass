@@ -45,6 +45,8 @@ Stores server-side opaque login sessions.
 
 Issue `#2` defines the initial database contract for seller-created transferable ticket listings. This is a documentation contract only; migrations are handled by implementation issues.
 
+The user-facing seller listing flow is documented in `docs/flows/SELLER_LISTING_FLOW.md`.
+
 ## Tables
 
 ### `events`

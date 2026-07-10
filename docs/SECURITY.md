@@ -33,6 +33,8 @@ TicketPass uses email/password authentication with server-side opaque sessions f
 
 Seller-created listings are public marketplace metadata. They must not expose sensitive ticket data before the controlled reveal flow allows it.
 
+The full seller listing flow is documented in `docs/flows/SELLER_LISTING_FLOW.md`.
+
 ## Authentication And Ownership
 
 - Listing creation requires authentication.
