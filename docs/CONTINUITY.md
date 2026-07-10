@@ -2,7 +2,7 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, seller listing contract/flow docs, and an approved authentication user story.
+TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, an authentication contract based on email/password plus server-side opaque sessions, and seller listing contract/flow docs.
 
 ## Latest Completed Work
 
@@ -18,7 +18,7 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 ## Active Work
 
-- Current GitHub Issue: `#9` / `#10` auth work is in review on separate PRs.
+- Current GitHub Issue: Auth work is in review on separate PRs.
 - Current goal: Review/merge auth contract and backend signup/login PRs before implementing seller-owned APIs.
 - Current blocker: Seller listing API issue `#3` should wait until authentication is implemented and accepted.
 
@@ -30,6 +30,9 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 ## Known Concerns
 
 - See `docs/CONCERNS.md`.
+- Password policy needs review.
+- Session cookie CSRF hardening needs review.
+- Account recovery and verification features are deferred.
 - Platform-specific transferability rules are unresolved.
 - Seller transferability confirmation is not proof.
 - Event reuse and deduplication rules are not defined for MVP.
