@@ -144,9 +144,19 @@ Flow details and security expectations are documented in `docs/flows/SELLER_LIST
 POST /api/listings
 ```
 
-Creates a seller-owned listing for one transferable ticket.
+Planned contract for creating a seller-owned listing for one transferable ticket.
 
-Authentication is required. The server derives `seller_id` from the authenticated user. Clients must not send or override seller ownership fields.
+Authentication is required. Spring Security must validate the session before controller execution, and the controller must receive the immutable `AuthenticatedUser` principal with `@AuthenticationPrincipal`.
+
+The server derives `seller_id` from `AuthenticatedUser.id()`. Clients must not send or override ownership fields such as `seller_id`, `sellerId`, `user_id`, `userId`, `owner_id`, or `ownerId`.
+
+Seller-owned controllers should pass the trusted user id explicitly into business services, for example:
+
+```java
+listingService.createListing(authenticatedUser.id(), request);
+```
+
+Listing services must not parse cookies, resolve raw session tokens, or accept client-provided ownership values.
 
 #### Request Body
 
@@ -215,7 +225,8 @@ Authentication is required. The server derives `seller_id` from the authenticate
 #### Validation Rules
 
 - Request must be authenticated.
-- `seller_id` is always derived server-side.
+- `seller_id` is always derived server-side from `AuthenticatedUser.id()`.
+- Request DTOs must not declare seller, user, owner, or equivalent ownership fields.
 - `quantity` is always `1` for MVP and is not accepted as a client-provided field.
 - New complete listings start with status `ACTIVE`.
 - `is_transferable_confirmed` must be `true`.

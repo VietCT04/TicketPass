@@ -2,9 +2,18 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, seller listing contract, flow, and status docs, and backend email/password auth with server-side opaque sessions, logout revocation, and current-user session validation.
+TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, seller listing contract, flow, and status docs, and backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, and a documented seller-owned API identity pattern.
 
 ## Latest Completed Work
+
+- Date: 2026-07-11
+- GitHub Issue: `#14` - https://github.com/VietCT04/TicketPass/issues/14
+- Summary: Documented the Spring Security `AuthenticatedUser` pattern for seller-owned APIs, including server-derived seller ownership, no client-provided ownership fields, no duplicate session parsing, and issue `#3` readiness.
+- Files changed:
+  - `docs/API.md`
+  - `docs/SECURITY.md`
+  - `docs/flows/SELLER_LISTING_FLOW.md`
+  - `docs/CONTINUITY.md`
 
 - Date: 2026-07-11
 - GitHub Issue: `#11` - https://github.com/VietCT04/TicketPass/issues/11
@@ -33,9 +42,9 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 ## Active Work
 
-- Current GitHub Issue: Auth backend work is ready for review.
-- Current goal: Review and merge the auth backend branch before building seller-owned APIs.
-- Current blocker: Seller listing API issue `#3` should wait until authentication is merged into `main`.
+- Current GitHub Issue: `#14` is being completed.
+- Current goal: Prepare seller listing API issue `#3` to use authenticated server-derived ownership.
+- Current blocker: None.
 
 ## Important User Stories
 
@@ -56,5 +65,5 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 ## Next Recommended Steps
 
 1. Run backend tests with Java 21: `mvn test` from `apps/api`.
-2. Review and merge the auth backend work.
-3. Continue with GitHub Issue `#14` to lock in the seller-owned API current-user pattern, then return to GitHub Issue `#3`.
+2. Review and merge issue `#14`.
+3. Continue with GitHub Issue `#3` to implement authenticated seller listing creation.
