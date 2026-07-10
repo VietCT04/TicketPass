@@ -1,5 +1,46 @@
 # Database
 
+## Authentication Contract
+
+Issue `#9` defines the initial database contract for user authentication. This is a documentation contract only; migrations are handled by implementation issues.
+
+## Auth Tables
+
+### `users`
+
+Stores TicketPass user accounts.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID/string id | Primary key. |
+| `email` | string | Unique normalized email address. |
+| `password_hash` | string | Strong password hash. Never store plaintext passwords. |
+| `display_name` | string | User-facing account name. |
+| `created_at` | timestamp | Creation time. |
+| `updated_at` | timestamp | Last update time. |
+
+### `auth_sessions`
+
+Stores server-side opaque login sessions.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID/string id | Primary key. |
+| `user_id` | UUID/string id | References `users.id`. |
+| `token_hash` | string | Hash of the random session token. The raw token is never stored. |
+| `expires_at` | timestamp | Session expiry time. |
+| `revoked_at` | timestamp nullable | Set when the session is logged out or revoked. |
+| `created_at` | timestamp | Creation time. |
+| `last_used_at` | timestamp | Last successful use time. |
+
+## Auth Constraints
+
+- `users.email` must be unique after normalization.
+- `users.password_hash` must never contain plaintext passwords.
+- `auth_sessions.token_hash` must be unique.
+- Expired or revoked sessions must not authenticate requests.
+- Business records must reference authenticated `users.id` values derived server-side.
+
 ## Seller Listing Contract
 
 Issue `#2` defines the initial database contract for seller-created transferable ticket listings. This is a documentation contract only; migrations are handled by implementation issues.
