@@ -6,7 +6,9 @@ TicketPass uses email/password authentication with server-side opaque sessions f
 
 ## Password Handling
 
-- Passwords must be hashed with a strong password hashing algorithm before storage.
+- Passwords must be hashed with BCrypt before storage.
+- MVP passwords must be 12 to 128 characters.
+- Email and display name inputs may be trimmed/normalized; passwords must not be trimmed.
 - Plaintext passwords must never be stored or logged.
 - Password hashes must never be returned by the API.
 - Login failures must not reveal whether the email or password was incorrect.
@@ -15,6 +17,7 @@ TicketPass uses email/password authentication with server-side opaque sessions f
 ## Session Handling
 
 - The server creates a random opaque session token after signup or login.
+- The session cookie name is `ticketpass_session`.
 - Only a hash of the session token is stored in `auth_sessions`.
 - The browser receives the raw token in an `HttpOnly` cookie.
 - The session cookie must use `SameSite=Lax`.

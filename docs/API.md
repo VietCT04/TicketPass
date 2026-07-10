@@ -29,7 +29,7 @@ Creates a user account and starts an authenticated session.
 | Field | Type | Required | Notes |
 |---|---|---:|---|
 | `email` | string | Yes | Normalized before uniqueness checks. |
-| `password` | string | Yes | Must satisfy the configured password policy. |
+| `password` | string | Yes | Must be 12 to 128 characters. Passwords are not trimmed. |
 | `display_name` | string | Yes | User-facing account name. |
 
 #### Response Body
@@ -46,6 +46,8 @@ Creates a user account and starts an authenticated session.
 ```
 
 On success, the server also sets an `HttpOnly` session cookie.
+
+Duplicate normalized emails return `409`.
 
 ### Log In
 
@@ -116,6 +118,7 @@ Returns `401` when the session is missing, invalid, expired, or revoked.
 
 ### Session Cookie
 
+- Cookie name is `ticketpass_session`.
 - Cookie contains a random opaque session token.
 - Only a hash of the token is stored server-side.
 - Cookie is `HttpOnly`.
