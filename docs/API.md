@@ -208,11 +208,14 @@ Authentication is required. The server derives `seller_id` from the authenticate
 - Request must be authenticated.
 - `seller_id` is always derived server-side.
 - `quantity` is always `1` for MVP and is not accepted as a client-provided field.
+- New complete listings start with status `ACTIVE`.
 - `is_transferable_confirmed` must be `true`.
 - `asking_price_minor` must be greater than zero.
 - `currency` must be a valid ISO-4217 currency code.
 - Event fields and listing fields must be non-empty after trimming.
 - Sensitive ticket data must not be included in public listing fields.
+
+Listing availability and duplicate-sale status rules are documented in `docs/flows/LISTING_STATUS_FLOW.md`.
 
 #### Sensitive Data Rule
 

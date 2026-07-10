@@ -2,7 +2,7 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, an authentication contract based on email/password plus server-side opaque sessions, and seller listing contract/flow docs.
+TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, an authentication contract based on email/password plus server-side opaque sessions, and seller listing contract, flow, and status docs.
 
 ## Latest Completed Work
 
@@ -11,6 +11,12 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 - Summary: Documented the seller listing flow, public metadata rules, server-side validation expectations, duplicate-sale relationship, audit expectations, and security boundaries.
 - Files changed:
   - `docs/flows/SELLER_LISTING_FLOW.md`
+
+- Date: 2026-07-10
+- GitHub Issue: `#4` - https://github.com/VietCT04/TicketPass/issues/4
+- Summary: Documented listing status meanings, allowed transitions, terminal statuses, duplicate-sale prevention invariants, and implementation expectations.
+- Files changed:
+  - `docs/flows/LISTING_STATUS_FLOW.md`
   - `docs/API.md`
   - `docs/DATABASE.md`
   - `docs/SECURITY.md`

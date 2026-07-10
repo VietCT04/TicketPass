@@ -87,6 +87,8 @@ Stores seller-created listings. Each listing represents exactly one ticket for M
 
 ## Listing Statuses
 
+Detailed transition rules and duplicate-sale invariants are documented in `docs/flows/LISTING_STATUS_FLOW.md`.
+
 | Status | Meaning |
 |---|---|
 | `DRAFT` | Listing exists but is not visible or purchasable. |
@@ -96,7 +98,7 @@ Stores seller-created listings. Each listing represents exactly one ticket for M
 | `CANCELLED` | Seller or admin cancelled the listing. |
 | `EXPIRED` | Listing is unavailable because the event or listing window expired. |
 
-Status transition enforcement belongs to issue `#4`.
+Status transition implementation belongs to backend/database work after issue `#4`.
 
 ## Transfer Methods
 
@@ -115,4 +117,6 @@ These values describe the expected transfer path only. Raw ticket payload storag
 - `quantity` must be `1`.
 - `asking_price_minor` must be greater than zero.
 - `is_transferable_confirmed` must be `true` before a listing can become `ACTIVE`.
+- Only `ACTIVE` listings can be reserved or purchased.
+- `SOLD` listings must never become purchasable again.
 - Sensitive ticket payload data must not be stored in `listings.public_notes` or other public listing metadata.
