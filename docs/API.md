@@ -1,5 +1,128 @@
 # API
 
+## Authentication
+
+Authentication lets users create accounts, log in, log out, and access protected TicketPass features. Backend services must derive the current user from authenticated session state and must not trust client-provided user IDs.
+
+TicketPass uses email/password authentication with server-side opaque sessions for MVP.
+
+### Sign Up
+
+```http
+POST /api/auth/signup
+```
+
+Creates a user account and starts an authenticated session.
+
+#### Request Body
+
+```json
+{
+  "email": "user@example.com",
+  "password": "correct horse battery staple",
+  "display_name": "Avery"
+}
+```
+
+#### Request Fields
+
+| Field | Type | Required | Notes |
+|---|---|---:|---|
+| `email` | string | Yes | Normalized before uniqueness checks. |
+| `password` | string | Yes | Must satisfy the configured password policy. |
+| `display_name` | string | Yes | User-facing account name. |
+
+#### Response Body
+
+```json
+{
+  "user": {
+    "id": "usr_123",
+    "email": "user@example.com",
+    "display_name": "Avery",
+    "created_at": "2026-07-10T10:00:00Z"
+  }
+}
+```
+
+On success, the server also sets an `HttpOnly` session cookie.
+
+### Log In
+
+```http
+POST /api/auth/login
+```
+
+Authenticates an existing user and starts a new session.
+
+#### Request Body
+
+```json
+{
+  "email": "user@example.com",
+  "password": "correct horse battery staple"
+}
+```
+
+#### Response Body
+
+```json
+{
+  "user": {
+    "id": "usr_123",
+    "email": "user@example.com",
+    "display_name": "Avery",
+    "created_at": "2026-07-10T10:00:00Z"
+  }
+}
+```
+
+On success, the server also sets an `HttpOnly` session cookie.
+
+Invalid credentials return `401` without revealing whether the email or password was incorrect.
+
+### Log Out
+
+```http
+POST /api/auth/logout
+```
+
+Revokes the current session server-side and clears the session cookie.
+
+Authentication is required. If the session is already missing, invalid, expired, or revoked, the endpoint should still leave the client signed out.
+
+### Current User
+
+```http
+GET /api/me
+```
+
+Returns the authenticated user for the current session.
+
+#### Response Body
+
+```json
+{
+  "user": {
+    "id": "usr_123",
+    "email": "user@example.com",
+    "display_name": "Avery",
+    "created_at": "2026-07-10T10:00:00Z"
+  }
+}
+```
+
+Returns `401` when the session is missing, invalid, expired, or revoked.
+
+### Session Cookie
+
+- Cookie contains a random opaque session token.
+- Only a hash of the token is stored server-side.
+- Cookie is `HttpOnly`.
+- Cookie is `SameSite=Lax`.
+- Cookie is `Secure` in production.
+- Logout revokes the session server-side.
+
 ## Listings
 
 Listings let authenticated sellers offer one transferable ticket for resale.

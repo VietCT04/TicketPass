@@ -81,7 +81,11 @@ Before resolving a GitHub Issue, write a proposal in the conversation first and 
 
 The proposal should summarize the intended scope, files to update, contract or schema decisions, open questions, and what will be commented back to the GitHub Issue.
 
-After approval, update the related files, update `docs/CONTINUITY.md`, and comment on the GitHub Issue with the completed work or proposed next steps.
+After approval, update the related files and update `docs/CONTINUITY.md`.
+
+When commenting on the GitHub Issue after approval, use the approved proposal as the source of truth. Do not replace it with a separately invented completion summary. The issue comment should preserve the approved scope, decisions, open questions, and next steps. It may add a short factual note listing files changed, tests run, and any implementation result that differs from the proposal.
+
+If a previous GitHub Issue comment does not match the approved proposal, add a corrective follow-up comment with the approved proposal and note that it supersedes the earlier comment.
 
 When completing an issue:
 
