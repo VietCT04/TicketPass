@@ -8,7 +8,7 @@ Related GitHub Issue: `#9` - https://github.com/VietCT04/TicketPass/issues/9
 
 ### Concern
 
-The authentication contract requires passwords to satisfy a configured policy, but the exact policy is not finalized.
+The MVP password policy is 12 to 128 characters, but it has not had final product/security review.
 
 ### Risk
 
@@ -16,7 +16,7 @@ A weak password policy may allow easily compromised accounts, while an overly st
 
 ### Recommendation
 
-Define the MVP password policy during backend implementation and review it before public launch.
+Review the MVP password policy before public launch and adjust if product or security requirements change.
 
 ### Status
 
@@ -61,6 +61,28 @@ Users may be unable to recover accounts, verify identity, or use stronger login 
 ### Recommendation
 
 Create follow-up user stories or issues for account recovery, verification, MFA, and account lifecycle features before public launch.
+
+### Status
+
+Open
+
+## CONCERN-0007: Local Java Runtime Cannot Verify Backend Tests
+
+Date: 2026-07-10  
+Related User Story: `docs/user-stories/US-0002-authenticate-user.md`  
+Related GitHub Issue: `#10` - https://github.com/VietCT04/TicketPass/issues/10
+
+### Concern
+
+The backend project targets Java 21, but the current local Maven runtime uses Java 19.
+
+### Risk
+
+`mvn test` cannot compile the project locally, so the signup/login tests added for issue `#10` could not be fully verified in this environment.
+
+### Recommendation
+
+Run `mvn test` with Java 21 before merging or continuing backend implementation work.
 
 ### Status
 

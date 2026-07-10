@@ -4,6 +4,8 @@
 
 Issue `#9` defines the initial database contract for user authentication. This is a documentation contract only; migrations are handled by implementation issues.
 
+Issue `#10` implements this contract with Flyway migration `apps/api/src/main/resources/db/migration/V1__create_auth_tables.sql`.
+
 ## Auth Tables
 
 ### `users`
@@ -36,7 +38,7 @@ Stores server-side opaque login sessions.
 ## Auth Constraints
 
 - `users.email` must be unique after normalization.
-- `users.password_hash` must never contain plaintext passwords.
+- `users.password_hash` must be a BCrypt hash and must never contain plaintext passwords.
 - `auth_sessions.token_hash` must be unique.
 - Expired or revoked sessions must not authenticate requests.
 - Business records must reference authenticated `users.id` values derived server-side.

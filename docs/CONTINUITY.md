@@ -2,15 +2,20 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, initial seller listing contract docs, and an authentication contract based on email/password plus server-side opaque sessions.
+TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, initial seller listing contract docs, and backend signup/login implementation for email/password auth with server-side opaque sessions.
 
 ## Latest Completed Work
 
 - Date: 2026-07-10
-- GitHub Issue: `#9` - https://github.com/VietCT04/TicketPass/issues/9
-- Summary: Defined the authentication API contract, user/session database contract, opaque session strategy, security rules, and auth concerns for `US-0002`; corrected `AGENTS.md` so future GitHub Issue comments preserve the approved proposal as the source of truth.
+- GitHub Issue: `#10` - https://github.com/VietCT04/TicketPass/issues/10
+- Summary: Implemented backend signup/login endpoints, user and auth session persistence, BCrypt password hashing, opaque session cookie creation, Flyway auth table migration, focused auth tests, and related docs.
 - Files changed:
-  - `AGENTS.md`
+  - `apps/api/pom.xml`
+  - `apps/api/src/main/java/com/ticketpass/api/auth/*`
+  - `apps/api/src/main/java/com/ticketpass/api/common/*`
+  - `apps/api/src/main/java/com/ticketpass/api/user/*`
+  - `apps/api/src/main/resources/db/migration/V1__create_auth_tables.sql`
+  - `apps/api/src/test/java/com/ticketpass/api/auth/*`
   - `docs/API.md`
   - `docs/DATABASE.md`
   - `docs/SECURITY.md`
@@ -19,8 +24,8 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 ## Active Work
 
-- Current GitHub Issue: `#10` - Implement backend signup and login API
-- Current goal: Implement backend signup and login using the documented auth contract from issue `#9`.
+- Current GitHub Issue: `#11` - Implement backend session handling and protected current-user endpoint
+- Current goal: Implement session validation, logout behavior, and current-user lookup using the auth sessions created by signup/login.
 - Current blocker: Seller listing API issue `#3` should wait until authentication is implemented.
 
 ## Important User Stories
@@ -31,15 +36,16 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 ## Known Concerns
 
 - See `docs/CONCERNS.md`.
-- Password policy needs review.
+- Password policy is defined for MVP but still needs review before public launch.
 - Session cookie CSRF hardening needs review.
 - Account recovery and verification features are deferred.
+- Local verification requires Java 21; current Maven runtime uses Java 19 and cannot compile the project.
 - Platform-specific transferability rules are unresolved.
 - Seller transferability confirmation is not proof.
 - Event reuse and deduplication rules are not defined for MVP.
 
 ## Next Recommended Steps
 
-1. Implement GitHub Issue `#10` using the auth API and database contract from `docs/API.md` and `docs/DATABASE.md`.
-2. Implement GitHub Issues `#11` through `#14` in order.
+1. Run backend tests with Java 21: `mvn test` from `apps/api`.
+2. Implement GitHub Issue `#11` for session validation, logout, and `GET /api/me`.
 3. Return to GitHub Issue `#3` and derive `seller_id` from the authenticated user.
