@@ -10,6 +10,8 @@ Seller-created listings are public marketplace metadata. They must not expose se
 - `seller_id` must be derived from the authenticated user on the server.
 - Clients must not be allowed to create listings for another seller by submitting `seller_id`.
 - Frontend checks are only usability aids; listing ownership and validation must be enforced server-side.
+- Listing availability must be enforced server-side using the status rules in `docs/flows/LISTING_STATUS_FLOW.md`.
+- Clients must not be trusted to decide whether a listing can be reserved, purchased, or sold.
 
 ## Sensitive Ticket Data
 

@@ -2,22 +2,25 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, initial seller listing contract docs, and an approved authentication user story.
+TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, seller listing contract/status docs, and an approved authentication user story.
 
 ## Latest Completed Work
 
-- Date: 2026-07-09
-- GitHub Issues: `#9` through `#14`
-- Summary: Created focused authentication issues from `US-0002: Authenticate User` and linked them back to the user story.
+- Date: 2026-07-10
+- GitHub Issue: `#4` - https://github.com/VietCT04/TicketPass/issues/4
+- Summary: Documented listing status meanings, allowed transitions, terminal statuses, duplicate-sale prevention invariants, and implementation expectations.
 - Files changed:
-  - `docs/user-stories/US-0002-authenticate-user.md`
+  - `docs/flows/LISTING_STATUS_FLOW.md`
+  - `docs/API.md`
+  - `docs/DATABASE.md`
+  - `docs/SECURITY.md`
   - `docs/CONTINUITY.md`
 
 ## Active Work
 
-- Current GitHub Issue: `#9` - Define authentication model and API contract
-- Current goal: Define the auth model, session strategy, and API contract before backend implementation.
-- Current blocker: Seller listing API issue `#3` should wait until authentication is implemented.
+- Current GitHub Issue: Auth work is in review on separate PRs.
+- Current goal: Review/merge auth contract and backend signup/login PRs before implementing seller-owned APIs.
+- Current blocker: Seller listing API issue `#3` should wait until authentication is implemented and accepted.
 
 ## Important User Stories
 
@@ -33,6 +36,6 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 ## Next Recommended Steps
 
-1. Complete GitHub Issue `#9` to define the authentication model and API contract.
-2. Implement GitHub Issues `#10` through `#14` in order.
+1. Review and merge the auth contract and signup/login PRs.
+2. Continue auth work with GitHub Issue `#11`.
 3. Return to GitHub Issue `#3` and derive `seller_id` from the authenticated user.
