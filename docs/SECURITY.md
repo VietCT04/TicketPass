@@ -39,6 +39,17 @@ TicketPass uses email/password authentication with server-side opaque sessions f
 - Seller, buyer, order, payment, ticket, reveal, and dispute ownership checks must use the authenticated user.
 - Frontend route protection is a usability layer only; backend authorization remains required.
 
+## Seller-Owned API Identity Pattern
+
+- Seller-owned routes must be protected by Spring Security before controller execution.
+- Seller-owned controllers should receive the immutable `AuthenticatedUser` with `@AuthenticationPrincipal`.
+- Business services should normally receive the trusted authenticated user id explicitly, such as `listingService.createListing(authenticatedUser.id(), request)`.
+- Seller-owned request DTOs must not declare `sellerId`, `userId`, `ownerId`, or equivalent ownership fields.
+- Seller ownership must be derived exclusively from `AuthenticatedUser.id()`.
+- Raw session tokens must not be passed to controllers, business services, request DTOs, logs, or ownership logic.
+- Do not add duplicate cookie parsing or session resolution for seller-owned APIs.
+- A reusable current-user accessor should be added only when direct current-user access is required outside controller boundaries, and it must fail defensively when no valid authenticated principal exists.
+
 ## Seller Listing Security Rules
 
 Seller-created listings are public marketplace metadata. They must not expose sensitive ticket data before the controlled reveal flow allows it.

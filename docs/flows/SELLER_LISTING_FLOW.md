@@ -61,11 +61,12 @@ Out of scope:
    - Public notes.
 4. Seller confirms the ticket is transferable.
 5. Frontend submits `POST /api/listings`.
-6. Backend derives `seller_id` from authenticated session state.
-7. Backend validates all required fields server-side.
-8. Backend creates or associates normalized event metadata.
-9. Backend creates one listing with `quantity = 1`.
-10. Backend returns public listing metadata only.
+6. Spring Security validates the session before controller execution.
+7. Backend receives the immutable `AuthenticatedUser` principal and derives `seller_id` from `AuthenticatedUser.id()`.
+8. Backend validates all required fields server-side.
+9. Backend creates or associates normalized event metadata.
+10. Backend creates one listing with `quantity = 1`.
+11. Backend returns public listing metadata only.
 
 ## Public Listing Metadata
 
@@ -90,8 +91,9 @@ The public listing must not expose:
 
 ## Server-Side Rules
 
-- Seller identity must be derived from the authenticated session.
-- Client-provided seller or ownership fields must be ignored or rejected.
+- Seller identity must be derived from the authenticated `AuthenticatedUser` principal.
+- Client-provided seller or ownership fields must be rejected.
+- Listing services must not parse cookies or resolve raw session tokens.
 - `quantity` is fixed to `1` for MVP.
 - `is_transferable_confirmed` must be `true`.
 - `asking_price_minor` must be greater than zero.
