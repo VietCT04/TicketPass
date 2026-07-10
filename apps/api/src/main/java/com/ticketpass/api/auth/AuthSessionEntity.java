@@ -84,6 +84,10 @@ public class AuthSessionEntity {
         return revokedAt;
     }
 
+    public void setRevokedAt(Instant revokedAt) {
+        this.revokedAt = revokedAt;
+    }
+
     public Instant getCreatedAt() {
         return createdAt;
     }

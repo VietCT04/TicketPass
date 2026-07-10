@@ -9,6 +9,10 @@ public record AuthResponse(UserResponse user) {
         return new AuthResponse(UserResponse.from(user));
     }
 
+    static AuthResponse from(AuthenticatedUser user) {
+        return new AuthResponse(UserResponse.from(user));
+    }
+
     public record UserResponse(
             String id,
             String email,
@@ -21,6 +25,14 @@ public record AuthResponse(UserResponse user) {
                     user.getEmail(),
                     user.getDisplayName(),
                     user.getCreatedAt().toString());
+        }
+
+        static UserResponse from(AuthenticatedUser user) {
+            return new UserResponse(
+                    user.id().toString(),
+                    user.email(),
+                    user.displayName(),
+                    user.createdAt().toString());
         }
     }
 }

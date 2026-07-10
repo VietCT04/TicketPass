@@ -31,7 +31,7 @@ Stores server-side opaque login sessions.
 | `user_id` | UUID/string id | References `users.id`. |
 | `token_hash` | string | Hash of the random session token. The raw token is never stored. |
 | `expires_at` | timestamp | Session expiry time. |
-| `revoked_at` | timestamp nullable | Set when the session is logged out or revoked. |
+| `revoked_at` | timestamp nullable | Set when the session is logged out or revoked. Rows are retained for audit and security investigation. |
 | `created_at` | timestamp | Creation time. |
 | `last_used_at` | timestamp | Last successful use time. |
 
@@ -41,6 +41,7 @@ Stores server-side opaque login sessions.
 - `users.password_hash` must be a BCrypt hash and must never contain plaintext passwords.
 - `auth_sessions.token_hash` must be unique.
 - Expired or revoked sessions must not authenticate requests.
+- Logout sets `auth_sessions.revoked_at` instead of deleting the session row.
 - Business records must reference authenticated `users.id` values derived server-side.
 
 ## Seller Listing Contract

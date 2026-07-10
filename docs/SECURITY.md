@@ -22,12 +22,19 @@ TicketPass uses email/password authentication with server-side opaque sessions f
 - The browser receives the raw token in an `HttpOnly` cookie.
 - The session cookie must use `SameSite=Lax`.
 - The session cookie must use `Secure` in production.
-- Logout must revoke the server-side session and clear the cookie.
-- Missing, invalid, expired, or revoked sessions must return `401` for protected APIs.
+- The session cookie must use path `/`.
+- Cookie creation and clearing must share one centralized configuration, including name, path, domain if configured, `HttpOnly`, `Secure`, and `SameSite`.
+- Logout must revoke the server-side session by setting `auth_sessions.revoked_at` and must clear the cookie with `Max-Age=0`.
+- Missing, malformed, unknown, expired, or revoked sessions must return `401` for protected APIs.
+- Logout must be idempotent and return `204 No Content` regardless of session validity.
+- API authentication failures must return API-style `401` responses and must not redirect to a login page.
 
 ## Current User And Ownership
 
 - Backend services must derive the current user from authenticated session state.
+- Session authentication must place an immutable authentication-specific principal in Spring Security's `SecurityContext`.
+- The principal must contain only the minimum required user information and must not be a JPA entity.
+- Raw session tokens must never be stored in `SecurityContext` or written to logs.
 - Clients must not be allowed to choose or override user IDs for ownership.
 - Seller, buyer, order, payment, ticket, reveal, and dispute ownership checks must use the authenticated user.
 - Frontend route protection is a usability layer only; backend authorization remains required.

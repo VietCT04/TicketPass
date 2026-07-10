@@ -2,12 +2,13 @@ package com.ticketpass.api.auth;
 
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
-import java.time.Duration;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseCookie;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -34,6 +35,15 @@ public class AuthController {
         AuthResult result = authService.login(request);
         response.addHeader(HttpHeaders.SET_COOKIE, sessionCookieFactory.create(result.sessionToken(), result.maxAge()).toString());
         return AuthResponse.from(result.user());
+    }
+
+    @PostMapping("/logout")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void logout(
+            @CookieValue(name = SessionCookieFactory.COOKIE_NAME, required = false) String sessionToken,
+            HttpServletResponse response) {
+        authService.logout(sessionToken);
+        response.addHeader(HttpHeaders.SET_COOKIE, sessionCookieFactory.clear().toString());
     }
 }
 
