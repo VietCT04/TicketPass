@@ -144,7 +144,7 @@ Flow details and security expectations are documented in `docs/flows/SELLER_LIST
 POST /api/listings
 ```
 
-Planned contract for creating a seller-owned listing for one transferable ticket.
+Creates a seller-owned listing for one transferable ticket.
 
 Authentication is required. Spring Security must validate the session before controller execution, and the controller must receive the immutable `AuthenticatedUser` principal with `@AuthenticationPrincipal`.
 
@@ -192,7 +192,7 @@ Listing services must not parse cookies, resolve raw session tokens, or accept c
 | `asking_price_minor` | integer | Yes | Asking price in minor currency units. Must be greater than zero. |
 | `transfer_method` | string | Yes | Expected transfer method. Initial value set is `PLATFORM_TRANSFER`, `PDF_UPLOAD`, `QR_UPLOAD`, or `MANUAL_TRANSFER`. |
 | `is_transferable_confirmed` | boolean | Yes | Must be `true`; seller confirms the ticket is transferable. |
-| `public_notes` | string | No | Buyer-visible notes. Must not contain QR codes, barcodes, private credentials, or sensitive ticket payload data. |
+| `public_notes` | string | No | Buyer-visible notes. MVP does not perform sensitive content classification on this free-text field. |
 
 #### Response Body
 
@@ -233,10 +233,11 @@ Listing services must not parse cookies, resolve raw session tokens, or accept c
 - `asking_price_minor` must be greater than zero.
 - `currency` must be a valid ISO-4217 currency code.
 - Event fields and listing fields must be non-empty after trimming.
-- Sensitive ticket data must not be included in public listing fields.
+- The public listing contract must not include dedicated fields for QR codes, barcodes, ticket files, private transfer links, platform credentials, or other sensitive ticket payload data.
+- MVP does not classify free-text `public_notes` for sensitive content; this limitation is tracked in `docs/CONCERNS.md`.
 
 Listing availability and duplicate-sale status rules are documented in `docs/flows/LISTING_STATUS_FLOW.md`.
 
 #### Sensitive Data Rule
 
-The listing API does not accept or return raw QR codes, barcodes, ticket images, ticket PDFs, private transfer links, or platform credentials. Secure ticket upload, storage, and reveal belong to a separate ticket reveal flow.
+The listing API does not define dedicated request or response fields for raw QR codes, barcodes, ticket images, ticket PDFs, private transfer links, or platform credentials. Secure ticket upload, storage, and reveal belong to a separate ticket reveal flow.

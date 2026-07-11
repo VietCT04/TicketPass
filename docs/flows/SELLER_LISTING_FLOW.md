@@ -2,7 +2,7 @@
 
 ## Source
 
-User Story: `docs/user-stories/US-0001-list-transferable-ticket.md`  
+User Story: `docs/user-stories/US-0001-list-transferable-ticket.md`
 GitHub Issue: `#7` - https://github.com/VietCT04/TicketPass/issues/7
 
 ## Goal
@@ -18,7 +18,7 @@ In scope:
 - Seller authentication requirement.
 - Event and listing metadata collection.
 - Seller transferability confirmation.
-- Public listing metadata safety.
+- Public listing metadata boundaries.
 - Server-side validation expectations.
 - Relationship to duplicate-sale prevention, audit logging, and later reveal flow.
 
@@ -77,9 +77,9 @@ The public listing may expose:
 - Ticket type.
 - Asking price and currency.
 - Transfer method.
-- Seller-provided public notes after validation.
+- Seller-provided public notes.
 
-The public listing must not expose:
+The public listing contract must not define dedicated fields for:
 
 - Raw QR codes.
 - Barcodes.
@@ -88,6 +88,8 @@ The public listing must not expose:
 - Private transfer links.
 - Platform credentials.
 - Any private payload that would let a buyer use the ticket before controlled reveal.
+
+MVP does not classify free-text public notes for sensitive content. This limitation is tracked in `docs/CONCERNS.md`.
 
 ## Server-Side Rules
 
@@ -99,7 +101,8 @@ The public listing must not expose:
 - `asking_price_minor` must be greater than zero.
 - `currency` must be a valid ISO-4217 currency code.
 - Required event and listing fields must be non-empty after trimming.
-- Sensitive ticket data must not be accepted in public metadata fields.
+- The public listing contract must not include dedicated sensitive ticket payload fields.
+- MVP does not classify free-text public notes for sensitive content.
 
 ## Status And Duplicate Sale
 

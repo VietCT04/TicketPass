@@ -2,9 +2,22 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, seller listing contract, flow, and status docs, and backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, and a documented seller-owned API identity pattern.
+TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, and authenticated seller listing creation.
 
 ## Latest Completed Work
+
+- Date: 2026-07-11
+- GitHub Issue: `#3` - https://github.com/VietCT04/TicketPass/issues/3
+- Summary: Implemented authenticated seller listing creation with server-derived seller ownership, normalized event/listing persistence, `quantity = 1`, initial `ACTIVE` status, server-side validation, Flyway listing tables, and focused backend tests.
+- Files changed:
+  - `apps/api/src/main/java/com/ticketpass/api/auth/SecurityConfig.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/*`
+  - `apps/api/src/main/resources/db/migration/V2__create_listing_tables.sql`
+  - `apps/api/src/test/java/com/ticketpass/api/listing/*`
+  - `docs/API.md`
+  - `docs/DATABASE.md`
+  - `docs/SECURITY.md`
+  - `docs/CONTINUITY.md`
 
 - Date: 2026-07-11
 - GitHub Issue: `#14` - https://github.com/VietCT04/TicketPass/issues/14
@@ -42,9 +55,9 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 ## Active Work
 
-- Current GitHub Issue: `#14` is being completed.
-- Current goal: Prepare seller listing API issue `#3` to use authenticated server-derived ownership.
-- Current blocker: None.
+- Current GitHub Issue: `#4` - Add listing status rules to prevent duplicate sale
+- Current goal: Implement status transition enforcement beyond initial listing creation.
+- Current blocker: Backend tests still need to be run with Java 21 in an environment that supports the project target.
 
 ## Important User Stories
 
@@ -58,6 +71,7 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 - Session cookie CSRF hardening needs review.
 - Account recovery and verification features are deferred.
 - Local verification requires Java 21; current Maven runtime uses Java 19 and cannot compile the project.
+- MVP does not classify seller listing `public_notes` for sensitive ticket payload content.
 - Platform-specific transferability rules are unresolved.
 - Seller transferability confirmation is not proof.
 - Event reuse and deduplication rules are not defined for MVP.
@@ -65,5 +79,5 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 ## Next Recommended Steps
 
 1. Run backend tests with Java 21: `mvn test` from `apps/api`.
-2. Review and merge issue `#14`.
-3. Continue with GitHub Issue `#3` to implement authenticated seller listing creation.
+2. Review and merge the PR containing issue `#3`.
+3. Continue with GitHub Issue `#4` for duplicate-sale status enforcement.

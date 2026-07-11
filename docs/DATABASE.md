@@ -46,7 +46,9 @@ Stores server-side opaque login sessions.
 
 ## Seller Listing Contract
 
-Issue `#2` defines the initial database contract for seller-created transferable ticket listings. This is a documentation contract only; migrations are handled by implementation issues.
+Issue `#2` defines the initial database contract for seller-created transferable ticket listings.
+
+Issue `#3` implements the initial seller listing persistence contract with Flyway migration `apps/api/src/main/resources/db/migration/V2__create_listing_tables.sql`.
 
 The user-facing seller listing flow is documented in `docs/flows/SELLER_LISTING_FLOW.md`.
 
@@ -84,7 +86,7 @@ Stores seller-created listings. Each listing represents exactly one ticket for M
 | `transfer_method` | enum/string | Expected transfer method. |
 | `is_transferable_confirmed` | boolean | Seller confirmation that the ticket is transferable. |
 | `status` | enum/string | Listing lifecycle status. |
-| `public_notes` | text | Buyer-visible notes. Must not contain sensitive ticket payload data. |
+| `public_notes` | text | Buyer-visible notes. MVP does not perform sensitive content classification on this free-text field. |
 | `created_at` | timestamp | Creation time. |
 | `updated_at` | timestamp | Last update time. |
 
@@ -122,4 +124,5 @@ These values describe the expected transfer path only. Raw ticket payload storag
 - `is_transferable_confirmed` must be `true` before a listing can become `ACTIVE`.
 - Only `ACTIVE` listings can be reserved or purchased.
 - `SOLD` listings must never become purchasable again.
-- Sensitive ticket payload data must not be stored in `listings.public_notes` or other public listing metadata.
+- Public listing metadata must not include dedicated columns for QR codes, barcodes, ticket files, private transfer links, platform credentials, or other sensitive ticket payload data.
+- MVP does not classify free-text `listings.public_notes` for sensitive content; this limitation is tracked in `docs/CONCERNS.md`.
