@@ -58,6 +58,7 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 - Session cookie CSRF hardening needs review.
 - Account recovery and verification features are deferred.
 - Local verification requires Java 21; current Maven runtime uses Java 19 and cannot compile the project.
+- MVP does not classify seller listing `public_notes` for sensitive ticket payload content.
 - Platform-specific transferability rules are unresolved.
 - Seller transferability confirmation is not proof.
 - Event reuse and deduplication rules are not defined for MVP.

@@ -67,7 +67,7 @@ The full seller listing flow is documented in `docs/flows/SELLER_LISTING_FLOW.md
 
 ## Sensitive Ticket Data
 
-The listing contract must not accept, store, or return:
+The public listing contract must not define dedicated fields that accept, store, or return:
 
 - Raw QR codes.
 - Barcodes.
@@ -81,14 +81,16 @@ Secure ticket upload, storage, reveal, and audit logging are separate flows.
 
 ## Public Listing Data
 
-The following fields are safe to expose as public listing metadata when validated:
+The following fields are intended as public listing metadata:
 
 - Event name, venue, city, start date, and event platform.
 - Seat information.
 - Ticket type.
 - Asking price and currency.
 - Transfer method.
-- Seller-provided public notes that do not contain sensitive ticket payload data.
+- Seller-provided public notes.
+
+MVP does not classify free-text public notes for sensitive content. This limitation is tracked in `docs/CONCERNS.md`.
 
 ## Transferability Confirmation
 

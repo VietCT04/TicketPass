@@ -2,8 +2,8 @@
 
 ## CONCERN-0004: Password Policy Needs Review
 
-Date: 2026-07-10  
-Related User Story: `docs/user-stories/US-0002-authenticate-user.md`  
+Date: 2026-07-10
+Related User Story: `docs/user-stories/US-0002-authenticate-user.md`
 Related GitHub Issue: `#9` - https://github.com/VietCT04/TicketPass/issues/9
 
 ### Concern
@@ -24,8 +24,8 @@ Open
 
 ## CONCERN-0005: Session Cookie CSRF Hardening
 
-Date: 2026-07-10  
-Related User Story: `docs/user-stories/US-0002-authenticate-user.md`  
+Date: 2026-07-10
+Related User Story: `docs/user-stories/US-0002-authenticate-user.md`
 Related GitHub Issue: `#9` - https://github.com/VietCT04/TicketPass/issues/9
 
 ### Concern
@@ -46,8 +46,8 @@ Open
 
 ## CONCERN-0006: Deferred Account Recovery And Verification
 
-Date: 2026-07-10  
-Related User Story: `docs/user-stories/US-0002-authenticate-user.md`  
+Date: 2026-07-10
+Related User Story: `docs/user-stories/US-0002-authenticate-user.md`
 Related GitHub Issue: `#9` - https://github.com/VietCT04/TicketPass/issues/9
 
 ### Concern
@@ -68,8 +68,8 @@ Open
 
 ## CONCERN-0007: Local Java Runtime Cannot Verify Backend Tests
 
-Date: 2026-07-10  
-Related User Story: `docs/user-stories/US-0002-authenticate-user.md`  
+Date: 2026-07-10
+Related User Story: `docs/user-stories/US-0002-authenticate-user.md`
 Related GitHub Issue: `#10` - https://github.com/VietCT04/TicketPass/issues/10
 
 ### Concern
@@ -88,10 +88,32 @@ Run `mvn test` with Java 21 before merging or continuing backend implementation 
 
 Open
 
+## CONCERN-0008: Public Notes Sensitive Content Is Not Classified
+
+Date: 2026-07-11
+Related User Story: `docs/user-stories/US-0001-list-transferable-ticket.md`
+Related GitHub Issue: `#3` - https://github.com/VietCT04/TicketPass/issues/3
+
+### Concern
+
+MVP seller listing creation does not classify or scan free-text `public_notes` for QR codes, barcodes, private transfer links, platform credentials, or other sensitive ticket payload data.
+
+### Risk
+
+A seller may accidentally or intentionally put sensitive ticket data into public notes, which could expose usable ticket information before escrow, payment, audit, and reveal controls apply.
+
+### Recommendation
+
+Keep dedicated sensitive ticket payload fields out of public listing metadata now. Add content classification, stricter public note rules, moderation, or ticket-upload separation in a later issue before public launch or broader seller access.
+
+### Status
+
+Open
+
 ## CONCERN-0001: Platform-Specific Transferability Rules
 
-Date: 2026-07-09  
-Related User Story: `docs/user-stories/US-0001-list-transferable-ticket.md`  
+Date: 2026-07-09
+Related User Story: `docs/user-stories/US-0001-list-transferable-ticket.md`
 Related GitHub Issue: `#2` - https://github.com/VietCT04/TicketPass/issues/2
 
 ### Concern
@@ -112,8 +134,8 @@ Open
 
 ## CONCERN-0002: Seller Transferability Confirmation Is Not Proof
 
-Date: 2026-07-09  
-Related User Story: `docs/user-stories/US-0001-list-transferable-ticket.md`  
+Date: 2026-07-09
+Related User Story: `docs/user-stories/US-0001-list-transferable-ticket.md`
 Related GitHub Issue: `#2` - https://github.com/VietCT04/TicketPass/issues/2
 
 ### Concern
@@ -134,8 +156,8 @@ Open
 
 ## CONCERN-0003: Event Reuse And Deduplication
 
-Date: 2026-07-09  
-Related User Story: `docs/user-stories/US-0001-list-transferable-ticket.md`  
+Date: 2026-07-09
+Related User Story: `docs/user-stories/US-0001-list-transferable-ticket.md`
 Related GitHub Issue: `#2` - https://github.com/VietCT04/TicketPass/issues/2
 
 ### Concern
