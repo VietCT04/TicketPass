@@ -70,7 +70,7 @@ Open
 
 Date: 2026-07-10
 Related User Story: `docs/user-stories/US-0002-authenticate-user.md`
-Related GitHub Issue: `#10` - https://github.com/VietCT04/TicketPass/issues/10
+Related GitHub Issues: `#10` - https://github.com/VietCT04/TicketPass/issues/10, `#3` - https://github.com/VietCT04/TicketPass/issues/3
 
 ### Concern
 
@@ -78,7 +78,7 @@ The backend project targets Java 21, but the current local Maven runtime uses Ja
 
 ### Risk
 
-`mvn test` cannot compile the project locally, so the signup/login tests added for issue `#10` could not be fully verified in this environment.
+`mvn test` cannot compile the project locally, so backend tests added for issues `#10` and `#3` could not be fully verified in this environment.
 
 ### Recommendation
 

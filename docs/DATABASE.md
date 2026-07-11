@@ -46,7 +46,9 @@ Stores server-side opaque login sessions.
 
 ## Seller Listing Contract
 
-Issue `#2` defines the initial database contract for seller-created transferable ticket listings. This is a documentation contract only; migrations are handled by implementation issues.
+Issue `#2` defines the initial database contract for seller-created transferable ticket listings.
+
+Issue `#3` implements the initial seller listing persistence contract with Flyway migration `apps/api/src/main/resources/db/migration/V2__create_listing_tables.sql`.
 
 The user-facing seller listing flow is documented in `docs/flows/SELLER_LISTING_FLOW.md`.
 

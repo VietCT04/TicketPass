@@ -144,7 +144,7 @@ Flow details and security expectations are documented in `docs/flows/SELLER_LIST
 POST /api/listings
 ```
 
-Planned contract for creating a seller-owned listing for one transferable ticket.
+Creates a seller-owned listing for one transferable ticket.
 
 Authentication is required. Spring Security must validate the session before controller execution, and the controller must receive the immutable `AuthenticatedUser` principal with `@AuthenticationPrincipal`.
 

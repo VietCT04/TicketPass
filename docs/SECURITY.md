@@ -56,6 +56,8 @@ Seller-created listings are public marketplace metadata. They must not expose se
 
 The full seller listing flow is documented in `docs/flows/SELLER_LISTING_FLOW.md`.
 
+Issue `#3` implements seller listing creation through a Spring Security-protected `POST /api/listings` endpoint that receives `AuthenticatedUser` with `@AuthenticationPrincipal`.
+
 ## Authentication And Ownership
 
 - Listing creation requires authentication.
