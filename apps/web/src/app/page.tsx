@@ -1,3 +1,5 @@
+import { AuthStatus } from "@/components/AuthStatus";
+
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
 
 export default function Home() {
@@ -16,6 +18,8 @@ export default function Home() {
             core ticketing workflow.
           </p>
         </div>
+
+        <AuthStatus />
 
         <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-sm font-medium text-slate-500">API base URL</p>

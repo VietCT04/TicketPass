@@ -77,13 +77,17 @@ Each implementation issue should usually have one primary outcome, one main affe
 
 Split an issue when it includes multiple deployable steps, multiple sensitive business rules, or changes across unrelated layers.
 
-Before resolving a GitHub Issue, write a proposal in the conversation first and wait for user approval.
+Before resolving a GitHub Issue, write a proposal as a GitHub Issue comment and wait for user approval.
 
-The proposal should summarize the intended scope, files to update, contract or schema decisions, open questions, and what will be commented back to the GitHub Issue.
+Use the GitHub Issue comment thread as the approval and revision loop. If the user comments on that proposal in GitHub, respond with a revised proposal as another GitHub Issue comment, and repeat until the user approves the scope.
+
+If GitHub is unavailable, write the proposal in the conversation and later mirror the approved proposal back to the GitHub Issue when access is restored.
+
+The proposal should summarize the intended scope, files to update, contract or schema decisions, open questions, and what will be commented back to GitHub.
 
 After approval, update the related files and update `docs/CONTINUITY.md`.
 
-When commenting on the GitHub Issue after approval, use the approved proposal as the source of truth. Do not replace it with a separately invented completion summary. The issue comment should preserve the approved scope, decisions, open questions, and next steps. It may add a short factual note listing files changed, tests run, and any implementation result that differs from the proposal.
+When commenting on GitHub after approval, use the approved proposal as the source of truth. Do not replace it with a separately invented completion summary. The GitHub comment should preserve the approved scope, decisions, open questions, and next steps. It may add a short factual note listing files changed, tests run, and any implementation result that differs from the proposal.
 
 If a previous GitHub Issue comment does not match the approved proposal, add a corrective follow-up comment with the approved proposal and note that it supersedes the earlier comment.
 
