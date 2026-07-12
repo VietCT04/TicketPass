@@ -8,9 +8,10 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 - Date: 2026-07-12
 - GitHub Issue: None - issue creation
-- Summary: Created focused GitHub Issues from approved user story `US-0003` for event-first marketplace browsing: API contract and visibility rules (`#25`), backend public browse events API (`#26`), and frontend browse events page (`#27`).
+- Summary: Created focused GitHub Issues from approved user story `US-0003` for event-first marketplace browsing: API contract and visibility rules (`#25`), backend public browse events API (`#26`), and frontend browse events page (`#27`). Added unresolved US-0003 concerns for event lifecycle rules, aggregate freshness, and event image source/moderation.
 - Files changed:
   - `docs/user-stories/US-0003-browse-events.md`
+  - `docs/CONCERNS.md`
   - `docs/CONTINUITY.md`
 
 - Date: 2026-07-12
@@ -123,6 +124,9 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 - Platform-specific transferability rules are unresolved.
 - Seller transferability confirmation is not proof.
 - Event reuse and deduplication rules are not defined for MVP.
+- Event cancellation and rescheduling rules are not defined for browse results.
+- Browse event aggregate freshness rules need review.
+- Event image source and moderation rules are not defined.
 
 ## Next Recommended Steps
 
