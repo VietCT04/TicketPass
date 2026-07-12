@@ -7,6 +7,20 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 ## Latest Completed Work
 
 - Date: 2026-07-12
+- GitHub Issue: None - user story proposal
+- Summary: Replaced the buyer browse listings proposal with an event-first browse events user story covering events with active visible listings, safe event summaries, optional server-derived listing aggregates, pagination, and server-side visibility enforcement.
+- Files changed:
+  - `docs/user-stories/US-0003-browse-events.md`
+  - `docs/CONTINUITY.md`
+
+- Date: 2026-07-12
+- GitHub Issue: None - workflow update
+- Summary: Updated `AGENTS.md` testing rules so backend and frontend test suites are not run after coding by default. Agents may still write or update tests, but test execution now requires an explicit user request. Non-test verification such as lint, build, typecheck, and formatting checks remains allowed when relevant.
+- Files changed:
+  - `AGENTS.md`
+  - `docs/CONTINUITY.md`
+
+- Date: 2026-07-12
 - GitHub Issue: `#12` - https://github.com/VietCT04/TicketPass/issues/12
 - Summary: Implemented frontend signup, login, logout, and current-user UI state using the existing cookie-backed backend auth contract. Added duplicate-submit prevention, signed-out handling for `GET /api/me` `401`, and `.tools/` git exclusion for local GitHub CLI binaries.
 - Files changed:
@@ -81,14 +95,15 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 ## Active Work
 
-- Current GitHub Issue: `#12` - Build frontend signup login logout flow
-- Current goal: Review and merge the issue `#12` pull request.
-- Current blocker: None. Frontend lint and build passed locally.
+- Current GitHub Issue: None.
+- Current goal: Review proposed buyer browse listings user story PR.
+- Current blocker: None.
 
 ## Important User Stories
 
 - `docs/user-stories/US-0001-list-transferable-ticket.md`: Seller can list a transferable ticket safely without exposing sensitive ticket data too early.
 - `docs/user-stories/US-0002-authenticate-user.md`: User can sign up, log in, log out, maintain secure sessions, and access protected TicketPass account features.
+- `docs/user-stories/US-0003-browse-events.md`: Buyer can browse events that have active publicly visible ticket listings with safe event summaries and basic pagination.
 
 ## Known Concerns
 
@@ -104,6 +119,6 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 ## Next Recommended Steps
 
-1. Review the pull request for GitHub Issue `#12`.
-2. Confirm frontend verification in CI.
-3. After issue `#12` merges, continue with issue `#13` for protected frontend pages.
+1. Review the buyer browse listings user story PR.
+2. After approval, create focused GitHub Issues from `US-0003`.
+3. Continue keeping implementation proposals and approval revisions in GitHub Issue comments before coding.
