@@ -7,6 +7,13 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 ## Latest Completed Work
 
 - Date: 2026-07-12
+- GitHub Issue: None - issue creation
+- Summary: Created focused GitHub Issues from approved user story `US-0003` for event-first marketplace browsing: API contract and visibility rules (`#25`), backend public browse events API (`#26`), and frontend browse events page (`#27`).
+- Files changed:
+  - `docs/user-stories/US-0003-browse-events.md`
+  - `docs/CONTINUITY.md`
+
+- Date: 2026-07-12
 - GitHub Issue: None - user story proposal
 - Summary: Replaced the buyer browse listings proposal with an event-first browse events user story covering events with active visible listings, safe event summaries, optional server-derived listing aggregates, pagination, and server-side visibility enforcement.
 - Files changed:
@@ -96,7 +103,7 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 ## Active Work
 
 - Current GitHub Issue: None.
-- Current goal: Review proposed buyer browse listings user story PR.
+- Current goal: Choose the next implementation issue from approved user story `US-0003`.
 - Current blocker: None.
 
 ## Important User Stories
@@ -119,6 +126,6 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 ## Next Recommended Steps
 
-1. Review the buyer browse listings user story PR.
-2. After approval, create focused GitHub Issues from `US-0003`.
-3. Continue keeping implementation proposals and approval revisions in GitHub Issue comments before coding.
+1. Start with issue `#25` to define the event browse API contract and visibility rules.
+2. Then implement issue `#26` for the backend public browse events API.
+3. Then implement issue `#27` for the frontend browse events page.
