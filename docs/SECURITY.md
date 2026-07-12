@@ -28,6 +28,11 @@ TicketPass uses email/password authentication with server-side opaque sessions f
 - Missing, malformed, unknown, expired, or revoked sessions must return `401` for protected APIs.
 - Logout must be idempotent and return `204 No Content` regardless of session validity.
 - API authentication failures must return API-style `401` responses and must not redirect to a login page.
+- Frontend code must store only derived current-user UI state in memory.
+- Frontend code must not store the opaque session token or duplicate session credentials in JavaScript-accessible storage such as `localStorage` or `sessionStorage`.
+- Frontend requests that rely on the session cookie must use credentialed requests.
+- Frontend `GET /api/me` handling must treat `401` as the expected signed-out state, not as a user-facing failure.
+- Frontend auth forms must prevent duplicate signup, login, or logout submissions while a request is in flight.
 
 ## Current User And Ownership
 

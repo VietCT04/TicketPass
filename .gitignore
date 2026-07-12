@@ -10,4 +10,5 @@ build/
 *.log
 .DS_Store
 .agents
+.tools/
 apps/api/.idea

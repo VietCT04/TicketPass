@@ -2,9 +2,35 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, and authenticated seller listing creation.
+TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, authenticated seller listing creation, and frontend signup/login/logout screens.
 
 ## Latest Completed Work
+
+- Date: 2026-07-12
+- GitHub Issue: `#12` - https://github.com/VietCT04/TicketPass/issues/12
+- Summary: Implemented frontend signup, login, logout, and current-user UI state using the existing cookie-backed backend auth contract. Added duplicate-submit prevention, signed-out handling for `GET /api/me` `401`, and `.tools/` git exclusion for local GitHub CLI binaries.
+- Files changed:
+  - `.gitignore`
+  - `AGENTS.md`
+  - `apps/web/eslint.config.mjs`
+  - `apps/web/next-env.d.ts`
+  - `apps/web/package.json`
+  - `apps/web/src/app/page.tsx`
+  - `apps/web/src/app/signup/page.tsx`
+  - `apps/web/src/app/login/page.tsx`
+  - `apps/web/src/components/AuthForm.tsx`
+  - `apps/web/src/components/AuthStatus.tsx`
+  - `apps/web/src/lib/auth.ts`
+  - `apps/web/tsconfig.json`
+  - `docs/SECURITY.md`
+  - `docs/CONTINUITY.md`
+
+- Date: 2026-07-11
+- GitHub Issue: None - workflow update
+- Summary: Updated `AGENTS.md` so implementation proposals use GitHub Issue comments as the approval and revision loop, with the conversation as a fallback only when GitHub is unavailable.
+- Files changed:
+  - `AGENTS.md`
+  - `docs/CONTINUITY.md`
 
 - Date: 2026-07-11
 - GitHub Issue: `#3` - https://github.com/VietCT04/TicketPass/issues/3
@@ -55,9 +81,9 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 ## Active Work
 
-- Current GitHub Issue: `#4` - Add listing status rules to prevent duplicate sale
-- Current goal: Implement status transition enforcement beyond initial listing creation.
-- Current blocker: Backend tests still need to be run with Java 21 in an environment that supports the project target.
+- Current GitHub Issue: `#12` - Build frontend signup login logout flow
+- Current goal: Review and merge the issue `#12` pull request.
+- Current blocker: None. Frontend lint and build passed locally.
 
 ## Important User Stories
 
@@ -78,6 +104,6 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 ## Next Recommended Steps
 
-1. Run backend tests with Java 21: `mvn test` from `apps/api`.
-2. Review and merge the PR containing issue `#3`.
-3. Continue with GitHub Issue `#4` for duplicate-sale status enforcement.
+1. Review the pull request for GitHub Issue `#12`.
+2. Confirm frontend verification in CI.
+3. After issue `#12` merges, continue with issue `#13` for protected frontend pages.
