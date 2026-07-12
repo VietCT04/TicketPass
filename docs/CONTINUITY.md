@@ -8,9 +8,9 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 - Date: 2026-07-12
 - GitHub Issue: None - user story proposal
-- Summary: Added proposed buyer browse listings user story covering active listing visibility, seller-safe listing fields, exclusion of unavailable listings, server-side visibility enforcement, and basic pagination.
+- Summary: Replaced the buyer browse listings proposal with an event-first browse events user story covering events with active visible listings, safe event summaries, optional server-derived listing aggregates, pagination, and server-side visibility enforcement.
 - Files changed:
-  - `docs/user-stories/US-0003-browse-ticket-listings.md`
+  - `docs/user-stories/US-0003-browse-events.md`
   - `docs/CONTINUITY.md`
 
 - Date: 2026-07-12
@@ -103,7 +103,7 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 - `docs/user-stories/US-0001-list-transferable-ticket.md`: Seller can list a transferable ticket safely without exposing sensitive ticket data too early.
 - `docs/user-stories/US-0002-authenticate-user.md`: User can sign up, log in, log out, maintain secure sessions, and access protected TicketPass account features.
-- `docs/user-stories/US-0003-browse-ticket-listings.md`: Buyer can browse active ticket listings with seller-safe public information and basic pagination.
+- `docs/user-stories/US-0003-browse-events.md`: Buyer can browse events that have active publicly visible ticket listings with safe event summaries and basic pagination.
 
 ## Known Concerns
 
