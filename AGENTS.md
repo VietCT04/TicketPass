@@ -315,7 +315,11 @@ Do not change API response shapes without updating all consumers.
 
 Add or update tests when practical, especially for security-sensitive, payment, escrow, ticket reveal, dispute, authorization, and API validation behavior.
 
-Run relevant local tests when the environment supports them.
+For now, do not run backend or frontend test suites after coding unless the user explicitly asks for them.
+
+Agents may still write or update backend unit tests, frontend tests, or other test code when practical, but running those tests is not required by default.
+
+Run non-test verification commands, such as lint, build, typecheck, or formatting checks, when they are relevant and the environment supports them.
 
 If the user explicitly approves review at the pull-request or CI level, or explicitly says local testing is not needed, do not keep attempting local test runs. In that case, clearly state in the final response and pull request that local tests were not run by user direction.
 
