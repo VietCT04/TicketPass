@@ -37,4 +37,6 @@ Buyers normally search for an event before comparing individual ticket offers. T
 
 ## Follow-up Issues
 
-- To be created after this user story is approved.
+- `#25` Define browse events API contract and visibility rules - https://github.com/VietCT04/TicketPass/issues/25
+- `#26` Implement public browse events API - https://github.com/VietCT04/TicketPass/issues/26
+- `#27` Build frontend browse events page - https://github.com/VietCT04/TicketPass/issues/27

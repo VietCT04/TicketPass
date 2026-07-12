@@ -110,6 +110,72 @@ Keep dedicated sensitive ticket payload fields out of public listing metadata no
 
 Open
 
+## CONCERN-0009: Event Cancellation And Rescheduling Rules
+
+Date: 2026-07-12
+Related User Story: `docs/user-stories/US-0003-browse-events.md`
+Related GitHub Issue: `#25` - https://github.com/VietCT04/TicketPass/issues/25
+
+### Concern
+
+The event-first browse story excludes expired, cancelled, hidden, and non-public events, but the current MVP event model does not define cancellation or rescheduling status rules.
+
+### Risk
+
+Buyers may see events that are cancelled, moved, or stale if event lifecycle rules are not defined before public browsing relies on them.
+
+### Recommendation
+
+Define the MVP event visibility and lifecycle rules in issue `#25`, including whether cancellation and rescheduling require schema changes or are deferred from the first browse implementation.
+
+### Status
+
+Open
+
+## CONCERN-0010: Browse Event Aggregate Freshness
+
+Date: 2026-07-12
+Related User Story: `docs/user-stories/US-0003-browse-events.md`
+Related GitHub Issue: `#25` - https://github.com/VietCT04/TicketPass/issues/25
+
+### Concern
+
+Event browse summaries may show aggregate listing information such as lowest available price and available listing count.
+
+### Risk
+
+If aggregate values are cached or denormalized without clear update rules, buyers may see stale prices or availability counts.
+
+### Recommendation
+
+For MVP, prefer server-derived query-time aggregate values unless performance requires caching. If caching is introduced later, document invalidation rules for listing status, price, and visibility changes.
+
+### Status
+
+Open
+
+## CONCERN-0011: Event Image Source And Moderation
+
+Date: 2026-07-12
+Related User Story: `docs/user-stories/US-0003-browse-events.md`
+Related GitHub Issue: `#25` - https://github.com/VietCT04/TicketPass/issues/25
+
+### Concern
+
+The browse events story allows safe event images or placeholders, but the source and moderation rules for event images are not defined.
+
+### Risk
+
+Unsafe, copyrighted, misleading, or user-uploaded images could appear in public marketplace browsing if image sourcing is not constrained.
+
+### Recommendation
+
+Use placeholders for MVP unless a trusted image source is defined. Before allowing user-uploaded or externally sourced event images, define validation, moderation, attribution, and fallback behavior.
+
+### Status
+
+Open
+
 ## CONCERN-0001: Platform-Specific Transferability Rules
 
 Date: 2026-07-09
