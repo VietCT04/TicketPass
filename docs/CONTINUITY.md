@@ -2,9 +2,19 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, authenticated seller listing creation, and frontend signup/login/logout screens.
+TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, authenticated seller listing creation, frontend signup/login/logout screens, and a documented public event browse API contract.
 
 ## Latest Completed Work
+
+- Date: 2026-07-13
+- GitHub Issue: `#25` - https://github.com/VietCT04/TicketPass/issues/25
+- Summary: Defined the docs-only public `GET /api/events` contract for event-first browsing, including a single browse-eligible listing rule, 1-based pagination, deterministic ordering, VND-only MVP aggregates, nullable `image_url`, safe response fields, and current schema limitations.
+- Files changed:
+  - `docs/API.md`
+  - `docs/DATABASE.md`
+  - `docs/SECURITY.md`
+  - `docs/CONCERNS.md`
+  - `docs/CONTINUITY.md`
 
 - Date: 2026-07-12
 - GitHub Issue: None - issue creation
@@ -103,8 +113,8 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 ## Active Work
 
-- Current GitHub Issue: None.
-- Current goal: Choose the next implementation issue from approved user story `US-0003`.
+- Current GitHub Issue: `#25` - https://github.com/VietCT04/TicketPass/issues/25
+- Current goal: Open a pull request for the approved docs-only browse events API contract.
 - Current blocker: None.
 
 ## Important User Stories
@@ -127,9 +137,10 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 - Event cancellation and rescheduling rules are not defined for browse results.
 - Browse event aggregate freshness rules need review.
 - Event image source and moderation rules are not defined.
+- Browse is VND-only for MVP, while listing creation still accepts generic ISO-4217 currencies.
 
 ## Next Recommended Steps
 
-1. Start with issue `#25` to define the event browse API contract and visibility rules.
-2. Then implement issue `#26` for the backend public browse events API.
+1. Review and merge the issue `#25` contract PR.
+2. Implement issue `#26` for the backend public browse events API using the documented contract.
 3. Then implement issue `#27` for the frontend browse events page.

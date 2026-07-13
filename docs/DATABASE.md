@@ -126,3 +126,29 @@ These values describe the expected transfer path only. Raw ticket payload storag
 - `SOLD` listings must never become purchasable again.
 - Public listing metadata must not include dedicated columns for QR codes, barcodes, ticket files, private transfer links, platform credentials, or other sensitive ticket payload data.
 - MVP does not classify free-text `listings.public_notes` for sensitive content; this limitation is tracked in `docs/CONCERNS.md`.
+
+## Public Browse Events Contract
+
+Issue `#25` defines how the current `events` and `listings` tables support event-first browse results for MVP. It is a documentation contract only; endpoint implementation belongs to issue `#26`.
+
+The public `GET /api/events` contract derives event visibility and aggregate values from browse-eligible listings.
+
+A listing is browse-eligible for MVP only when all of these are true:
+
+- `listings.status` is `ACTIVE`.
+- The related `events.starts_at` is in the future at request time.
+- `listings.currency` is `VND`.
+- The listing is currently available for purchase under the listing status rules in `docs/flows/LISTING_STATUS_FLOW.md`.
+
+An event appears in browse results only if it has at least one browse-eligible listing.
+
+The same browse-eligible listing set must be used to calculate:
+
+- `lowest_price_minor`: minimum `listings.asking_price_minor` for the event.
+- `available_listing_count`: count of listings currently available for purchase for the event.
+
+For MVP, aggregate values should be server-derived at query time rather than stored on `events`. If performance later requires cached or denormalized aggregate columns, invalidation rules must account for listing status, listing price, listing currency, and event start time changes.
+
+The current schema does not define event-level cancellation, rescheduling, hidden, public/private, or image-source fields. Event expiration can be inferred from `events.starts_at`, and listing availability can be inferred from `listings.status`, but richer event lifecycle and image rules require follow-up schema work.
+
+The browse contract is VND-only for MVP. The existing listing creation contract still allows a generic ISO-4217 `listings.currency`; non-VND listings are not browse-eligible and do not affect browse event visibility or aggregate values.

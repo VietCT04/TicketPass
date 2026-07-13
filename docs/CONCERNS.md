@@ -126,7 +126,7 @@ Buyers may see events that are cancelled, moved, or stale if event lifecycle rul
 
 ### Recommendation
 
-Define the MVP event visibility and lifecycle rules in issue `#25`, including whether cancellation and rescheduling require schema changes or are deferred from the first browse implementation.
+For issue `#25`, document the MVP browse rule that uses future `events.starts_at` and active listings only. Plan follow-up schema and product work before relying on event-level cancellation, rescheduling, hidden, or public/private visibility states.
 
 ### Status
 
@@ -148,7 +148,7 @@ If aggregate values are cached or denormalized without clear update rules, buyer
 
 ### Recommendation
 
-For MVP, prefer server-derived query-time aggregate values unless performance requires caching. If caching is introduced later, document invalidation rules for listing status, price, and visibility changes.
+For MVP, use query-time server-derived aggregate values from the shared browse-eligible listing rule. If caching is introduced later, document invalidation rules for listing status, price, currency, visibility, and event start-time changes.
 
 ### Status
 
@@ -171,6 +171,28 @@ Unsafe, copyrighted, misleading, or user-uploaded images could appear in public 
 ### Recommendation
 
 Use placeholders for MVP unless a trusted image source is defined. Before allowing user-uploaded or externally sourced event images, define validation, moderation, attribution, and fallback behavior.
+
+### Status
+
+Open
+
+## CONCERN-0012: Browse Currency Scope Differs From Listing Creation
+
+Date: 2026-07-13
+Related User Story: `docs/user-stories/US-0003-browse-events.md`
+Related GitHub Issue: `#25` - https://github.com/VietCT04/TicketPass/issues/25
+
+### Concern
+
+The browse events contract supports only `VND` for MVP, but the existing seller listing creation contract accepts a generic ISO-4217 currency.
+
+### Risk
+
+Sellers may create active non-VND listings that do not appear in public event browse results, which could confuse sellers and create inconsistent marketplace behavior.
+
+### Recommendation
+
+Decide whether the whole marketplace should be VND-only for MVP. If so, create a follow-up API and validation issue to restrict listing creation to `VND`. Until then, document that only active future VND listings are browse-eligible.
 
 ### Status
 

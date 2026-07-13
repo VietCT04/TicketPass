@@ -241,3 +241,122 @@ Listing availability and duplicate-sale status rules are documented in `docs/flo
 #### Sensitive Data Rule
 
 The listing API does not define dedicated request or response fields for raw QR codes, barcodes, ticket images, ticket PDFs, private transfer links, or platform credentials. Secure ticket upload, storage, and reveal belong to a separate ticket reveal flow.
+
+## Events
+
+Events let buyers browse upcoming event-first marketplace inventory without exposing sensitive ticket or seller information.
+
+Issue `#25` defines this public browse contract. Backend implementation belongs to issue `#26`, and frontend implementation belongs to issue `#27`.
+
+### Browse Events
+
+```http
+GET /api/events
+```
+
+Returns event summaries for events with at least one browse-eligible listing.
+
+This endpoint is public, but all event availability, visibility, aggregate calculation, pagination, and ordering must be enforced server-side.
+
+#### Query Parameters
+
+| Field | Type | Required | Default | Notes |
+|---|---|---:|---:|---|
+| `page` | integer | No | `1` | 1-based page number. Minimum `1`. |
+| `page_size` | integer | No | `20` | Minimum `1`. Maximum `50`. |
+
+Invalid pagination values return `400 Bad Request`.
+
+#### Browse-Eligible Listing Rule
+
+A listing is browse-eligible for MVP only when all of these are true:
+
+- `listings.status` is `ACTIVE`.
+- The related `events.starts_at` is in the future at request time.
+- `listings.currency` is `VND`.
+- The listing is currently available for purchase under the listing status rules in `docs/flows/LISTING_STATUS_FLOW.md`.
+
+This same browse-eligible listing set must be used for:
+
+- deciding whether an event appears in `GET /api/events`;
+- calculating `lowest_price_minor`;
+- calculating `available_listing_count`.
+
+An event appears in browse results only if it has at least one browse-eligible listing.
+
+The event-first user story excludes expired, cancelled, hidden, and non-public events. The current MVP schema can enforce expired events through `events.starts_at` and listing availability through `listings.status`, but it does not yet define event-level cancellation, hidden, or public/private fields. Those lifecycle and visibility gaps are tracked in `docs/CONCERNS.md`.
+
+#### Ordering
+
+Results are ordered deterministically:
+
+1. `starts_at ASC`
+2. `id ASC`
+
+Only future events are included, so the default order shows the soonest upcoming events first.
+
+#### Response Body
+
+```json
+{
+  "events": [
+    {
+      "id": "evt_123",
+      "name": "Example Concert",
+      "starts_at": "2026-08-15T19:30:00+07:00",
+      "venue": "Example Arena",
+      "city": "Ho Chi Minh City",
+      "image_url": null,
+      "lowest_price_minor": 1250000,
+      "currency": "VND",
+      "available_listing_count": 3
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "page_size": 20,
+    "total_items": 42,
+    "total_pages": 3
+  }
+}
+```
+
+#### Response Fields
+
+| Field | Type | Notes |
+|---|---|---|
+| `events` | array | Event summaries for the requested page. Empty when no events match. |
+| `events[].id` | string | Event identifier. |
+| `events[].name` | string | Event display name. |
+| `events[].starts_at` | ISO-8601 datetime | Event start timestamp with timezone offset, such as `2026-08-15T19:30:00+07:00`. |
+| `events[].venue` | string | Venue name. |
+| `events[].city` | string | Event city/location. |
+| `events[].image_url` | string or null | Always present. `null` means the frontend should render a safe placeholder. |
+| `events[].lowest_price_minor` | integer | Lowest asking price among browse-eligible listings for the event. |
+| `events[].currency` | string | Always `VND` for browse MVP. |
+| `events[].available_listing_count` | integer | Count of browse-eligible listings currently available for purchase. |
+| `pagination.page` | integer | Current 1-based page. |
+| `pagination.page_size` | integer | Applied page size after defaulting and validation. |
+| `pagination.total_items` | integer | Total number of matching events before pagination. |
+| `pagination.total_pages` | integer | Total number of pages for the applied page size. |
+
+#### Sensitive Data Exclusions
+
+The public browse events response must not include:
+
+- Ticket payload data.
+- Seat details or seat-specific inventory details.
+- Seller IDs.
+- Seller email addresses.
+- Private seller notes.
+- Private transfer links.
+- QR codes.
+- Barcodes.
+- Ownership information.
+- Buyer-specific or seller-specific state.
+
+#### Currency Scope
+
+Browse events support only `VND` for MVP. Listings in another currency are not browse-eligible and must not affect event visibility, lowest price, or available listing count.
+
+The existing listing creation contract still accepts a generic ISO-4217 currency. If TicketPass decides the whole marketplace should be VND-only, seller listing validation should be changed in a separate API contract and implementation issue.
