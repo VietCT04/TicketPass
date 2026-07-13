@@ -99,6 +99,29 @@ The following fields are intended as public listing metadata:
 
 MVP does not classify free-text public notes for sensitive content. This limitation is tracked in `docs/CONCERNS.md`.
 
+## Public Event Browse Security
+
+The public `GET /api/events` browse contract exposes event summaries and server-derived listing aggregates only.
+
+Event visibility and aggregate values must be calculated server-side from the same browse-eligible listing rule documented in `docs/API.md`.
+
+For MVP, browse-eligible listings are limited to active, future, VND listings that are currently available for purchase under the listing status rules.
+
+Public event browse responses must not include:
+
+- Ticket payload data.
+- Seat details or seat-specific inventory details.
+- Seller IDs.
+- Seller email addresses.
+- Private seller notes.
+- Private transfer links.
+- QR codes.
+- Barcodes.
+- Ownership information.
+- Buyer-specific or seller-specific state.
+
+`image_url` is nullable in the API contract. Until trusted event image source and moderation rules exist, clients should render safe placeholders when `image_url` is `null`.
+
 ## Transferability Confirmation
 
 Sellers must confirm the ticket is transferable before listing creation. This confirmation reduces accidental invalid listings but does not prove transferability. Platform-specific verification remains an unresolved concern.
