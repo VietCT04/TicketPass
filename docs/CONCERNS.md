@@ -158,7 +158,7 @@ Resolved
 
 Date: 2026-07-12
 Related User Story: `docs/user-stories/US-0003-browse-events.md`
-Related GitHub Issue: `#25` - https://github.com/VietCT04/TicketPass/issues/25
+Related GitHub Issues: `#25` - https://github.com/VietCT04/TicketPass/issues/25, `#27` - https://github.com/VietCT04/TicketPass/issues/27
 
 ### Concern
 
@@ -268,11 +268,11 @@ Open
 
 Date: 2026-07-14
 Related User Story: `docs/user-stories/US-0004-search-select-existing-event.md`
-Related GitHub Issue: `#35` - https://github.com/VietCT04/TicketPass/issues/35
+Related GitHub Issues: `#35` - https://github.com/VietCT04/TicketPass/issues/35, `#27` - https://github.com/VietCT04/TicketPass/issues/27
 
 ### Concern
 
-The frontend event selector formats `starts_at` with the browser locale and available timezone abbreviation or offset, but the event model stores an absolute timestamp without a separate event-local timezone identifier.
+The frontend event selector and public browse page format `starts_at` with the browser locale and available timezone abbreviation or offset, but the event model stores an absolute timestamp without a separate event-local timezone identifier.
 
 ### Risk
 
