@@ -46,11 +46,22 @@ This user story provides the event-selection prerequisite for the seller listing
 - Existing event data and event identity model.
 - A public or seller-safe event search API contract and backend implementation.
 
-## Follow-up Work
+## Follow-up Issues
 
-- Define the event autocomplete API contract, searchable fields, matching rules, result limits, and eligibility rules.
-- Implement the event search/autocomplete backend endpoint.
-- Implement the frontend autocomplete event selector.
-- Update the listing creation contract to accept `event_id` instead of seller-provided event fields.
-- Add a later user story for reporting or requesting a missing event.
-- Unblock issue `#6` only after the required event search, selection, and listing-contract dependencies are complete.
+- `#31` Define event autocomplete API contract - https://github.com/VietCT04/TicketPass/issues/31
+- `#32` Define event-linked listing creation contract - https://github.com/VietCT04/TicketPass/issues/32
+- `#33` Implement event autocomplete API - https://github.com/VietCT04/TicketPass/issues/33
+- `#34` Implement event-linked listing creation - https://github.com/VietCT04/TicketPass/issues/34
+- `#35` Build seller event autocomplete selector - https://github.com/VietCT04/TicketPass/issues/35
+- `#6` Build seller listing form - https://github.com/VietCT04/TicketPass/issues/6
+
+## Implementation Order
+
+1. Approve and complete the event autocomplete contract in `#31`.
+2. Approve and complete the event-linked listing creation contract in `#32`.
+3. Implement the backend event autocomplete endpoint in `#33`.
+4. Implement the backend listing creation contract change in `#34`.
+5. Build the frontend autocomplete selector in `#35`.
+6. Unblock and implement the seller listing form in `#6`.
+
+A separate future user story should define how sellers report or request an event that does not exist.

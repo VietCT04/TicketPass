@@ -198,6 +198,28 @@ Decide whether the whole marketplace should be VND-only for MVP. If so, create a
 
 Open
 
+## CONCERN-0013: Event Autocomplete Matching And Missing-Event Flow
+
+Date: 2026-07-14
+Related User Story: `docs/user-stories/US-0004-search-select-existing-event.md`
+Related GitHub Issues: `#31` - https://github.com/VietCT04/TicketPass/issues/31, `#33` - https://github.com/VietCT04/TicketPass/issues/33, `#35` - https://github.com/VietCT04/TicketPass/issues/35
+
+### Concern
+
+The exact event autocomplete searchable fields, matching and ordering rules, query limits, and eligibility rules are not yet defined. Sellers also cannot create a listing when the required event is missing from TicketPass.
+
+### Risk
+
+Ambiguous or duplicate-looking results may cause a seller to attach a ticket to the wrong event. Unbounded autocomplete requests may create unnecessary backend load. Legitimate sellers may also be blocked when no matching event exists.
+
+### Recommendation
+
+Use issue `#31` to define deterministic seller-safe matching, minimum query length, result limits, sufficient distinguishing event fields, and server-side eligibility rules. Enforce the approved contract in `#33` and `#35`. Create a separate user story before launch for reporting or requesting a missing event.
+
+### Status
+
+Open
+
 ## CONCERN-0001: Platform-Specific Transferability Rules
 
 Date: 2026-07-09
@@ -245,8 +267,8 @@ Open
 ## CONCERN-0003: Event Reuse And Deduplication
 
 Date: 2026-07-09
-Related User Story: `docs/user-stories/US-0001-list-transferable-ticket.md`
-Related GitHub Issue: `#2` - https://github.com/VietCT04/TicketPass/issues/2
+Related User Stories: `docs/user-stories/US-0001-list-transferable-ticket.md`, `docs/user-stories/US-0004-search-select-existing-event.md`
+Related GitHub Issues: `#2` - https://github.com/VietCT04/TicketPass/issues/2, `#31` - https://github.com/VietCT04/TicketPass/issues/31, `#33` - https://github.com/VietCT04/TicketPass/issues/33
 
 ### Concern
 
@@ -254,11 +276,11 @@ Events are normalized into an `events` table, but the MVP contract does not defi
 
 ### Risk
 
-The database may accumulate duplicate event rows for the same real-world event.
+The database may contain duplicate event rows for the same real-world event, and those duplicates may appear as separate autocomplete results.
 
 ### Recommendation
 
-Allow duplicate event rows for MVP if needed, then introduce event search, matching, or admin curation when buyer discovery and marketplace quality require it.
+Require sellers to select an existing event rather than create event identity through the listing form. Show enough event context to distinguish results, while tracking deduplication and admin curation as separate follow-up work.
 
 ### Status
 
