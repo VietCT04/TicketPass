@@ -2,9 +2,23 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, authenticated seller listing creation, a backend authenticated seller event autocomplete endpoint, backend event-linked listing creation that requires an existing future event, a backend public event browse API, a frontend `/sell` event selector and seller listing form, and frontend signup/login/logout screens.
+TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, authenticated seller listing creation, a backend authenticated seller event autocomplete endpoint, backend event-linked listing creation that requires an existing future event, a backend public event browse API, a frontend homepage event browse page, a frontend `/sell` event selector and seller listing form, and frontend signup/login/logout screens.
 
 ## Latest Completed Work
+
+- Date: 2026-07-15
+- GitHub Issue: `#27` - https://github.com/VietCT04/TicketPass/issues/27
+- Summary: Implemented the frontend public event browse page on `/` using the approved `GET /api/events` contract. The page server-fetches event summaries with `cache: "no-store"`, normalizes invalid page query values to page 1, redirects pages above the final valid page, renders empty/error/success states, adds loading skeletons, shows only safe event fields and server-derived aggregates, keeps event cards non-clickable, keeps the account status section secondary, and removes the placeholder API base URL card.
+- Files changed:
+  - `apps/web/src/app/page.tsx`
+  - `apps/web/src/app/loading.tsx`
+  - `apps/web/src/components/EventBrowseCard.tsx`
+  - `apps/web/src/components/EventBrowsePagination.tsx`
+  - `apps/web/src/components/EventBrowseSkeleton.tsx`
+  - `apps/web/src/components/EventDateTime.tsx`
+  - `apps/web/src/lib/events.ts`
+  - `docs/CONCERNS.md`
+  - `docs/CONTINUITY.md`
 
 - Date: 2026-07-14
 - GitHub Issue: `#26` - https://github.com/VietCT04/TicketPass/issues/26
@@ -232,8 +246,8 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 ## Active Work
 
-- Current GitHub Issue: `#26` - https://github.com/VietCT04/TicketPass/issues/26
-- Current goal: Review and merge the public browse events API pull request.
+- Current GitHub Issue: `#27` - https://github.com/VietCT04/TicketPass/issues/27
+- Current goal: Review and merge the frontend public browse events page pull request.
 - Current blocker: None.
 
 ## Important User Stories
@@ -256,7 +270,7 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 - Seller transferability confirmation is not proof.
 - Existing duplicate events may appear as separate autocomplete results until deduplication rules are implemented.
 - Event cancellation and rescheduling rules are not defined for browse or seller selection.
-- Event image source and moderation rules are not defined.
+- Event image source and moderation rules are not defined; the issue `#27` frontend uses a neutral local placeholder only.
 - Sellers cannot list tickets for missing events until a later event request/reporting user story is defined.
 - Event autocomplete query performance may require indexes or a dedicated search strategy after production-volume review.
 - Event local timezone preservation and display rules are unresolved.
@@ -264,6 +278,6 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 ## Next Recommended Steps
 
-1. Merge the issue `#26` public browse events API pull request after review.
-2. Implement the frontend public browse events page in issue `#27`.
-3. Define the US-0005 event-detail contract in issue `#44`.
+1. Merge the issue `#27` frontend browse events page pull request after review.
+2. Define the US-0005 event-detail contract in issue `#44`.
+3. Implement the event-detail backend and frontend follow-ups after the contract is approved.
