@@ -51,4 +51,6 @@ This story defines the public read-only step between browsing events and a futur
 
 ## Follow-up Issues
 
-Follow-up GitHub Issues will be linked here after creation.
+- `#44` Define event detail and available listings API contract - https://github.com/VietCT04/TicketPass/issues/44
+- `#45` Implement public event detail and available listings API - https://github.com/VietCT04/TicketPass/issues/45
+- `#46` Build public event detail and available listings page - https://github.com/VietCT04/TicketPass/issues/46
