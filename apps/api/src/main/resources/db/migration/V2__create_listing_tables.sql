@@ -4,7 +4,6 @@ create table events (
     venue varchar(255) not null,
     city varchar(120) not null,
     starts_at timestamptz not null,
-    event_platform varchar(120) not null,
     created_at timestamptz not null,
     updated_at timestamptz not null
 );
@@ -13,6 +12,7 @@ create table listings (
     id uuid primary key,
     seller_id uuid not null references users(id),
     event_id uuid not null references events(id),
+    event_platform varchar(120) not null,
     seat_info varchar(255) not null,
     ticket_type varchar(120) not null,
     quantity integer not null,

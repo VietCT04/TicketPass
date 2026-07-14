@@ -184,21 +184,21 @@ Related GitHub Issues: `#25` - https://github.com/VietCT04/TicketPass/issues/25,
 
 ### Concern
 
-The browse events contract supports only `VND` for MVP. Issue `#32` now defines new listing creation as VND-only, but backend implementation and persistence alignment are deferred to issue `#34`.
+The browse events contract supports only `VND` for MVP. Issue `#34` aligns backend listing creation so new listings reject client-provided `currency` and are stored as `VND`.
 
 ### Risk
 
-Until issue `#34` is implemented, existing backend/frontend code may still allow or expect client-provided currency. Sellers may create or tests may rely on active non-VND listings that do not appear in public event browse results.
+Resolved for new listing creation. If legacy or manually seeded non-VND listing rows are introduced later, they remain outside the MVP browse-eligible listing rule and will not affect browse event visibility or aggregates.
 
 ### Recommendation
 
-Implement issue `#34` to reject client-provided currency, store new listings as `VND`, and update tests or fixture data accordingly. Until then, document that only active future VND listings are browse-eligible.
+Keep the MVP browse rule limited to active future `VND` listings. Revisit this concern only if multi-currency support is planned.
 
 ### Status
 
-Open
+Resolved
 
-## CONCERN-0015: Event Platform Schema Placement Pending Migration
+## CONCERN-0015: Event Platform Schema Placement
 
 Date: 2026-07-14
 Related User Stories: `docs/user-stories/US-0001-list-transferable-ticket.md`, `docs/user-stories/US-0004-search-select-existing-event.md`
@@ -206,19 +206,19 @@ Related GitHub Issues: `#32` - https://github.com/VietCT04/TicketPass/issues/32,
 
 ### Concern
 
-Issue `#32` defines `event_platform` as listing/ticket-specific rather than shared event identity, but the initial database contract and existing implementation placed `event_platform` on `events`.
+Issue `#32` defines `event_platform` as listing/ticket-specific rather than shared event identity. Issue `#34` moves `event_platform` from `events` to `listings` in the unapplied `V2` migration and backend entities.
 
 ### Risk
 
-Until issue `#34` updates the schema and implementation, event autocomplete and listing creation may disagree about whether platform belongs to the selected event or to the seller's specific ticket.
+Resolved for the current MVP schema. If `V2` is ever applied in a persistent environment before this change, a real migration and backfill plan would be required instead of editing `V2` directly.
 
 ### Recommendation
 
-Use issue `#34` to make the smallest compatible migration and API update that stores `event_platform` with listings, keeps selected event identity separate, and documents any backfill or compatibility behavior.
+Keep `event_platform` listing-scoped. Before any persistent deployment, confirm Flyway history does not already contain the older `V2` shape.
 
 ### Status
 
-Open
+Resolved
 
 ## CONCERN-0013: Event Autocomplete Matching And Missing-Event Flow
 

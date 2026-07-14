@@ -31,9 +31,6 @@ public class EventEntity {
     @Column(name = "starts_at", nullable = false)
     private Instant startsAt;
 
-    @Column(name = "event_platform", nullable = false, length = 120)
-    private String eventPlatform;
-
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -88,12 +85,5 @@ public class EventEntity {
         this.startsAt = startsAt;
     }
 
-    public String getEventPlatform() {
-        return eventPlatform;
-    }
-
-    public void setEventPlatform(String eventPlatform) {
-        this.eventPlatform = eventPlatform;
-    }
 }
 

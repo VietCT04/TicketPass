@@ -62,7 +62,7 @@ Out of scope:
 8. Backend receives the immutable `AuthenticatedUser` principal and derives `seller_id` from `AuthenticatedUser.id()`.
 9. Backend validates all required fields server-side, including selected event existence and eligibility.
 10. Backend associates the listing to the selected event without creating, renaming, or modifying the event record.
-11. Backend creates one listing with `quantity = 1` and `currency = VND`.
+11. Backend creates one listing with `quantity = 1`, listing-level `event_platform`, and `currency = VND`.
 12. Backend returns public listing metadata only.
 
 ## Public Listing Metadata

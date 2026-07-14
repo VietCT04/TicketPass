@@ -10,12 +10,13 @@ import static org.mockito.Mockito.when;
 import com.ticketpass.api.common.ApiException;
 import com.ticketpass.api.user.UserEntity;
 import com.ticketpass.api.user.UserRepository;
+import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -25,61 +26,51 @@ class ListingServiceTest {
     private EventRepository eventRepository;
     private ListingRepository listingRepository;
     private ListingService listingService;
+    private Clock clock;
 
     @BeforeEach
     void setUp() {
         userRepository = org.mockito.Mockito.mock(UserRepository.class);
         eventRepository = org.mockito.Mockito.mock(EventRepository.class);
         listingRepository = org.mockito.Mockito.mock(ListingRepository.class);
-        listingService = new ListingService(userRepository, eventRepository, listingRepository);
+        clock = Clock.fixed(Instant.parse("2026-07-11T10:00:00Z"), ZoneOffset.UTC);
+        listingService = new ListingService(userRepository, eventRepository, listingRepository, clock);
     }
 
     @Test
-    void createListingPersistsEventAndListingWithServerDerivedSeller() {
+    void createListingPersistsListingWithExistingEventAndServerDerivedSeller() {
         UUID sellerId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+        UUID eventId = UUID.fromString("22222222-2222-2222-2222-222222222222");
         UserEntity seller = seller(sellerId);
+        EventEntity event = event(eventId);
         when(userRepository.findById(sellerId)).thenReturn(Optional.of(seller));
-        when(eventRepository.save(any(EventEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
         when(listingRepository.save(any(ListingEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         ListingEntity listing = listingService.createListing(sellerId, request());
 
-        ArgumentCaptor<EventEntity> eventCaptor = ArgumentCaptor.forClass(EventEntity.class);
-        verify(eventRepository).save(eventCaptor.capture());
-        EventEntity event = eventCaptor.getValue();
-        assertThat(event.getName()).isEqualTo("Example Concert");
-        assertThat(event.getVenue()).isEqualTo("Example Arena");
-        assertThat(event.getCity()).isEqualTo("Singapore");
-        assertThat(event.getStartsAt()).isEqualTo(Instant.parse("2026-08-15T11:30:00Z"));
-        assertThat(event.getEventPlatform()).isEqualTo("Ticketmaster");
-
-        ArgumentCaptor<ListingEntity> listingCaptor = ArgumentCaptor.forClass(ListingEntity.class);
-        verify(listingRepository).save(listingCaptor.capture());
-        ListingEntity savedListing = listingCaptor.getValue();
-        assertThat(savedListing).isSameAs(listing);
-        assertThat(savedListing.getSeller()).isSameAs(seller);
-        assertThat(savedListing.getQuantity()).isEqualTo(1);
-        assertThat(savedListing.getCurrency()).isEqualTo("SGD");
-        assertThat(savedListing.getAskingPriceMinor()).isEqualTo(12500);
-        assertThat(savedListing.getTransferMethod()).isEqualTo(TransferMethod.PLATFORM_TRANSFER);
-        assertThat(savedListing.isTransferableConfirmed()).isTrue();
-        assertThat(savedListing.getStatus()).isEqualTo(ListingStatus.ACTIVE);
-        assertThat(savedListing.getPublicNotes()).isEqualTo("Mobile transfer available after purchase.");
+        verify(eventRepository, never()).save(any(EventEntity.class));
+        assertThat(listing.getSeller()).isSameAs(seller);
+        assertThat(listing.getEvent()).isSameAs(event);
+        assertThat(listing.getEventPlatform()).isEqualTo("Ticketmaster");
+        assertThat(listing.getQuantity()).isEqualTo(1);
+        assertThat(listing.getCurrency()).isEqualTo("VND");
+        assertThat(listing.getAskingPriceMinor()).isEqualTo(1250000);
+        assertThat(listing.getTransferMethod()).isEqualTo(TransferMethod.PLATFORM_TRANSFER);
+        assertThat(listing.isTransferableConfirmed()).isTrue();
+        assertThat(listing.getStatus()).isEqualTo(ListingStatus.ACTIVE);
+        assertThat(listing.getPublicNotes()).isEqualTo("Mobile transfer available after purchase.");
     }
 
     @Test
     void createListingRejectsUnconfirmedTransferability() {
         UUID sellerId = UUID.fromString("11111111-1111-1111-1111-111111111111");
         CreateListingRequest request = new CreateListingRequest(
-                "Example Concert",
-                "Example Arena",
-                "Singapore",
-                Instant.parse("2026-08-15T11:30:00Z"),
+                UUID.fromString("22222222-2222-2222-2222-222222222222"),
                 "Ticketmaster",
                 "Section 101, Row B, Seat 12",
                 "General Admission",
-                "SGD",
-                12500,
+                1250000,
                 TransferMethod.PLATFORM_TRANSFER,
                 false,
                 null);
@@ -92,41 +83,28 @@ class ListingServiceTest {
     }
 
     @Test
-    void createListingRejectsInvalidCurrency() {
+    void createListingRejectsPastEvent() {
         UUID sellerId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+        UUID eventId = UUID.fromString("22222222-2222-2222-2222-222222222222");
         when(userRepository.findById(sellerId)).thenReturn(Optional.of(seller(sellerId)));
-        CreateListingRequest request = new CreateListingRequest(
-                "Example Concert",
-                "Example Arena",
-                "Singapore",
-                Instant.parse("2026-08-15T11:30:00Z"),
-                "Ticketmaster",
-                "Section 101, Row B, Seat 12",
-                "General Admission",
-                "BAD",
-                12500,
-                TransferMethod.PLATFORM_TRANSFER,
-                true,
-                null);
+        EventEntity event = event(eventId);
+        event.setStartsAt(Instant.parse("2026-07-11T10:00:00Z"));
+        when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
 
-        assertThatThrownBy(() -> listingService.createListing(sellerId, request))
+        assertThatThrownBy(() -> listingService.createListing(sellerId, request()))
                 .isInstanceOf(ApiException.class)
                 .extracting("status")
-                .isEqualTo(HttpStatus.BAD_REQUEST);
+                .isEqualTo(HttpStatus.CONFLICT);
         verify(listingRepository, never()).save(any());
     }
 
     private static CreateListingRequest request() {
         return new CreateListingRequest(
-                "  Example Concert  ",
-                "  Example Arena  ",
-                "  Singapore  ",
-                Instant.parse("2026-08-15T11:30:00Z"),
+                UUID.fromString("22222222-2222-2222-2222-222222222222"),
                 "  Ticketmaster  ",
                 "  Section 101, Row B, Seat 12  ",
                 "  General Admission  ",
-                "sgd",
-                12500,
+                1250000,
                 TransferMethod.PLATFORM_TRANSFER,
                 true,
                 "  Mobile transfer available after purchase.  ");
@@ -138,6 +116,16 @@ class ListingServiceTest {
         seller.setEmail("seller@example.com");
         seller.setDisplayName("Seller");
         return seller;
+    }
+
+    private static EventEntity event(UUID eventId) {
+        EventEntity event = new EventEntity();
+        ReflectionTestUtils.setField(event, "id", eventId);
+        event.setName("Example Concert");
+        event.setVenue("Example Arena");
+        event.setCity("Singapore");
+        event.setStartsAt(Instant.parse("2026-08-15T11:30:00Z"));
+        return event;
     }
 }
 

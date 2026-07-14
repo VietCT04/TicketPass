@@ -2,9 +2,30 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, authenticated seller listing creation, a backend authenticated seller event autocomplete endpoint, frontend signup/login/logout screens, a documented public event browse API contract, and a documented event-linked listing creation contract requiring sellers to select an existing event before listing creation.
+TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, authenticated seller listing creation, a backend authenticated seller event autocomplete endpoint, backend event-linked listing creation that requires an existing future event, frontend signup/login/logout screens, and a documented public event browse API contract.
 
 ## Latest Completed Work
+
+- Date: 2026-07-14
+- GitHub Issue: `#34` - https://github.com/VietCT04/TicketPass/issues/34
+- Summary: Implemented backend event-linked seller listing creation. `POST /api/listings` now accepts `event_id`, rejects legacy seller-provided event identity fields and `currency`, resolves an existing future event, never creates or modifies events during listing creation, stores listing-level `event_platform`, and persists new MVP listings as `VND`. Updated the unapplied `V2` listing migration directly and aligned docs/concerns/continuity. No backend or frontend tests were run per the approved issue decision; local test-source compilation remains blocked by the Java 19 runtime versus the project Java 21 target.
+- Files changed:
+  - `apps/api/src/main/java/com/ticketpass/api/common/ApiExceptionHandler.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/CreateListingRequest.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/EventEntity.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/ListingController.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/ListingEntity.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/ListingResponse.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/ListingService.java`
+  - `apps/api/src/main/resources/db/migration/V2__create_listing_tables.sql`
+  - `apps/api/src/test/java/com/ticketpass/api/listing/ListingControllerTest.java`
+  - `apps/api/src/test/java/com/ticketpass/api/listing/ListingServiceTest.java`
+  - `docs/API.md`
+  - `docs/DATABASE.md`
+  - `docs/SECURITY.md`
+  - `docs/flows/SELLER_LISTING_FLOW.md`
+  - `docs/CONCERNS.md`
+  - `docs/CONTINUITY.md`
 
 - Date: 2026-07-14
 - GitHub Issue: `#33` - https://github.com/VietCT04/TicketPass/issues/33
@@ -168,9 +189,9 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 ## Active Work
 
-- Current GitHub Issue: `#33` - https://github.com/VietCT04/TicketPass/issues/33
-- Current goal: Review and merge the authenticated event autocomplete backend PR.
-- Current blocker: Issue `#6` is blocked until `#34` and `#35` are complete. Issue `#34` is still needed to align listing creation with the event-linked contract.
+- Current GitHub Issue: `#34` - https://github.com/VietCT04/TicketPass/issues/34
+- Current goal: Review and merge the backend event-linked listing creation PR.
+- Current blocker: Issue `#6` is blocked until `#35` is complete after `#34` merges.
 
 ## Important User Stories
 
@@ -193,14 +214,12 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 - Event cancellation and rescheduling rules are not defined for browse or seller selection.
 - Browse event aggregate freshness rules need review.
 - Event image source and moderation rules are not defined.
-- Listing creation is documented as VND-only for MVP, but backend/database implementation remains pending in `#34`.
 - Sellers cannot list tickets for missing events until a later event request/reporting user story is defined.
 - Event autocomplete query performance may require indexes or a dedicated search strategy after production-volume review.
-- `event_platform` is documented as listing/ticket-specific, but schema and implementation migration remains pending in `#34`.
 
 ## Next Recommended Steps
 
-1. Merge the issue `#33` backend autocomplete PR after review.
-2. Implement issue `#34` to align listing creation with the event-linked contract.
-3. Implement the frontend event selector in `#35`.
-4. Unblock and implement the seller listing form in `#6`.
+1. Merge the issue `#34` backend event-linked listing creation PR after review.
+2. Implement the frontend event selector in `#35`.
+3. Unblock and implement the seller listing form in `#6`.
+4. Implement public browse events backend work in `#26` when ready.

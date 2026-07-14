@@ -150,7 +150,7 @@ Autocomplete must use strict query limits to reduce unnecessary backend load and
 
 ## Event-Linked Listing Creation Security
 
-Issue `#32` defines listing creation as an event-linked operation. Sellers submit `event_id` for an existing TicketPass event and ticket-specific listing data; they do not submit event identity fields that would create or redefine an event record.
+Issue `#32` defines listing creation as an event-linked operation, and issue `#34` implements the backend enforcement. Sellers submit `event_id` for an existing TicketPass event and ticket-specific listing data; they do not submit event identity fields that would create or redefine an event record.
 
 The backend must independently validate the selected event. Frontend autocomplete selection is not trusted as authorization or eligibility proof.
 
