@@ -3,8 +3,7 @@ package com.ticketpass.api.listing;
 import com.ticketpass.api.common.ApiException;
 import com.ticketpass.api.user.UserEntity;
 import com.ticketpass.api.user.UserRepository;
-import java.util.Currency;
-import java.util.Locale;
+import java.time.Clock;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -16,14 +15,17 @@ public class ListingService {
     private final UserRepository userRepository;
     private final EventRepository eventRepository;
     private final ListingRepository listingRepository;
+    private final Clock clock;
 
     public ListingService(
             UserRepository userRepository,
             EventRepository eventRepository,
-            ListingRepository listingRepository) {
+            ListingRepository listingRepository,
+            Clock clock) {
         this.userRepository = userRepository;
         this.eventRepository = eventRepository;
         this.listingRepository = listingRepository;
+        this.clock = clock;
     }
 
     @Transactional
@@ -35,37 +37,26 @@ public class ListingService {
         UserEntity seller = userRepository.findById(sellerId)
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "Authentication required"));
 
-        EventEntity event = new EventEntity();
-        event.setName(trim(request.eventName()));
-        event.setVenue(trim(request.eventVenue()));
-        event.setCity(trim(request.eventCity()));
-        event.setStartsAt(request.eventStartsAt());
-        event.setEventPlatform(trim(request.eventPlatform()));
-        EventEntity savedEvent = eventRepository.save(event);
+        EventEntity event = eventRepository.findById(request.eventId())
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Event not found"));
+        if (!event.getStartsAt().isAfter(clock.instant())) {
+            throw new ApiException(HttpStatus.CONFLICT, "Event has already started");
+        }
 
         ListingEntity listing = new ListingEntity();
         listing.setSeller(seller);
-        listing.setEvent(savedEvent);
+        listing.setEvent(event);
+        listing.setEventPlatform(trim(request.eventPlatform()));
         listing.setSeatInfo(trim(request.seatInfo()));
         listing.setTicketType(trim(request.ticketType()));
         listing.setQuantity(ListingEntity.MVP_QUANTITY);
-        listing.setCurrency(normalizeCurrency(request.currency()));
+        listing.setCurrency(ListingEntity.MVP_CURRENCY);
         listing.setAskingPriceMinor(request.askingPriceMinor());
         listing.setTransferMethod(request.transferMethod());
         listing.setTransferableConfirmed(true);
         listing.setStatus(ListingStatus.ACTIVE);
         listing.setPublicNotes(optionalTrim(request.publicNotes()));
         return listingRepository.save(listing);
-    }
-
-    private static String normalizeCurrency(String value) {
-        String currency = trim(value).toUpperCase(Locale.ROOT);
-        try {
-            Currency.getInstance(currency);
-        } catch (IllegalArgumentException exception) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "currency must be a valid ISO-4217 code");
-        }
-        return currency;
     }
 
     private static String trim(String value) {

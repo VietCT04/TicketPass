@@ -65,7 +65,6 @@ Stores normalized event information shared by listings.
 | `venue` | string | Venue name. |
 | `city` | string | Event city. |
 | `starts_at` | timestamp with timezone | Event start date and time. |
-| `event_platform` | string | Existing initial-schema field. Issue `#32` defines `event_platform` as listing/ticket-specific rather than shared event identity; migration work belongs to issue `#34`. |
 | `created_at` | timestamp | Creation time. |
 | `updated_at` | timestamp | Last update time. |
 
@@ -78,7 +77,7 @@ Stores seller-created listings. Each listing represents exactly one ticket for M
 | `id` | UUID/string id | Primary key. |
 | `seller_id` | UUID/string id | References the authenticated seller/user. Must be derived server-side. |
 | `event_id` | UUID/string id | References `events.id`. |
-| `event_platform` | string | Platform or provider where this ticket originated. Transferability rules can vary by platform. Required by the issue `#32` listing contract; schema migration belongs to issue `#34`. |
+| `event_platform` | string | Platform or provider where this ticket originated. Transferability rules can vary by platform. |
 | `seat_info` | string | Combined seat, section, row, or standing-zone information. |
 | `ticket_type` | string | Ticket category or type. |
 | `quantity` | integer | Always `1` for MVP. Multi-ticket listings are not supported. |
@@ -162,13 +161,13 @@ The browse contract is VND-only for MVP. Issue `#32` also defines new listing cr
 
 ## Event-Linked Listing Creation Contract
 
-Issue `#32` defines the docs-only event-linked listing creation contract. Backend and database implementation belongs to issue `#34`.
+Issue `#32` defines the event-linked listing creation contract. Issue `#34` implements the backend and database alignment.
 
 Under this contract, listing creation references an existing event by `event_id`. Seller-provided event identity fields such as event name, venue, city, or start time are not accepted by `POST /api/listings`.
 
 The selected event must exist and must have `starts_at` in the future at request time. Listing creation must not create, rename, or otherwise modify event records. Event-level cancellation, hidden, public/private, and moderation checks must be added later when the schema supports those states.
 
-`event_platform` is listing/ticket-specific rather than shared event identity. This lets multiple listings for the same real-world event represent tickets sourced from different platforms or providers. Any schema migration that moves `event_platform` from `events` to `listings`, backfills data, or updates indexes belongs to issue `#34`.
+`event_platform` is listing/ticket-specific rather than shared event identity. This lets multiple listings for the same real-world event represent tickets sourced from different platforms or providers. Because migration `V2__create_listing_tables.sql` has not been run in a persistent environment, issue `#34` updates that migration directly and does not add backfill SQL.
 
 New MVP listings are always stored as `VND`; clients do not submit `currency`. For VND, `asking_price_minor` represents whole dong.
 
@@ -191,7 +190,6 @@ The result payload uses these existing `events` fields:
 - `starts_at`
 - `venue`
 - `city`
-- `event_platform`
 
 Autocomplete eligibility uses `events.starts_at` to include only future events at request time. Unlike public browse events, autocomplete may return future events that currently have no active listings so a seller can create the first listing for an existing event.
 

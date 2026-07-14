@@ -22,6 +22,7 @@ import java.util.UUID;
 public class ListingEntity {
 
     public static final int MVP_QUANTITY = 1;
+    public static final String MVP_CURRENCY = "VND";
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -34,6 +35,9 @@ public class ListingEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "event_id", nullable = false)
     private EventEntity event;
+
+    @Column(name = "event_platform", nullable = false, length = 120)
+    private String eventPlatform;
 
     @Column(name = "seat_info", nullable = false, length = 255)
     private String seatInfo;
@@ -100,6 +104,14 @@ public class ListingEntity {
 
     public void setEvent(EventEntity event) {
         this.event = event;
+    }
+
+    public String getEventPlatform() {
+        return eventPlatform;
+    }
+
+    public void setEventPlatform(String eventPlatform) {
+        this.eventPlatform = eventPlatform;
     }
 
     public String getSeatInfo() {

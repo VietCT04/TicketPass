@@ -6,6 +6,7 @@ public record ListingResponse(
         String id,
         @JsonProperty("seller_id") String sellerId,
         EventResponse event,
+        @JsonProperty("event_platform") String eventPlatform,
         @JsonProperty("seat_info") String seatInfo,
         @JsonProperty("ticket_type") String ticketType,
         int quantity,
@@ -23,6 +24,7 @@ public record ListingResponse(
                 listing.getId().toString(),
                 listing.getSeller().getId().toString(),
                 EventResponse.from(listing.getEvent()),
+                listing.getEventPlatform(),
                 listing.getSeatInfo(),
                 listing.getTicketType(),
                 listing.getQuantity(),
@@ -41,8 +43,7 @@ public record ListingResponse(
             String name,
             String venue,
             String city,
-            @JsonProperty("starts_at") String startsAt,
-            @JsonProperty("event_platform") String eventPlatform) {
+            @JsonProperty("starts_at") String startsAt) {
 
         static EventResponse from(EventEntity event) {
             return new EventResponse(
@@ -50,8 +51,7 @@ public record ListingResponse(
                     event.getName(),
                     event.getVenue(),
                     event.getCity(),
-                    event.getStartsAt().toString(),
-                    event.getEventPlatform());
+                    event.getStartsAt().toString());
         }
     }
 }

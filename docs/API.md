@@ -162,7 +162,7 @@ Listing services must not parse cookies, resolve raw session tokens, or accept c
 
 ```json
 {
-  "event_id": "evt_123",
+  "event_id": "22222222-2222-2222-2222-222222222222",
   "event_platform": "Ticketmaster",
   "seat_info": "Section 101, Row B, Seat 12",
   "ticket_type": "General Admission",
@@ -190,10 +190,10 @@ Listing services must not parse cookies, resolve raw session tokens, or accept c
 
 ```json
 {
-  "id": "lst_123",
-  "seller_id": "usr_123",
+  "id": "33333333-3333-3333-3333-333333333333",
+  "seller_id": "11111111-1111-1111-1111-111111111111",
   "event": {
-    "id": "evt_123",
+    "id": "22222222-2222-2222-2222-222222222222",
     "name": "Example Concert",
     "venue": "Example Arena",
     "city": "Ho Chi Minh City",
@@ -219,7 +219,7 @@ Listing services must not parse cookies, resolve raw session tokens, or accept c
 - Request must be authenticated.
 - `seller_id` is always derived server-side from `AuthenticatedUser.id()`.
 - Request DTOs must not declare seller, user, owner, or equivalent ownership fields.
-- `event_id` must be provided by the client and must identify an existing TicketPass event.
+- `event_id` must be provided as a UUID and must identify an existing TicketPass event.
 - `event_id` must come from a seller autocomplete selection in the normal frontend flow, but the backend must independently validate event existence and eligibility.
 - Listing creation must not create, rename, or otherwise modify the selected event record.
 - The selected event must have `starts_at` in the future at request time.
@@ -486,4 +486,4 @@ The public browse events response must not include:
 
 Browse events support only `VND` for MVP. Listings in another currency are not browse-eligible and must not affect event visibility, lowest price, or available listing count.
 
-The listing creation contract also stores new MVP listings as `VND` and does not accept `currency` from the client. Existing backend and database implementation changes for this contract belong to issue `#34`.
+The listing creation contract also stores new MVP listings as `VND` and does not accept `currency` from the client. Issue `#34` implements this backend and database alignment.
