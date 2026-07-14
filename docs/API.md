@@ -283,7 +283,7 @@ MVP autocomplete searches these existing event fields:
 - `events.venue`
 - `events.city`
 
-Matching must be case-insensitive. Matching should be accent-insensitive where the database/runtime implementation supports it without introducing unsupported schema or dependency changes.
+Event name, venue, and city matches use case-insensitive substring matching. Matching should be accent-insensitive where the database/runtime implementation supports it without introducing unsupported schema or dependency changes.
 
 #### Ranking And Ordering
 
@@ -295,6 +295,8 @@ Results must be ordered deterministically:
 4. Venue or city match.
 5. `starts_at ASC`.
 6. `id ASC` as the final stable tie-breaker.
+
+Event-name exact and prefix matches receive higher ranking than general substring matches. Venue and city matches are substring matches and are ranked after event-name substring matches. When an event matches multiple categories, its highest-ranking category is used.
 
 Advanced fuzzy matching, recommendations, and full marketplace search are out of scope.
 
