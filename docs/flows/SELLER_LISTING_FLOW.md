@@ -41,41 +41,39 @@ Out of scope:
 
 - Seller is authenticated.
 - Seller has a ticket they believe is transferable.
-- Seller can provide event metadata, ticket metadata, asking price, transfer method, and transferability confirmation.
+- Seller can search for and select an existing TicketPass event.
+- Seller can provide ticket metadata, asking price, transfer method, event platform, and transferability confirmation.
 
 ## Listing Creation Steps
 
 1. Seller opens the create listing flow.
-2. Frontend collects event metadata:
-   - Event name.
-   - Venue.
-   - City.
-   - Start date and time.
-   - Event platform.
-3. Frontend collects listing metadata:
+2. Frontend requires the seller to search for and select an existing event through the authenticated event autocomplete flow.
+3. The selected event supplies `event_id` for listing creation.
+4. Frontend collects listing metadata:
+   - Event platform or ticket provider.
    - Seat information.
    - Ticket type.
-   - Currency.
    - Asking price.
    - Transfer method.
    - Public notes.
-4. Seller confirms the ticket is transferable.
-5. Frontend submits `POST /api/listings`.
-6. Spring Security validates the session before controller execution.
-7. Backend receives the immutable `AuthenticatedUser` principal and derives `seller_id` from `AuthenticatedUser.id()`.
-8. Backend validates all required fields server-side.
-9. Backend creates or associates normalized event metadata.
-10. Backend creates one listing with `quantity = 1`.
-11. Backend returns public listing metadata only.
+5. Seller confirms the ticket is transferable.
+6. Frontend submits `POST /api/listings` with `event_id` and listing-specific fields.
+7. Spring Security validates the session before controller execution.
+8. Backend receives the immutable `AuthenticatedUser` principal and derives `seller_id` from `AuthenticatedUser.id()`.
+9. Backend validates all required fields server-side, including selected event existence and eligibility.
+10. Backend associates the listing to the selected event without creating, renaming, or modifying the event record.
+11. Backend creates one listing with `quantity = 1` and `currency = VND`.
+12. Backend returns public listing metadata only.
 
 ## Public Listing Metadata
 
 The public listing may expose:
 
-- Event name, venue, city, start date, and event platform.
+- Selected event summary: event name, venue, city, and start date.
+- Listing-level event platform or ticket provider.
 - Seat information.
 - Ticket type.
-- Asking price and currency.
+- Asking price and `VND` currency.
 - Transfer method.
 - Seller-provided public notes.
 
@@ -96,11 +94,19 @@ MVP does not classify free-text public notes for sensitive content. This limitat
 - Seller identity must be derived from the authenticated `AuthenticatedUser` principal.
 - Client-provided seller or ownership fields must be rejected.
 - Listing services must not parse cookies or resolve raw session tokens.
+- `event_id` must reference an existing TicketPass event.
+- Event identity fields such as event name, venue, city, or start time must not be accepted from the listing creation request.
+- Backend validation must not trust frontend autocomplete selection as proof that the event exists or remains eligible.
+- The selected event must have `starts_at` in the future at request time.
+- Listing creation must not create, rename, or otherwise modify event records.
+- Event-level cancellation, hidden, public/private, or moderation checks must be added once supported by schema and product rules.
+- `event_platform` is listing/ticket-specific and does not redefine event identity.
 - `quantity` is fixed to `1` for MVP.
 - `is_transferable_confirmed` must be `true`.
 - `asking_price_minor` must be greater than zero.
-- `currency` must be a valid ISO-4217 currency code.
-- Required event and listing fields must be non-empty after trimming.
+- New MVP listings must use `currency = VND`; the client must not choose currency.
+- For VND, `asking_price_minor` represents whole dong.
+- Required listing fields must be non-empty after trimming.
 - The public listing contract must not include dedicated sensitive ticket payload fields.
 - MVP does not classify free-text public notes for sensitive content.
 
@@ -125,7 +131,8 @@ Audit records must not include raw QR codes, barcodes, ticket PDFs, private tran
 - Frontend checks are usability aids only.
 - Backend validation and authorization are mandatory.
 - Seller transferability confirmation is not proof that the ticket is actually transferable.
-- `event_platform` is captured because transferability rules vary by platform.
+- `event_platform` is captured at the listing/ticket level because transferability rules vary by platform.
+- Sellers cannot list tickets for events missing from TicketPass in the MVP flow.
 - Secure ticket upload, storage, and reveal must remain separate from public listing creation.
 
 ## Related Docs

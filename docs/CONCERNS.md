@@ -180,19 +180,41 @@ Open
 
 Date: 2026-07-13
 Related User Story: `docs/user-stories/US-0003-browse-events.md`
-Related GitHub Issue: `#25` - https://github.com/VietCT04/TicketPass/issues/25
+Related GitHub Issues: `#25` - https://github.com/VietCT04/TicketPass/issues/25, `#32` - https://github.com/VietCT04/TicketPass/issues/32, `#34` - https://github.com/VietCT04/TicketPass/issues/34
 
 ### Concern
 
-The browse events contract supports only `VND` for MVP, but the existing seller listing creation contract accepts a generic ISO-4217 currency.
+The browse events contract supports only `VND` for MVP. Issue `#32` now defines new listing creation as VND-only, but backend implementation and persistence alignment are deferred to issue `#34`.
 
 ### Risk
 
-Sellers may create active non-VND listings that do not appear in public event browse results, which could confuse sellers and create inconsistent marketplace behavior.
+Until issue `#34` is implemented, existing backend/frontend code may still allow or expect client-provided currency. Sellers may create or tests may rely on active non-VND listings that do not appear in public event browse results.
 
 ### Recommendation
 
-Decide whether the whole marketplace should be VND-only for MVP. If so, create a follow-up API and validation issue to restrict listing creation to `VND`. Until then, document that only active future VND listings are browse-eligible.
+Implement issue `#34` to reject client-provided currency, store new listings as `VND`, and update tests or fixture data accordingly. Until then, document that only active future VND listings are browse-eligible.
+
+### Status
+
+Open
+
+## CONCERN-0015: Event Platform Schema Placement Pending Migration
+
+Date: 2026-07-14
+Related User Stories: `docs/user-stories/US-0001-list-transferable-ticket.md`, `docs/user-stories/US-0004-search-select-existing-event.md`
+Related GitHub Issues: `#32` - https://github.com/VietCT04/TicketPass/issues/32, `#34` - https://github.com/VietCT04/TicketPass/issues/34
+
+### Concern
+
+Issue `#32` defines `event_platform` as listing/ticket-specific rather than shared event identity, but the initial database contract and existing implementation placed `event_platform` on `events`.
+
+### Risk
+
+Until issue `#34` updates the schema and implementation, event autocomplete and listing creation may disagree about whether platform belongs to the selected event or to the seller's specific ticket.
+
+### Recommendation
+
+Use issue `#34` to make the smallest compatible migration and API update that stores `event_platform` with listings, keeps selected event identity separate, and documents any backfill or compatibility behavior.
 
 ### Status
 
