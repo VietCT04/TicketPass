@@ -87,7 +87,11 @@ The proposal should summarize the intended scope, files to update, contract or s
 
 After approval, update the related files and update `docs/CONTINUITY.md`.
 
-When commenting on GitHub after approval, use the approved proposal as the source of truth. Do not replace it with a separately invented completion summary. The GitHub comment should preserve the approved scope, decisions, open questions, and next steps. It may add a short factual note listing files changed, tests run, and any implementation result that differs from the proposal.
+Before commenting on GitHub after approval, read the issue comments and check whether the approved proposal is already present.
+
+If the approved proposal is already present in the GitHub Issue comments, do not post it again. Add implementation or completion notes in the linked pull request instead, or add a short issue comment only when there is new information that is not already captured by the approved proposal or PR.
+
+When commenting on GitHub after approval and the approved proposal is not already present, use the approved proposal as the source of truth. Do not replace it with a separately invented completion summary. The GitHub comment should preserve the approved scope, decisions, open questions, and next steps. It may add a short factual note listing files changed, tests run, and any implementation result that differs from the proposal.
 
 If a previous GitHub Issue comment does not match the approved proposal, add a corrective follow-up comment with the approved proposal and note that it supersedes the earlier comment.
 

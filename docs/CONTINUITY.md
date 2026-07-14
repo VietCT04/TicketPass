@@ -7,6 +7,13 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 ## Latest Completed Work
 
 - Date: 2026-07-14
+- GitHub Issue: None - workflow update
+- Summary: Updated `AGENTS.md` GitHub Issues workflow to prevent reposting an approved proposal when the same approved proposal is already present in the issue comments. Future implementation notes should go in the linked PR or only add a short issue comment when new information is not already captured.
+- Files changed:
+  - `AGENTS.md`
+  - `docs/CONTINUITY.md`
+
+- Date: 2026-07-14
 - GitHub Issue: `#32` - https://github.com/VietCT04/TicketPass/issues/32
 - Summary: Defined the docs-only `POST /api/listings` event-linked creation contract. Listing creation now submits `event_id` instead of seller-provided event identity fields, keeps `event_platform` at the listing/ticket level, requires server-side selected-event existence and future-start validation, prevents listing creation from modifying event records, and stores new MVP listings as `VND` with whole-dong `asking_price_minor` semantics. Backend and database implementation belongs to `#34`.
 - Files changed:
