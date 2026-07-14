@@ -264,6 +264,28 @@ Measure or review performance before launch, and add targeted indexes or a dedic
 
 Open
 
+## CONCERN-0016: Event Local Timezone Display
+
+Date: 2026-07-14
+Related User Story: `docs/user-stories/US-0004-search-select-existing-event.md`
+Related GitHub Issue: `#35` - https://github.com/VietCT04/TicketPass/issues/35
+
+### Concern
+
+The frontend event selector formats `starts_at` with the browser locale and available timezone abbreviation or offset, but the event model stores an absolute timestamp without a separate event-local timezone identifier.
+
+### Risk
+
+Users in a different timezone from the event may see a browser-local time that differs from the venue-local time they expect when selecting an event.
+
+### Recommendation
+
+Add event-local timezone preservation and display rules before broader seller access or event browsing depends on venue-local date and time presentation.
+
+### Status
+
+Open
+
 ## CONCERN-0001: Platform-Specific Transferability Rules
 
 Date: 2026-07-09

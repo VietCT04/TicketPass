@@ -46,24 +46,27 @@ Out of scope:
 
 ## Listing Creation Steps
 
-1. Seller opens the create listing flow.
+1. Seller opens the `/sell` create listing flow.
 2. Frontend requires the seller to search for and select an existing event through the authenticated event autocomplete flow.
-3. The selected event supplies `event_id` for listing creation.
-4. Frontend collects listing metadata:
+3. The event selector searches `GET /api/events/autocomplete` only after at least three trimmed characters and uses a short debounce.
+4. The selected event supplies `event_id` for listing creation. Free-text input does not count as a valid event selection.
+5. Frontend collects listing metadata:
    - Event platform or ticket provider.
    - Seat information.
    - Ticket type.
    - Asking price.
    - Transfer method.
    - Public notes.
-5. Seller confirms the ticket is transferable.
-6. Frontend submits `POST /api/listings` with `event_id` and listing-specific fields.
-7. Spring Security validates the session before controller execution.
-8. Backend receives the immutable `AuthenticatedUser` principal and derives `seller_id` from `AuthenticatedUser.id()`.
-9. Backend validates all required fields server-side, including selected event existence and eligibility.
-10. Backend associates the listing to the selected event without creating, renaming, or modifying the event record.
-11. Backend creates one listing with `quantity = 1`, listing-level `event_platform`, and `currency = VND`.
-12. Backend returns public listing metadata only.
+6. Seller confirms the ticket is transferable.
+7. Frontend submits `POST /api/listings` with `event_id` and listing-specific fields.
+8. Spring Security validates the session before controller execution.
+9. Backend receives the immutable `AuthenticatedUser` principal and derives `seller_id` from `AuthenticatedUser.id()`.
+10. Backend validates all required fields server-side, including selected event existence and eligibility.
+11. Backend associates the listing to the selected event without creating, renaming, or modifying the event record.
+12. Backend creates one listing with `quantity = 1`, listing-level `event_platform`, and `currency = VND`.
+13. Backend returns public listing metadata only.
+
+Issue `#35` adds the frontend `/sell` event selector and selected-event summary. Issue `#6` extends the same page with the ticket-specific fields and final listing submission.
 
 ## Public Listing Metadata
 
