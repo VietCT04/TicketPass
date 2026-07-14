@@ -2,9 +2,24 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, authenticated seller listing creation, a backend authenticated seller event autocomplete endpoint, backend event-linked listing creation that requires an existing future event, a frontend `/sell` event selector and seller listing form, frontend signup/login/logout screens, and a documented public event browse API contract.
+TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, authenticated seller listing creation, a backend authenticated seller event autocomplete endpoint, backend event-linked listing creation that requires an existing future event, a backend public event browse API, a frontend `/sell` event selector and seller listing form, and frontend signup/login/logout screens.
 
 ## Latest Completed Work
+
+- Date: 2026-07-14
+- GitHub Issue: `#26` - https://github.com/VietCT04/TicketPass/issues/26
+- Summary: Implemented the public backend `GET /api/events` browse endpoint. The endpoint defaults to 1-based pagination, rejects invalid pagination with controlled API errors, uses the injected `Clock`, runs a database-side grouped query over active future VND listings, returns safe event summaries with query-time lowest-price and available-listing aggregates, keeps `image_url` as `null`, and explicitly marks the route public in API security configuration.
+- Files changed:
+  - `apps/api/src/main/java/com/ticketpass/api/auth/SecurityConfig.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/EventBrowseController.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/EventBrowseResponse.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/EventBrowseRow.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/EventBrowseService.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/EventRepository.java`
+  - `docs/API.md`
+  - `docs/SECURITY.md`
+  - `docs/CONCERNS.md`
+  - `docs/CONTINUITY.md`
 
 - Date: 2026-07-14
 - GitHub Issue: None - user story and issue creation
@@ -217,9 +232,9 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 ## Active Work
 
-- Current GitHub Issue: `#6` - https://github.com/VietCT04/TicketPass/issues/6
-- Current goal: Implement the seller listing form on `/sell` using the merged event selector and event-linked listing API.
-- Parallel planning: Review and merge user story pull request `#43`, then begin the US-0005 contract work in issue `#44`.
+- Current GitHub Issue: `#26` - https://github.com/VietCT04/TicketPass/issues/26
+- Current goal: Review and merge the public browse events API pull request.
+- Current blocker: None.
 
 ## Important User Stories
 
@@ -241,7 +256,6 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 - Seller transferability confirmation is not proof.
 - Existing duplicate events may appear as separate autocomplete results until deduplication rules are implemented.
 - Event cancellation and rescheduling rules are not defined for browse or seller selection.
-- Browse event aggregate freshness rules need review.
 - Event image source and moderation rules are not defined.
 - Sellers cannot list tickets for missing events until a later event request/reporting user story is defined.
 - Event autocomplete query performance may require indexes or a dedicated search strategy after production-volume review.
@@ -250,6 +264,6 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 ## Next Recommended Steps
 
-1. Implement the seller listing form in issue `#6`.
-2. Implement public browse events backend and frontend work in issues `#26` and `#27`.
-3. Review and merge pull request `#43`, then define the US-0005 event-detail contract in issue `#44`.
+1. Merge the issue `#26` public browse events API pull request after review.
+2. Implement the frontend public browse events page in issue `#27`.
+3. Define the US-0005 event-detail contract in issue `#44`.

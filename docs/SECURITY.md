@@ -110,6 +110,8 @@ Event visibility and aggregate values must be calculated server-side from the sa
 
 For MVP, browse-eligible listings are limited to active, future, VND listings that are currently available for purchase under the listing status rules.
 
+Issue `#26` implements the endpoint as an explicitly public route in API security configuration. The permissive fallback must not be the only indicator that public event browse is allowed.
+
 Public event browse responses must not include:
 
 - Ticket payload data.
