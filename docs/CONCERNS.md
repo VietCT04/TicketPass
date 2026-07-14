@@ -114,7 +114,7 @@ Open
 
 Date: 2026-07-12
 Related User Story: `docs/user-stories/US-0003-browse-events.md`
-Related GitHub Issue: `#25` - https://github.com/VietCT04/TicketPass/issues/25
+Related GitHub Issues: `#25` - https://github.com/VietCT04/TicketPass/issues/25, `#26` - https://github.com/VietCT04/TicketPass/issues/26
 
 ### Concern
 
@@ -126,7 +126,7 @@ Buyers may see events that are cancelled, moved, or stale if event lifecycle rul
 
 ### Recommendation
 
-For issue `#25`, document the MVP browse rule that uses future `events.starts_at` and active listings only. Plan follow-up schema and product work before relying on event-level cancellation, rescheduling, hidden, or public/private visibility states.
+Issues `#25` and `#26` use the MVP browse rule based on future `events.starts_at`, active listing status, and VND currency. Plan follow-up schema and product work before relying on event-level cancellation, rescheduling, hidden, or public/private visibility states.
 
 ### Status
 
@@ -136,7 +136,7 @@ Open
 
 Date: 2026-07-12
 Related User Story: `docs/user-stories/US-0003-browse-events.md`
-Related GitHub Issue: `#25` - https://github.com/VietCT04/TicketPass/issues/25
+Related GitHub Issues: `#25` - https://github.com/VietCT04/TicketPass/issues/25, `#26` - https://github.com/VietCT04/TicketPass/issues/26
 
 ### Concern
 
@@ -144,15 +144,15 @@ Event browse summaries may show aggregate listing information such as lowest ava
 
 ### Risk
 
-If aggregate values are cached or denormalized without clear update rules, buyers may see stale prices or availability counts.
+Issue `#26` calculates browse aggregate values at query time. If aggregate values are cached or denormalized later without clear update rules, buyers may see stale prices or availability counts.
 
 ### Recommendation
 
-For MVP, use query-time server-derived aggregate values from the shared browse-eligible listing rule. If caching is introduced later, document invalidation rules for listing status, price, currency, visibility, and event start-time changes.
+Keep MVP aggregate values query-time and server-derived from the shared browse-eligible listing rule. If caching is introduced later, document invalidation rules for listing status, price, currency, visibility, and event start-time changes.
 
 ### Status
 
-Open
+Resolved
 
 ## CONCERN-0011: Event Image Source And Moderation
 

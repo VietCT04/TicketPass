@@ -3,6 +3,7 @@ package com.ticketpass.api.listing;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -31,6 +32,39 @@ public interface EventRepository extends JpaRepository<EventEntity, UUID> {
             """)
     List<EventEntity> searchAutocomplete(
             @Param("query") String query,
+            @Param("now") Instant now,
+            Pageable pageable);
+
+    @Query(
+            value = """
+                    select new com.ticketpass.api.listing.EventBrowseRow(
+                        event.id,
+                        event.name,
+                        event.startsAt,
+                        event.venue,
+                        event.city,
+                        min(listing.askingPriceMinor),
+                        count(listing.id)
+                    )
+                    from ListingEntity listing
+                    join listing.event event
+                    where listing.status = :status
+                        and listing.currency = :currency
+                        and event.startsAt > :now
+                    group by event.id, event.name, event.startsAt, event.venue, event.city
+                    order by event.startsAt asc, event.id asc
+                    """,
+            countQuery = """
+                    select count(distinct event.id)
+                    from ListingEntity listing
+                    join listing.event event
+                    where listing.status = :status
+                        and listing.currency = :currency
+                        and event.startsAt > :now
+                    """)
+    Page<EventBrowseRow> browsePublicEvents(
+            @Param("status") ListingStatus status,
+            @Param("currency") String currency,
             @Param("now") Instant now,
             Pageable pageable);
 }

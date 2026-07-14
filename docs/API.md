@@ -385,6 +385,8 @@ Returns event summaries for events with at least one browse-eligible listing.
 
 This endpoint is public, but all event availability, visibility, aggregate calculation, pagination, and ordering must be enforced server-side.
 
+Issue `#26` implements this endpoint using a database-side grouped query over events and browse-eligible listings.
+
 #### Query Parameters
 
 | Field | Type | Required | Default | Notes |
@@ -393,6 +395,8 @@ This endpoint is public, but all event availability, visibility, aggregate calcu
 | `page_size` | integer | No | `20` | Minimum `1`. Maximum `50`. |
 
 Invalid pagination values return `400 Bad Request`.
+
+Non-integer pagination values return `400 Bad Request` with a controlled API error message.
 
 #### Browse-Eligible Listing Rule
 
