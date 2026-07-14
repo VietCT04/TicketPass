@@ -54,19 +54,19 @@ Out of scope:
    - Event platform or ticket provider.
    - Seat information.
    - Ticket type.
-   - Asking price.
-   - Transfer method.
+   - Asking price as a positive whole-VND amount.
    - Public notes.
-6. Seller confirms the ticket is transferable.
-7. Frontend submits `POST /api/listings` with `event_id` and listing-specific fields.
-8. Spring Security validates the session before controller execution.
-9. Backend receives the immutable `AuthenticatedUser` principal and derives `seller_id` from `AuthenticatedUser.id()`.
-10. Backend validates all required fields server-side, including selected event existence and eligibility.
-11. Backend associates the listing to the selected event without creating, renaming, or modifying the event record.
-12. Backend creates one listing with `quantity = 1`, listing-level `event_platform`, and `currency = VND`.
-13. Backend returns public listing metadata only.
+6. Frontend submits `transfer_method = PLATFORM_TRANSFER` for MVP and does not offer PDF upload, QR upload, or manual transfer choices.
+7. Seller confirms the ticket is transferable.
+8. Frontend submits `POST /api/listings` with `event_id` and listing-specific fields.
+9. Spring Security validates the session before controller execution.
+10. Backend receives the immutable `AuthenticatedUser` principal and derives `seller_id` from `AuthenticatedUser.id()`.
+11. Backend validates all required fields server-side, including selected event existence and eligibility.
+12. Backend associates the listing to the selected event without creating, renaming, or modifying the event record.
+13. Backend creates one listing with `quantity = 1`, listing-level `event_platform`, and `currency = VND`.
+14. Backend returns public listing metadata only.
 
-Issue `#35` adds the frontend `/sell` event selector and selected-event summary. Issue `#6` extends the same page with the ticket-specific fields and final listing submission.
+Issue `#35` adds the frontend `/sell` event selector and selected-event summary. Issue `#6` extends the same page with ticket-specific fields, listing submission, same-page success confirmation, and a create-another-listing action.
 
 ## Public Listing Metadata
 
@@ -136,6 +136,7 @@ Audit records must not include raw QR codes, barcodes, ticket PDFs, private tran
 - Seller transferability confirmation is not proof that the ticket is actually transferable.
 - `event_platform` is captured at the listing/ticket level because transferability rules vary by platform.
 - Sellers cannot list tickets for events missing from TicketPass in the MVP flow.
+- The MVP frontend seller form submits only `PLATFORM_TRANSFER`; PDF upload, QR upload, and manual transfer choices remain unavailable until controlled upload and reveal rules exist.
 - Secure ticket upload, storage, and reveal must remain separate from public listing creation.
 
 ## Related Docs

@@ -86,6 +86,8 @@ The public listing contract must not define dedicated fields that accept, store,
 
 Secure ticket upload, storage, reveal, and audit logging are separate flows.
 
+The MVP frontend seller form warns sellers not to enter QR codes, barcodes, ticket links, platform credentials, or other usable ticket payload data in public notes. This warning is a usability safeguard only; backend content classification is not implemented for MVP public notes.
+
 ## Public Listing Data
 
 The following fields are intended as public listing metadata:
@@ -154,6 +156,8 @@ Issue `#32` defines listing creation as an event-linked operation, and issue `#3
 
 The backend must independently validate the selected event. Frontend autocomplete selection is not trusted as authorization or eligibility proof.
 
+The issue `#6` frontend seller form reuses the issue `#35` event selector and submits the selected server-issued `event_id`. It does not collect event name, venue, city, start time, quantity, or currency. It displays `VND` as fixed MVP currency and submits the entered whole-dong amount as `asking_price_minor`.
+
 Server-side listing creation must enforce:
 
 - The request is authenticated.
@@ -164,6 +168,8 @@ Server-side listing creation must enforce:
 - `event_platform` is listing/ticket-specific and does not redefine event identity.
 - New MVP listings are stored as `VND`; clients cannot choose currency.
 - `asking_price_minor` is a positive whole-dong integer for VND.
+
+The MVP frontend form submits `transfer_method = PLATFORM_TRANSFER` and does not expose `PDF_UPLOAD`, `QR_UPLOAD`, or `MANUAL_TRANSFER` choices. Adding upload-backed transfer methods must wait for controlled ticket upload, storage, reveal, and audit rules.
 
 When event cancellation, hidden, public/private, or moderation fields exist, listing creation must also enforce those eligibility rules server-side.
 
