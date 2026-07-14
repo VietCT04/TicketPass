@@ -7,6 +7,14 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 ## Latest Completed Work
 
 - Date: 2026-07-14
+- GitHub Issue: None - user story and issue creation
+- Pull Request: `#43` - https://github.com/VietCT04/TicketPass/pull/43
+- Summary: Added `US-0005` for the public buyer flow to open an event and compare its currently available ticket listings. Created focused follow-up issues for the API contract (`#44`), backend implementation (`#45`), and frontend event-detail page (`#46`). The story keeps listing cards read-only, uses the shared browse-eligibility rule, excludes seller identity and `public_notes`, and defers reservation and checkout.
+- Files changed:
+  - `docs/user-stories/US-0005-view-available-listings-for-event.md`
+  - `docs/CONTINUITY.md`
+
+- Date: 2026-07-14
 - GitHub Issue: `#35` - https://github.com/VietCT04/TicketPass/issues/35
 - Summary: Implemented the frontend seller event autocomplete selector on `/sell`. The selector calls the authenticated autocomplete endpoint with included credentials, trims queries, waits for three characters, debounces requests, cancels stale searches, supports keyboard and mouse selection, exposes the selected event summary and `event_id`, clears selection when typing changes, and shows guidance, loading, empty, error, unauthenticated, and selected-event states.
 - Files changed:
@@ -200,9 +208,9 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 ## Active Work
 
-- Current GitHub Issue: `#35` - https://github.com/VietCT04/TicketPass/issues/35
-- Current goal: Review and merge the frontend seller event autocomplete selector PR.
-- Current blocker: Issue `#6` remains blocked until the issue `#35` frontend selector PR is merged.
+- Current GitHub Issue: `#6` - https://github.com/VietCT04/TicketPass/issues/6
+- Current goal: Implement the seller listing form on `/sell` using the merged event selector and event-linked listing API.
+- Parallel planning: Review and merge user story pull request `#43`, then begin the US-0005 contract work in issue `#44`.
 
 ## Important User Stories
 
@@ -210,6 +218,7 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 - `docs/user-stories/US-0002-authenticate-user.md`: User can sign up, log in, log out, maintain secure sessions, and access protected TicketPass account features.
 - `docs/user-stories/US-0003-browse-events.md`: Buyer can browse events that have active publicly visible ticket listings with safe event summaries and basic pagination.
 - `docs/user-stories/US-0004-search-select-existing-event.md`: Seller must search and select an existing event through autocomplete, and listing creation must reference that event through `event_id`.
+- `docs/user-stories/US-0005-view-available-listings-for-event.md`: Buyer can open an event and compare its currently browse-eligible ticket listings without exposing seller identity or sensitive ticket payload data.
 
 ## Known Concerns
 
@@ -228,9 +237,10 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 - Sellers cannot list tickets for missing events until a later event request/reporting user story is defined.
 - Event autocomplete query performance may require indexes or a dedicated search strategy after production-volume review.
 - Event local timezone preservation and display rules are unresolved.
+- Listing availability can change between event-detail page load and a future reservation attempt.
 
 ## Next Recommended Steps
 
-1. Merge the issue `#35` frontend event selector PR after review.
-2. Unblock and implement the seller listing form in `#6`.
-3. Implement public browse events backend work in `#26` when ready.
+1. Implement the seller listing form in issue `#6`.
+2. Implement public browse events backend and frontend work in issues `#26` and `#27`.
+3. Review and merge pull request `#43`, then define the US-0005 event-detail contract in issue `#44`.
