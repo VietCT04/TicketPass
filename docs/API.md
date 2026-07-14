@@ -162,15 +162,11 @@ Listing services must not parse cookies, resolve raw session tokens, or accept c
 
 ```json
 {
-  "event_name": "Example Concert",
-  "event_venue": "Example Arena",
-  "event_city": "Singapore",
-  "event_starts_at": "2026-08-15T19:30:00+08:00",
+  "event_id": "evt_123",
   "event_platform": "Ticketmaster",
   "seat_info": "Section 101, Row B, Seat 12",
   "ticket_type": "General Admission",
-  "currency": "SGD",
-  "asking_price_minor": 12500,
+  "asking_price_minor": 1250000,
   "transfer_method": "PLATFORM_TRANSFER",
   "is_transferable_confirmed": true,
   "public_notes": "Mobile transfer available after purchase."
@@ -181,15 +177,11 @@ Listing services must not parse cookies, resolve raw session tokens, or accept c
 
 | Field | Type | Required | Notes |
 |---|---|---:|---|
-| `event_name` | string | Yes | Event display name. |
-| `event_venue` | string | Yes | Venue name. |
-| `event_city` | string | Yes | Event city. |
-| `event_starts_at` | ISO-8601 datetime | Yes | Event start date and time. |
-| `event_platform` | string | Yes | Platform or provider where the ticket originated. Used because transferability varies by platform. |
+| `event_id` | string | Yes | Server-issued identifier for an existing TicketPass event selected through the seller event autocomplete flow. |
+| `event_platform` | string | Yes | Platform or provider where this ticket originated. Used because transferability varies by platform and ticket source. Free-text string for MVP. |
 | `seat_info` | string | Yes | Human-readable seat, section, row, or standing-zone information. |
 | `ticket_type` | string | Yes | Ticket category such as standard, VIP, student, or general admission. |
-| `currency` | string | Yes | ISO-4217 currency code. |
-| `asking_price_minor` | integer | Yes | Asking price in minor currency units. Must be greater than zero. |
+| `asking_price_minor` | integer | Yes | Asking price. Must be greater than zero. For MVP, new listings are always stored as `VND`, and this integer represents whole dong. |
 | `transfer_method` | string | Yes | Expected transfer method. Initial value set is `PLATFORM_TRANSFER`, `PDF_UPLOAD`, `QR_UPLOAD`, or `MANUAL_TRANSFER`. |
 | `is_transferable_confirmed` | boolean | Yes | Must be `true`; seller confirms the ticket is transferable. |
 | `public_notes` | string | No | Buyer-visible notes. MVP does not perform sensitive content classification on this free-text field. |
@@ -204,15 +196,15 @@ Listing services must not parse cookies, resolve raw session tokens, or accept c
     "id": "evt_123",
     "name": "Example Concert",
     "venue": "Example Arena",
-    "city": "Singapore",
-    "starts_at": "2026-08-15T19:30:00+08:00",
-    "event_platform": "Ticketmaster"
+    "city": "Ho Chi Minh City",
+    "starts_at": "2026-08-15T19:30:00+07:00"
   },
+  "event_platform": "Ticketmaster",
   "seat_info": "Section 101, Row B, Seat 12",
   "ticket_type": "General Admission",
   "quantity": 1,
-  "currency": "SGD",
-  "asking_price_minor": 12500,
+  "currency": "VND",
+  "asking_price_minor": 1250000,
   "transfer_method": "PLATFORM_TRANSFER",
   "is_transferable_confirmed": true,
   "status": "ACTIVE",
@@ -227,16 +219,36 @@ Listing services must not parse cookies, resolve raw session tokens, or accept c
 - Request must be authenticated.
 - `seller_id` is always derived server-side from `AuthenticatedUser.id()`.
 - Request DTOs must not declare seller, user, owner, or equivalent ownership fields.
+- `event_id` must be provided by the client and must identify an existing TicketPass event.
+- `event_id` must come from a seller autocomplete selection in the normal frontend flow, but the backend must independently validate event existence and eligibility.
+- Listing creation must not create, rename, or otherwise modify the selected event record.
+- The selected event must have `starts_at` in the future at request time.
+- The selected event does not need an existing active listing because this seller may create the first listing for it.
+- Future event cancellation, hidden, public/private, or moderation checks must be added when the schema supports those states.
+- Clients must not send or redefine event identity fields such as `event_name`, `event_venue`, `event_city`, or `event_starts_at`.
+- `event_platform` is listing/ticket-specific and must be returned at the listing level, not inside the nested `event` object.
 - `quantity` is always `1` for MVP and is not accepted as a client-provided field.
 - New complete listings start with status `ACTIVE`.
 - `is_transferable_confirmed` must be `true`.
 - `asking_price_minor` must be greater than zero.
-- `currency` must be a valid ISO-4217 currency code.
-- Event fields and listing fields must be non-empty after trimming.
+- Clients must not send `currency` for MVP listing creation.
+- New MVP listings are always stored as `VND`.
+- For VND, `asking_price_minor` represents whole dong because VND has no decimal minor unit in this contract. For example, `1250000` means `VND 1,250,000`, not `VND 12,500.00`.
+- Listing fields must be non-empty after trimming.
 - The public listing contract must not include dedicated fields for QR codes, barcodes, ticket files, private transfer links, platform credentials, or other sensitive ticket payload data.
 - MVP does not classify free-text `public_notes` for sensitive content; this limitation is tracked in `docs/CONCERNS.md`.
 
 Listing availability and duplicate-sale status rules are documented in `docs/flows/LISTING_STATUS_FLOW.md`.
+
+#### Error Behavior
+
+- Missing or malformed `event_id`: `400 Bad Request`.
+- Seller-provided event identity fields such as `event_name`, `event_venue`, `event_city`, or `event_starts_at`: `400 Bad Request`.
+- Seller-provided `currency`: `400 Bad Request`.
+- Event not found: `404 Not Found`.
+- Event exists but is no longer eligible, such as having already started: `409 Conflict`.
+
+The `409` case covers an event that was valid when selected through autocomplete but became ineligible before form submission.
 
 #### Sensitive Data Rule
 
@@ -475,4 +487,4 @@ The public browse events response must not include:
 
 Browse events support only `VND` for MVP. Listings in another currency are not browse-eligible and must not affect event visibility, lowest price, or available listing count.
 
-The existing listing creation contract still accepts a generic ISO-4217 currency. If TicketPass decides the whole marketplace should be VND-only, seller listing validation should be changed in a separate API contract and implementation issue.
+The listing creation contract also stores new MVP listings as `VND` and does not accept `currency` from the client. Existing backend and database implementation changes for this contract belong to issue `#34`.

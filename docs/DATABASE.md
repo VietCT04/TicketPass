@@ -65,7 +65,7 @@ Stores normalized event information shared by listings.
 | `venue` | string | Venue name. |
 | `city` | string | Event city. |
 | `starts_at` | timestamp with timezone | Event start date and time. |
-| `event_platform` | string | Platform or provider where the ticket originated. Transferability rules can vary by platform. |
+| `event_platform` | string | Existing initial-schema field. Issue `#32` defines `event_platform` as listing/ticket-specific rather than shared event identity; migration work belongs to issue `#34`. |
 | `created_at` | timestamp | Creation time. |
 | `updated_at` | timestamp | Last update time. |
 
@@ -78,11 +78,12 @@ Stores seller-created listings. Each listing represents exactly one ticket for M
 | `id` | UUID/string id | Primary key. |
 | `seller_id` | UUID/string id | References the authenticated seller/user. Must be derived server-side. |
 | `event_id` | UUID/string id | References `events.id`. |
+| `event_platform` | string | Platform or provider where this ticket originated. Transferability rules can vary by platform. Required by the issue `#32` listing contract; schema migration belongs to issue `#34`. |
 | `seat_info` | string | Combined seat, section, row, or standing-zone information. |
 | `ticket_type` | string | Ticket category or type. |
 | `quantity` | integer | Always `1` for MVP. Multi-ticket listings are not supported. |
-| `currency` | string | ISO-4217 currency code. |
-| `asking_price_minor` | integer | Asking price in minor currency units. |
+| `currency` | string | Always `VND` for new MVP listings under the issue `#32` contract. |
+| `asking_price_minor` | integer | Asking price. For VND MVP listings, this integer represents whole dong. |
 | `transfer_method` | enum/string | Expected transfer method. |
 | `is_transferable_confirmed` | boolean | Seller confirmation that the ticket is transferable. |
 | `status` | enum/string | Listing lifecycle status. |
@@ -120,7 +121,13 @@ These values describe the expected transfer path only. Raw ticket payload storag
 
 - One listing represents one ticket for MVP.
 - `quantity` must be `1`.
+- `event_id` must reference an existing event.
+- Listing creation must not create, rename, or otherwise modify the referenced event record.
+- The referenced event must have `starts_at` in the future at listing creation time.
+- `event_platform` belongs to the listing/ticket because the same real-world event may have tickets from multiple platforms or providers.
+- New MVP listings must use `currency = VND`; clients must not choose a currency.
 - `asking_price_minor` must be greater than zero.
+- For VND, `asking_price_minor` represents whole dong, not cents.
 - `is_transferable_confirmed` must be `true` before a listing can become `ACTIVE`.
 - Only `ACTIVE` listings can be reserved or purchased.
 - `SOLD` listings must never become purchasable again.
@@ -151,7 +158,19 @@ For MVP, aggregate values should be server-derived at query time rather than sto
 
 The current schema does not define event-level cancellation, rescheduling, hidden, public/private, or image-source fields. Event expiration can be inferred from `events.starts_at`, and listing availability can be inferred from `listings.status`, but richer event lifecycle and image rules require follow-up schema work.
 
-The browse contract is VND-only for MVP. The existing listing creation contract still allows a generic ISO-4217 `listings.currency`; non-VND listings are not browse-eligible and do not affect browse event visibility or aggregate values.
+The browse contract is VND-only for MVP. Issue `#32` also defines new listing creation as VND-only, so issue `#34` must align backend validation and persistence with `currency = VND`. Non-VND listings, if any exist before that implementation, are not browse-eligible and do not affect browse event visibility or aggregate values.
+
+## Event-Linked Listing Creation Contract
+
+Issue `#32` defines the docs-only event-linked listing creation contract. Backend and database implementation belongs to issue `#34`.
+
+Under this contract, listing creation references an existing event by `event_id`. Seller-provided event identity fields such as event name, venue, city, or start time are not accepted by `POST /api/listings`.
+
+The selected event must exist and must have `starts_at` in the future at request time. Listing creation must not create, rename, or otherwise modify event records. Event-level cancellation, hidden, public/private, and moderation checks must be added later when the schema supports those states.
+
+`event_platform` is listing/ticket-specific rather than shared event identity. This lets multiple listings for the same real-world event represent tickets sourced from different platforms or providers. Any schema migration that moves `event_platform` from `events` to `listings`, backfills data, or updates indexes belongs to issue `#34`.
+
+New MVP listings are always stored as `VND`; clients do not submit `currency`. For VND, `asking_price_minor` represents whole dong.
 
 ## Event Autocomplete Contract
 

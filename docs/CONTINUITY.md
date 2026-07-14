@@ -2,9 +2,27 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, authenticated seller listing creation, frontend signup/login/logout screens, a documented public event browse API contract, a documented authenticated seller event autocomplete API contract, and an approved seller workflow requiring selection of an existing event before listing creation.
+TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, authenticated seller listing creation, frontend signup/login/logout screens, a documented public event browse API contract, a documented authenticated seller event autocomplete API contract, and a documented event-linked listing creation contract requiring sellers to select an existing event before listing creation.
 
 ## Latest Completed Work
+
+- Date: 2026-07-14
+- GitHub Issue: None - workflow update
+- Summary: Updated `AGENTS.md` GitHub Issues workflow to prevent reposting an approved proposal when the same approved proposal is already present in the issue comments. Future implementation notes should go in the linked PR or only add a short issue comment when new information is not already captured.
+- Files changed:
+  - `AGENTS.md`
+  - `docs/CONTINUITY.md`
+
+- Date: 2026-07-14
+- GitHub Issue: `#32` - https://github.com/VietCT04/TicketPass/issues/32
+- Summary: Defined the docs-only `POST /api/listings` event-linked creation contract. Listing creation now submits `event_id` instead of seller-provided event identity fields, keeps `event_platform` at the listing/ticket level, requires server-side selected-event existence and future-start validation, prevents listing creation from modifying event records, and stores new MVP listings as `VND` with whole-dong `asking_price_minor` semantics. Backend and database implementation belongs to `#34`.
+- Files changed:
+  - `docs/API.md`
+  - `docs/DATABASE.md`
+  - `docs/SECURITY.md`
+  - `docs/flows/SELLER_LISTING_FLOW.md`
+  - `docs/CONCERNS.md`
+  - `docs/CONTINUITY.md`
 
 - Date: 2026-07-14
 - GitHub Issue: `#31` - https://github.com/VietCT04/TicketPass/issues/31
@@ -137,8 +155,8 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 ## Active Work
 
 - Current GitHub Issue: `#32` - https://github.com/VietCT04/TicketPass/issues/32
-- Current goal: Approve the event-linked listing creation contract before backend or frontend implementation.
-- Current blocker: Issue `#6` is blocked until `#32`, `#34`, and `#35` are complete. Issues `#33`, `#34`, and `#35` also require their contract dependencies first.
+- Current goal: Review and merge the event-linked listing creation contract PR.
+- Current blocker: Issue `#6` is blocked until `#32`, `#34`, and `#35` are complete. Issues `#34` and `#35` require their contract dependencies first.
 
 ## Important User Stories
 
@@ -161,14 +179,15 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 - Event cancellation and rescheduling rules are not defined for browse or seller selection.
 - Browse event aggregate freshness rules need review.
 - Event image source and moderation rules are not defined.
-- Listing creation remains multi-currency until `#32` and `#34` align it with VND-only MVP behavior.
+- Listing creation is documented as VND-only for MVP, but backend/database implementation remains pending in `#34`.
 - Sellers cannot list tickets for missing events until a later event request/reporting user story is defined.
 - Event autocomplete query performance may require indexes or a dedicated search strategy after issue `#33` implementation review.
+- `event_platform` is documented as listing/ticket-specific, but schema and implementation migration remains pending in `#34`.
 
 ## Next Recommended Steps
 
-1. Write and approve the proposal for issue `#32` defining the `event_id`-based, VND-only listing creation contract.
-2. Implement issue `#33` after the issue `#31` contract PR is merged.
+1. Merge the issue `#32` contract PR after review.
+2. Implement issue `#33` for the authenticated event autocomplete backend endpoint.
 3. Implement issue `#34` after the issue `#32` contract PR is merged.
 4. Implement the frontend event selector in `#35`.
 5. Unblock and implement the seller listing form in `#6`.

@@ -90,10 +90,11 @@ Secure ticket upload, storage, reveal, and audit logging are separate flows.
 
 The following fields are intended as public listing metadata:
 
-- Event name, venue, city, start date, and event platform.
+- Selected event summary: event name, venue, city, and start date.
+- Listing-level event platform or ticket provider.
 - Seat information.
 - Ticket type.
-- Asking price and currency.
+- Asking price and `VND` currency.
 - Transfer method.
 - Seller-provided public notes.
 
@@ -145,6 +146,25 @@ Seller event autocomplete responses must not include:
 - Barcodes.
 
 Autocomplete must use strict query limits to reduce unnecessary backend load and enumeration risk: trimmed `q` length from `3` to `100` characters, maximum `10` results, and no pagination for MVP.
+
+## Event-Linked Listing Creation Security
+
+Issue `#32` defines listing creation as an event-linked operation. Sellers submit `event_id` for an existing TicketPass event and ticket-specific listing data; they do not submit event identity fields that would create or redefine an event record.
+
+The backend must independently validate the selected event. Frontend autocomplete selection is not trusted as authorization or eligibility proof.
+
+Server-side listing creation must enforce:
+
+- The request is authenticated.
+- Seller ownership is derived from `AuthenticatedUser.id()`.
+- The selected `event_id` exists.
+- The selected event has `starts_at` in the future at request time.
+- Listing creation does not create, rename, or otherwise modify event records.
+- `event_platform` is listing/ticket-specific and does not redefine event identity.
+- New MVP listings are stored as `VND`; clients cannot choose currency.
+- `asking_price_minor` is a positive whole-dong integer for VND.
+
+When event cancellation, hidden, public/private, or moderation fields exist, listing creation must also enforce those eligibility rules server-side.
 
 ## Transferability Confirmation
 
