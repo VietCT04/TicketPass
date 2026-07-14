@@ -2,9 +2,22 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, authenticated seller listing creation, frontend signup/login/logout screens, and a documented public event browse API contract.
+TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, authenticated seller listing creation, frontend signup/login/logout screens, a documented public event browse API contract, and an approved seller workflow requiring selection of an existing event before listing creation.
 
 ## Latest Completed Work
+
+- Date: 2026-07-14
+- GitHub Issue: None - issue creation and workflow alignment
+- Summary: Created focused follow-up issues for `US-0004` covering the event autocomplete contract (`#31`), event-linked listing contract (`#32`), backend autocomplete implementation (`#33`), backend `event_id` listing implementation (`#34`), and frontend autocomplete selector (`#35`). Updated issue `#6` so the seller listing form is blocked until the required event-selection and listing-contract dependencies are complete.
+- Files changed:
+  - `docs/user-stories/US-0004-search-select-existing-event.md`
+  - `docs/CONTINUITY.md`
+
+- Date: 2026-07-14
+- GitHub Issue: None - user story creation
+- Summary: Added `US-0004` defining that sellers must search and select an existing event through autocomplete, listing creation must use `event_id`, free-text event creation is not accepted, and missing-event reporting is deferred.
+- Files changed:
+  - `docs/user-stories/US-0004-search-select-existing-event.md`
 
 - Date: 2026-07-13
 - GitHub Issue: `#25` - https://github.com/VietCT04/TicketPass/issues/25
@@ -113,15 +126,16 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 ## Active Work
 
-- Current GitHub Issue: `#25` - https://github.com/VietCT04/TicketPass/issues/25
-- Current goal: Open a pull request for the approved docs-only browse events API contract.
-- Current blocker: None.
+- Current GitHub Issues: `#31` - https://github.com/VietCT04/TicketPass/issues/31 and `#32` - https://github.com/VietCT04/TicketPass/issues/32
+- Current goal: Approve the event autocomplete and event-linked listing creation contracts before backend or frontend implementation.
+- Current blocker: Issue `#6` is blocked until `#32`, `#34`, and `#35` are complete. Issues `#33`, `#34`, and `#35` also require their contract dependencies first.
 
 ## Important User Stories
 
 - `docs/user-stories/US-0001-list-transferable-ticket.md`: Seller can list a transferable ticket safely without exposing sensitive ticket data too early.
 - `docs/user-stories/US-0002-authenticate-user.md`: User can sign up, log in, log out, maintain secure sessions, and access protected TicketPass account features.
 - `docs/user-stories/US-0003-browse-events.md`: Buyer can browse events that have active publicly visible ticket listings with safe event summaries and basic pagination.
+- `docs/user-stories/US-0004-search-select-existing-event.md`: Seller must search and select an existing event through autocomplete, and listing creation must reference that event through `event_id`.
 
 ## Known Concerns
 
@@ -133,14 +147,17 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 - MVP does not classify seller listing `public_notes` for sensitive ticket payload content.
 - Platform-specific transferability rules are unresolved.
 - Seller transferability confirmation is not proof.
-- Event reuse and deduplication rules are not defined for MVP.
-- Event cancellation and rescheduling rules are not defined for browse results.
+- Existing duplicate events may appear as separate autocomplete results until deduplication rules are implemented.
+- Event cancellation and rescheduling rules are not defined for browse or seller selection.
 - Browse event aggregate freshness rules need review.
 - Event image source and moderation rules are not defined.
-- Browse is VND-only for MVP, while listing creation still accepts generic ISO-4217 currencies.
+- Listing creation remains multi-currency until `#32` and `#34` align it with VND-only MVP behavior.
+- Sellers cannot list tickets for missing events until a later event request/reporting user story is defined.
 
 ## Next Recommended Steps
 
-1. Review and merge the issue `#25` contract PR.
-2. Implement issue `#26` for the backend public browse events API using the documented contract.
-3. Then implement issue `#27` for the frontend browse events page.
+1. Write and approve the proposal for issue `#31` defining the event autocomplete API contract.
+2. Write and approve the proposal for issue `#32` defining the `event_id`-based, VND-only listing creation contract.
+3. Implement issues `#33` and `#34` after their contracts are merged.
+4. Implement the frontend event selector in `#35`.
+5. Unblock and implement the seller listing form in `#6`.
