@@ -206,15 +206,37 @@ Related GitHub Issues: `#31` - https://github.com/VietCT04/TicketPass/issues/31,
 
 ### Concern
 
-The exact event autocomplete searchable fields, matching and ordering rules, query limits, and eligibility rules are not yet defined. Sellers also cannot create a listing when the required event is missing from TicketPass.
+Issue `#31` defines deterministic MVP autocomplete rules for searching `events.name`, `events.venue`, and `events.city`, but ambiguous results, duplicate event records, accent-insensitive matching support, and missing-event handling remain unresolved. Sellers also cannot create a listing when the required event is missing from TicketPass.
 
 ### Risk
 
-Ambiguous or duplicate-looking results may cause a seller to attach a ticket to the wrong event. Unbounded autocomplete requests may create unnecessary backend load. Legitimate sellers may also be blocked when no matching event exists.
+Ambiguous or duplicate-looking results may cause a seller to attach a ticket to the wrong event. If accent-insensitive matching is unsupported or inconsistent, sellers may fail to find valid events. Legitimate sellers may also be blocked when no matching event exists.
 
 ### Recommendation
 
-Use issue `#31` to define deterministic seller-safe matching, minimum query length, result limits, sufficient distinguishing event fields, and server-side eligibility rules. Enforce the approved contract in `#33` and `#35`. Create a separate user story before launch for reporting or requesting a missing event.
+Enforce the approved `#31` contract in `#33` and `#35`, including sufficient distinguishing event fields and stable ordering. Keep duplicate-event cleanup, stronger matching, and missing-event reporting as separate product work before broader seller access.
+
+### Status
+
+Open
+
+## CONCERN-0014: Event Autocomplete Query Performance
+
+Date: 2026-07-14
+Related User Story: `docs/user-stories/US-0004-search-select-existing-event.md`
+Related GitHub Issues: `#31` - https://github.com/VietCT04/TicketPass/issues/31, `#33` - https://github.com/VietCT04/TicketPass/issues/33
+
+### Concern
+
+The approved autocomplete contract searches `events.name`, `events.venue`, and `events.city` with case-insensitive matching, a minimum query length, and a maximum of 10 results, but the current issue does not add database indexes or implementation-specific performance controls.
+
+### Risk
+
+As event volume grows, substring matching across multiple text fields may become slow or create unnecessary backend load even with frontend debouncing and strict result limits.
+
+### Recommendation
+
+Implement the smallest query that satisfies issue `#33`, measure or review performance before launch, and add targeted indexes or a dedicated search strategy in a follow-up migration if needed.
 
 ### Status
 

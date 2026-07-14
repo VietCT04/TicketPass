@@ -2,9 +2,19 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, authenticated seller listing creation, frontend signup/login/logout screens, a documented public event browse API contract, and an approved seller workflow requiring selection of an existing event before listing creation.
+TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, authenticated seller listing creation, frontend signup/login/logout screens, a documented public event browse API contract, a documented authenticated seller event autocomplete API contract, and an approved seller workflow requiring selection of an existing event before listing creation.
 
 ## Latest Completed Work
+
+- Date: 2026-07-14
+- GitHub Issue: `#31` - https://github.com/VietCT04/TicketPass/issues/31
+- Summary: Defined the docs-only authenticated seller `GET /api/events/autocomplete` contract, including required auth, `q` validation, 10-result MVP limit, no pagination, 300 ms frontend debounce guidance, searchable event fields, deterministic ranking, future-event eligibility, safe response fields, and sensitive-data exclusions. Documented that backend implementation belongs to `#33` and frontend autocomplete belongs to `#35`.
+- Files changed:
+  - `docs/API.md`
+  - `docs/DATABASE.md`
+  - `docs/SECURITY.md`
+  - `docs/CONCERNS.md`
+  - `docs/CONTINUITY.md`
 
 - Date: 2026-07-14
 - GitHub Issue: None - issue creation and workflow alignment
@@ -126,8 +136,8 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 ## Active Work
 
-- Current GitHub Issues: `#31` - https://github.com/VietCT04/TicketPass/issues/31 and `#32` - https://github.com/VietCT04/TicketPass/issues/32
-- Current goal: Approve the event autocomplete and event-linked listing creation contracts before backend or frontend implementation.
+- Current GitHub Issue: `#32` - https://github.com/VietCT04/TicketPass/issues/32
+- Current goal: Approve the event-linked listing creation contract before backend or frontend implementation.
 - Current blocker: Issue `#6` is blocked until `#32`, `#34`, and `#35` are complete. Issues `#33`, `#34`, and `#35` also require their contract dependencies first.
 
 ## Important User Stories
@@ -153,11 +163,12 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 - Event image source and moderation rules are not defined.
 - Listing creation remains multi-currency until `#32` and `#34` align it with VND-only MVP behavior.
 - Sellers cannot list tickets for missing events until a later event request/reporting user story is defined.
+- Event autocomplete query performance may require indexes or a dedicated search strategy after issue `#33` implementation review.
 
 ## Next Recommended Steps
 
-1. Write and approve the proposal for issue `#31` defining the event autocomplete API contract.
-2. Write and approve the proposal for issue `#32` defining the `event_id`-based, VND-only listing creation contract.
-3. Implement issues `#33` and `#34` after their contracts are merged.
+1. Write and approve the proposal for issue `#32` defining the `event_id`-based, VND-only listing creation contract.
+2. Implement issue `#33` after the issue `#31` contract PR is merged.
+3. Implement issue `#34` after the issue `#32` contract PR is merged.
 4. Implement the frontend event selector in `#35`.
 5. Unblock and implement the seller listing form in `#6`.
