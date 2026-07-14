@@ -260,7 +260,7 @@ Events let buyers browse upcoming event-first marketplace inventory without expo
 
 Issue `#25` defines this public browse contract. Backend implementation belongs to issue `#26`, and frontend implementation belongs to issue `#27`.
 
-Issue `#31` defines the authenticated seller event autocomplete contract. Backend implementation belongs to issue `#33`, and frontend autocomplete implementation belongs to issue `#35`.
+Issue `#31` defines the authenticated seller event autocomplete contract. Issue `#33` implements the backend endpoint, and frontend autocomplete implementation belongs to issue `#35`.
 
 ### Event Autocomplete
 
@@ -270,7 +270,7 @@ GET /api/events/autocomplete?q={query}
 
 Returns a small set of seller-safe existing event summaries for the seller listing flow. Authentication is required because this endpoint exists specifically to let sellers select an existing TicketPass event before creating a listing.
 
-Backend implementation must enforce authentication, query validation, matching, result limits, and event eligibility server-side.
+Backend implementation enforces authentication, query validation, matching, result limits, and event eligibility server-side.
 
 #### Query Parameters
 
@@ -295,7 +295,7 @@ MVP autocomplete searches these existing event fields:
 - `events.venue`
 - `events.city`
 
-Event name, venue, and city matches use case-insensitive substring matching. Matching should be accent-insensitive where the database/runtime implementation supports it without introducing unsupported schema or dependency changes.
+Event name, venue, and city matches use case-insensitive substring matching. Accent-insensitive matching is deferred and must not be introduced implicitly through a database extension, migration, or dependency change.
 
 #### Ranking And Ordering
 
@@ -334,8 +334,7 @@ The current MVP schema does not define event-level cancellation, hidden, public/
       "name": "Example Concert",
       "starts_at": "2026-08-15T19:30:00+07:00",
       "venue": "Example Arena",
-      "city": "Ho Chi Minh City",
-      "event_platform": "Ticketmaster"
+      "city": "Ho Chi Minh City"
     }
   ]
 }
@@ -351,7 +350,6 @@ The current MVP schema does not define event-level cancellation, hidden, public/
 | `events[].starts_at` | ISO-8601 datetime | Event start timestamp with timezone offset, such as `2026-08-15T19:30:00+07:00`. |
 | `events[].venue` | string | Venue name. |
 | `events[].city` | string | Event city/location. |
-| `events[].event_platform` | string | Platform or provider associated with the event. |
 
 #### Error And Empty Behavior
 
@@ -364,6 +362,7 @@ The current MVP schema does not define event-level cancellation, hidden, public/
 
 The event autocomplete response must not include:
 
+- Event platform.
 - Ticket payload data.
 - Listing IDs or listing details.
 - Seat information.

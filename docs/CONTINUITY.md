@@ -2,9 +2,23 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, authenticated seller listing creation, frontend signup/login/logout screens, a documented public event browse API contract, a documented authenticated seller event autocomplete API contract, and a documented event-linked listing creation contract requiring sellers to select an existing event before listing creation.
+TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, authenticated seller listing creation, a backend authenticated seller event autocomplete endpoint, frontend signup/login/logout screens, a documented public event browse API contract, and a documented event-linked listing creation contract requiring sellers to select an existing event before listing creation.
 
 ## Latest Completed Work
+
+- Date: 2026-07-14
+- GitHub Issue: `#33` - https://github.com/VietCT04/TicketPass/issues/33
+- Summary: Implemented authenticated `GET /api/events/autocomplete` for seller event selection. The endpoint trims and validates `q`, requires 3 to 100 characters, returns at most 10 future events, performs database-side case-insensitive substring matching over event name, venue, and city with deterministic ranking, uses the injected `Clock`, and returns safe event summaries without `event_platform`.
+- Files changed:
+  - `apps/api/src/main/java/com/ticketpass/api/auth/SecurityConfig.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/EventAutocompleteController.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/EventAutocompleteResponse.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/EventAutocompleteService.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/EventRepository.java`
+  - `docs/API.md`
+  - `docs/SECURITY.md`
+  - `docs/CONCERNS.md`
+  - `docs/CONTINUITY.md`
 
 - Date: 2026-07-14
 - GitHub Issue: None - workflow update
@@ -154,9 +168,9 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 ## Active Work
 
-- Current GitHub Issue: `#32` - https://github.com/VietCT04/TicketPass/issues/32
-- Current goal: Review and merge the event-linked listing creation contract PR.
-- Current blocker: Issue `#6` is blocked until `#32`, `#34`, and `#35` are complete. Issues `#34` and `#35` require their contract dependencies first.
+- Current GitHub Issue: `#33` - https://github.com/VietCT04/TicketPass/issues/33
+- Current goal: Review and merge the authenticated event autocomplete backend PR.
+- Current blocker: Issue `#6` is blocked until `#34` and `#35` are complete. Issue `#34` is still needed to align listing creation with the event-linked contract.
 
 ## Important User Stories
 
@@ -181,13 +195,12 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 - Event image source and moderation rules are not defined.
 - Listing creation is documented as VND-only for MVP, but backend/database implementation remains pending in `#34`.
 - Sellers cannot list tickets for missing events until a later event request/reporting user story is defined.
-- Event autocomplete query performance may require indexes or a dedicated search strategy after issue `#33` implementation review.
+- Event autocomplete query performance may require indexes or a dedicated search strategy after production-volume review.
 - `event_platform` is documented as listing/ticket-specific, but schema and implementation migration remains pending in `#34`.
 
 ## Next Recommended Steps
 
-1. Merge the issue `#32` contract PR after review.
-2. Implement issue `#33` for the authenticated event autocomplete backend endpoint.
-3. Implement issue `#34` after the issue `#32` contract PR is merged.
-4. Implement the frontend event selector in `#35`.
-5. Unblock and implement the seller listing form in `#6`.
+1. Merge the issue `#33` backend autocomplete PR after review.
+2. Implement issue `#34` to align listing creation with the event-linked contract.
+3. Implement the frontend event selector in `#35`.
+4. Unblock and implement the seller listing form in `#6`.
