@@ -125,7 +125,7 @@ Public event browse responses must not include:
 
 ## Seller Event Autocomplete Security
 
-The authenticated `GET /api/events/autocomplete` contract exposes seller-safe existing event summaries only.
+The authenticated `GET /api/events/autocomplete` endpoint exposes seller-safe existing event summaries only.
 
 Authentication is required because autocomplete is part of the seller listing flow. Frontend checks are only usability aids; the backend must enforce authentication, query validation, result limits, and event eligibility.
 
@@ -133,6 +133,7 @@ Autocomplete may include future events that have no active listings so a seller 
 
 Seller event autocomplete responses must not include:
 
+- Event platform.
 - Ticket payload data.
 - Listing IDs or listing details.
 - Seat information.
