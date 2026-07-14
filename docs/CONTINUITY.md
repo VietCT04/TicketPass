@@ -2,9 +2,21 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, authenticated seller listing creation, a backend authenticated seller event autocomplete endpoint, backend event-linked listing creation that requires an existing future event, a frontend `/sell` event selector, frontend signup/login/logout screens, and a documented public event browse API contract.
+TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, authenticated seller listing creation, a backend authenticated seller event autocomplete endpoint, backend event-linked listing creation that requires an existing future event, a frontend `/sell` event selector and seller listing form, frontend signup/login/logout screens, and a documented public event browse API contract.
 
 ## Latest Completed Work
+
+- Date: 2026-07-14
+- GitHub Issue: `#6` - https://github.com/VietCT04/TicketPass/issues/6
+- Summary: Implemented the frontend seller listing form on `/sell`. The form reuses the event autocomplete selector, requires a selected `event_id`, collects listing-specific fields only, submits fixed `transfer_method = PLATFORM_TRANSFER`, treats `VND` as fixed MVP currency, warns sellers not to put sensitive ticket payload data in public notes, preserves form state on failures, handles `401` with a login link, shows same-page success with the created listing ID and summary, and adds a create-another-listing reset action.
+- Files changed:
+  - `apps/web/src/app/sell/page.tsx`
+  - `apps/web/src/components/AuthStatus.tsx`
+  - `apps/web/src/components/SellerListingForm.tsx`
+  - `apps/web/src/lib/listings.ts`
+  - `docs/flows/SELLER_LISTING_FLOW.md`
+  - `docs/SECURITY.md`
+  - `docs/CONTINUITY.md`
 
 - Date: 2026-07-14
 - GitHub Issue: `#35` - https://github.com/VietCT04/TicketPass/issues/35
@@ -200,9 +212,9 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 ## Active Work
 
-- Current GitHub Issue: `#35` - https://github.com/VietCT04/TicketPass/issues/35
-- Current goal: Review and merge the frontend seller event autocomplete selector PR.
-- Current blocker: Issue `#6` remains blocked until the issue `#35` frontend selector PR is merged.
+- Current GitHub Issue: `#6` - https://github.com/VietCT04/TicketPass/issues/6
+- Current goal: Review and merge the frontend seller listing form PR.
+- Current blocker: None for the current issue.
 
 ## Important User Stories
 
@@ -231,6 +243,6 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 ## Next Recommended Steps
 
-1. Merge the issue `#35` frontend event selector PR after review.
-2. Unblock and implement the seller listing form in `#6`.
-3. Implement public browse events backend work in `#26` when ready.
+1. Merge the issue `#6` frontend seller listing form PR after review.
+2. Implement public browse events backend work in `#26` when ready.
+3. Implement audit logging for listing creation in issue `#5`.
