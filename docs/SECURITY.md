@@ -122,6 +122,30 @@ Public event browse responses must not include:
 
 `image_url` is nullable in the API contract. Until trusted event image source and moderation rules exist, clients should render safe placeholders when `image_url` is `null`.
 
+## Seller Event Autocomplete Security
+
+The authenticated `GET /api/events/autocomplete` contract exposes seller-safe existing event summaries only.
+
+Authentication is required because autocomplete is part of the seller listing flow. Frontend checks are only usability aids; the backend must enforce authentication, query validation, result limits, and event eligibility.
+
+Autocomplete may include future events that have no active listings so a seller can create the first listing for an existing event. The server must still enforce that returned events are existing TicketPass records, selectable by server-issued `event_id`, and eligible under the documented MVP rules.
+
+Seller event autocomplete responses must not include:
+
+- Ticket payload data.
+- Listing IDs or listing details.
+- Seat information.
+- Prices.
+- Seller IDs.
+- Seller contact information.
+- Ownership data.
+- Private seller or event notes.
+- Private transfer links.
+- QR codes.
+- Barcodes.
+
+Autocomplete must use strict query limits to reduce unnecessary backend load and enumeration risk: trimmed `q` length from `3` to `100` characters, maximum `10` results, and no pagination for MVP.
+
 ## Transferability Confirmation
 
 Sellers must confirm the ticket is transferable before listing creation. This confirmation reduces accidental invalid listings but does not prove transferability. Platform-specific verification remains an unresolved concern.

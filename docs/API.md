@@ -248,6 +248,120 @@ Events let buyers browse upcoming event-first marketplace inventory without expo
 
 Issue `#25` defines this public browse contract. Backend implementation belongs to issue `#26`, and frontend implementation belongs to issue `#27`.
 
+Issue `#31` defines the authenticated seller event autocomplete contract. Backend implementation belongs to issue `#33`, and frontend autocomplete implementation belongs to issue `#35`.
+
+### Event Autocomplete
+
+```http
+GET /api/events/autocomplete?q={query}
+```
+
+Returns a small set of seller-safe existing event summaries for the seller listing flow. Authentication is required because this endpoint exists specifically to let sellers select an existing TicketPass event before creating a listing.
+
+Backend implementation must enforce authentication, query validation, matching, result limits, and event eligibility server-side.
+
+#### Query Parameters
+
+| Field | Type | Required | Notes |
+|---|---|---:|---|
+| `q` | string | Yes | Search query. Trim surrounding whitespace before validation and matching. Minimum `3` characters and maximum `100` characters after trimming. |
+
+Invalid, missing, blank, shorter-than-3, or longer-than-100 `q` values return `400 Bad Request`.
+
+#### Query Behavior
+
+- Maximum response size is `10` events.
+- No pagination for MVP.
+- No matches return `200 OK` with an empty `events` array.
+- Frontend autocomplete requests should use an approximately `300 ms` debounce.
+
+#### Searchable Fields
+
+MVP autocomplete searches these existing event fields:
+
+- `events.name`
+- `events.venue`
+- `events.city`
+
+Matching must be case-insensitive. Matching should be accent-insensitive where the database/runtime implementation supports it without introducing unsupported schema or dependency changes.
+
+#### Ranking And Ordering
+
+Results must be ordered deterministically:
+
+1. Exact event-name match.
+2. Event-name prefix match.
+3. Event-name substring match.
+4. Venue or city match.
+5. `starts_at ASC`.
+6. `id ASC` as the final stable tie-breaker.
+
+Advanced fuzzy matching, recommendations, and full marketplace search are out of scope.
+
+#### Event Eligibility
+
+Autocomplete includes existing future events even when they currently have no active listings. This allows a seller to create the first listing for an existing event.
+
+For MVP:
+
+- `events.starts_at` must be in the future at request time.
+- The event must exist in TicketPass and be selectable by its server-issued `event_id`.
+- Event-level cancelled, hidden, public/private, or moderation filtering must be applied only when supported by the schema and documented rules.
+
+The current MVP schema does not define event-level cancellation, hidden, public/private, moderation, or rescheduling fields. These lifecycle gaps are tracked in `docs/CONCERNS.md`; this contract must not invent unsupported event schema fields.
+
+#### Response Body
+
+```json
+{
+  "events": [
+    {
+      "id": "evt_123",
+      "name": "Example Concert",
+      "starts_at": "2026-08-15T19:30:00+07:00",
+      "venue": "Example Arena",
+      "city": "Ho Chi Minh City",
+      "event_platform": "Ticketmaster"
+    }
+  ]
+}
+```
+
+#### Response Fields
+
+| Field | Type | Notes |
+|---|---|---|
+| `events` | array | Seller-safe event summaries. Empty when a valid query has no matches. |
+| `events[].id` | string | Server-issued event identifier to use as `event_id` in the listing flow. |
+| `events[].name` | string | Event display name. |
+| `events[].starts_at` | ISO-8601 datetime | Event start timestamp with timezone offset, such as `2026-08-15T19:30:00+07:00`. |
+| `events[].venue` | string | Venue name. |
+| `events[].city` | string | Event city/location. |
+| `events[].event_platform` | string | Platform or provider associated with the event. |
+
+#### Error And Empty Behavior
+
+- Missing, blank, shorter-than-3, or longer-than-100 `q`: `400 Bad Request`.
+- Unauthenticated request: `401 Unauthorized`.
+- Valid query with no results: `200 OK` and `{"events": []}`.
+- Unexpected server failure: standard API `5xx` error behavior.
+
+#### Sensitive Data Exclusions
+
+The event autocomplete response must not include:
+
+- Ticket payload data.
+- Listing IDs or listing details.
+- Seat information.
+- Prices.
+- Seller IDs.
+- Seller contact information.
+- Ownership data.
+- Private seller or event notes.
+- Private transfer links.
+- QR codes.
+- Barcodes.
+
 ### Browse Events
 
 ```http

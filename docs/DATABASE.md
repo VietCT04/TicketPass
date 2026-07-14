@@ -152,3 +152,30 @@ For MVP, aggregate values should be server-derived at query time rather than sto
 The current schema does not define event-level cancellation, rescheduling, hidden, public/private, or image-source fields. Event expiration can be inferred from `events.starts_at`, and listing availability can be inferred from `listings.status`, but richer event lifecycle and image rules require follow-up schema work.
 
 The browse contract is VND-only for MVP. The existing listing creation contract still allows a generic ISO-4217 `listings.currency`; non-VND listings are not browse-eligible and do not affect browse event visibility or aggregate values.
+
+## Event Autocomplete Contract
+
+Issue `#31` defines how the current `events` table supports authenticated seller event autocomplete for MVP. It is a documentation contract only; endpoint implementation belongs to issue `#33`.
+
+The seller autocomplete endpoint searches existing event records so a seller can select a server-issued `event_id` before creating a listing.
+
+MVP autocomplete searches these existing `events` fields:
+
+- `name`
+- `venue`
+- `city`
+
+The result payload uses these existing `events` fields:
+
+- `id`
+- `name`
+- `starts_at`
+- `venue`
+- `city`
+- `event_platform`
+
+Autocomplete eligibility uses `events.starts_at` to include only future events at request time. Unlike public browse events, autocomplete may return future events that currently have no active listings so a seller can create the first listing for an existing event.
+
+The approved issue `#31` contract requires deterministic ordering by match quality, then `starts_at ASC`, then `id ASC`. Backend implementation should account for query performance when matching `name`, `venue`, and `city`, but this issue does not add indexes or migrations. If autocomplete performance requires new indexes, add them in the backend implementation issue with a migration and updated database documentation.
+
+The current schema does not define event-level cancellation, rescheduling, hidden, public/private, or moderation fields. Autocomplete must not rely on unsupported event lifecycle fields until those schema and product rules are defined.
