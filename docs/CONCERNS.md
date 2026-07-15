@@ -114,7 +114,7 @@ Open
 
 Date: 2026-07-12
 Related User Story: `docs/user-stories/US-0003-browse-events.md`
-Related GitHub Issues: `#25` - https://github.com/VietCT04/TicketPass/issues/25, `#26` - https://github.com/VietCT04/TicketPass/issues/26
+Related GitHub Issues: `#25` - https://github.com/VietCT04/TicketPass/issues/25, `#26` - https://github.com/VietCT04/TicketPass/issues/26, `#44` - https://github.com/VietCT04/TicketPass/issues/44
 
 ### Concern
 
@@ -126,7 +126,7 @@ Buyers may see events that are cancelled, moved, or stale if event lifecycle rul
 
 ### Recommendation
 
-Issues `#25` and `#26` use the MVP browse rule based on future `events.starts_at`, active listing status, and VND currency. Plan follow-up schema and product work before relying on event-level cancellation, rescheduling, hidden, or public/private visibility states.
+Issues `#25`, `#26`, and `#44` use the MVP browse rule based on future `events.starts_at`, active listing status, and VND currency. Plan follow-up schema and product work before relying on event-level cancellation, rescheduling, hidden, or public/private visibility states.
 
 ### Status
 
@@ -158,7 +158,7 @@ Resolved
 
 Date: 2026-07-12
 Related User Story: `docs/user-stories/US-0003-browse-events.md`
-Related GitHub Issues: `#25` - https://github.com/VietCT04/TicketPass/issues/25, `#27` - https://github.com/VietCT04/TicketPass/issues/27
+Related GitHub Issues: `#25` - https://github.com/VietCT04/TicketPass/issues/25, `#27` - https://github.com/VietCT04/TicketPass/issues/27, `#44` - https://github.com/VietCT04/TicketPass/issues/44
 
 ### Concern
 
@@ -267,12 +267,12 @@ Open
 ## CONCERN-0016: Event Local Timezone Display
 
 Date: 2026-07-14
-Related User Story: `docs/user-stories/US-0004-search-select-existing-event.md`
-Related GitHub Issues: `#35` - https://github.com/VietCT04/TicketPass/issues/35, `#27` - https://github.com/VietCT04/TicketPass/issues/27
+Related User Stories: `docs/user-stories/US-0004-search-select-existing-event.md`, `docs/user-stories/US-0005-view-available-listings-for-event.md`
+Related GitHub Issues: `#35` - https://github.com/VietCT04/TicketPass/issues/35, `#27` - https://github.com/VietCT04/TicketPass/issues/27, `#44` - https://github.com/VietCT04/TicketPass/issues/44
 
 ### Concern
 
-The frontend event selector and public browse page format `starts_at` with the browser locale and available timezone abbreviation or offset, but the event model stores an absolute timestamp without a separate event-local timezone identifier.
+The frontend event selector and public browse page format `starts_at` with the browser locale and available timezone abbreviation or offset. The event-detail contract also exposes the same absolute timestamp, but the event model stores no separate event-local timezone identifier.
 
 ### Risk
 
@@ -280,7 +280,29 @@ Users in a different timezone from the event may see a browser-local time that d
 
 ### Recommendation
 
-Add event-local timezone preservation and display rules before broader seller access or event browsing depends on venue-local date and time presentation.
+Add event-local timezone preservation and display rules before broader seller access, event browsing, or event-detail pages depend on venue-local date and time presentation.
+
+### Status
+
+Open
+
+## CONCERN-0017: Event Detail Snapshot Is Not A Reservation
+
+Date: 2026-07-15
+Related User Story: `docs/user-stories/US-0005-view-available-listings-for-event.md`
+Related GitHub Issues: `#44` - https://github.com/VietCT04/TicketPass/issues/44, `#45` - https://github.com/VietCT04/TicketPass/issues/45, `#46` - https://github.com/VietCT04/TicketPass/issues/46
+
+### Concern
+
+The public event-detail response shows currently browse-eligible listings, but loading the event detail page does not reserve inventory or guarantee that a listed ticket will remain available.
+
+### Risk
+
+A buyer may view a listing that becomes sold, reserved, cancelled, expired, or otherwise unavailable before a future checkout flow starts. If later checkout logic trusts the public detail response, a ticket could be oversold or an unavailable listing could enter payment.
+
+### Recommendation
+
+Treat `GET /api/events/{eventId}` as a current marketplace snapshot only. Future reservation and checkout logic must independently revalidate listing status, event eligibility, currency, transfer method rules, ownership, and availability server-side immediately before reserving or accepting payment.
 
 ### Status
 
@@ -333,8 +355,8 @@ Open
 ## CONCERN-0003: Event Reuse And Deduplication
 
 Date: 2026-07-09
-Related User Stories: `docs/user-stories/US-0001-list-transferable-ticket.md`, `docs/user-stories/US-0004-search-select-existing-event.md`
-Related GitHub Issues: `#2` - https://github.com/VietCT04/TicketPass/issues/2, `#31` - https://github.com/VietCT04/TicketPass/issues/31, `#33` - https://github.com/VietCT04/TicketPass/issues/33
+Related User Stories: `docs/user-stories/US-0001-list-transferable-ticket.md`, `docs/user-stories/US-0004-search-select-existing-event.md`, `docs/user-stories/US-0005-view-available-listings-for-event.md`
+Related GitHub Issues: `#2` - https://github.com/VietCT04/TicketPass/issues/2, `#31` - https://github.com/VietCT04/TicketPass/issues/31, `#33` - https://github.com/VietCT04/TicketPass/issues/33, `#44` - https://github.com/VietCT04/TicketPass/issues/44
 
 ### Concern
 
@@ -342,7 +364,7 @@ Events are normalized into an `events` table, but the MVP contract does not defi
 
 ### Risk
 
-The database may contain duplicate event rows for the same real-world event, and those duplicates may appear as separate autocomplete results.
+The database may contain duplicate event rows for the same real-world event. Those duplicates may appear as separate autocomplete results and may split equivalent ticket inventory across separate event-detail pages.
 
 ### Recommendation
 
