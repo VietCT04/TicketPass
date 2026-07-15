@@ -2,9 +2,26 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, a protected frontend `/sell` route, authenticated seller listing creation with a minimal `LISTING_CREATED` audit event, a backend authenticated seller event autocomplete endpoint, backend event-linked listing creation that requires an existing future event, a backend public event browse API, a documented public event-detail API contract, a frontend homepage event browse page, a frontend `/sell` event selector and seller listing form, and frontend signup/login/logout screens.
+TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, a protected frontend `/sell` route, authenticated seller listing creation with a minimal `LISTING_CREATED` audit event, a backend authenticated seller event autocomplete endpoint, backend event-linked listing creation that requires an existing future event, a backend public event browse API, a backend public event-detail API, a frontend homepage event browse page, a frontend `/sell` event selector and seller listing form, and frontend signup/login/logout screens.
 
 ## Latest Completed Work
+
+- Date: 2026-07-15
+- GitHub Issue: `#45` - https://github.com/VietCT04/TicketPass/issues/45
+- Summary: Implemented the backend public `GET /api/events/{eventId}` event-detail endpoint. The endpoint explicitly parses malformed event IDs into controlled `400` responses, treats missing and no-longer-upcoming events as public `404 Event not found`, captures a single request timestamp, returns an upcoming event even when it has zero browse-eligible listings, pages listing summaries with the shared public pagination parser, orders listings by price, creation time, and ID in the database, reuses the public browse-eligible listing predicate, keeps `image_url` as `null`, and exposes only safe listing fields without seller identity, `public_notes`, internal status, timestamps, transferability confirmation, or ticket payload data.
+- Files changed:
+  - `apps/api/src/main/java/com/ticketpass/api/auth/SecurityConfig.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/EventDetailController.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/EventDetailResponse.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/EventDetailService.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/EventListingSummaryRow.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/EventBrowseService.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/EventRepository.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/ListingRepository.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/PublicListingEligibility.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/PublicPagination.java`
+  - `docs/SECURITY.md`
+  - `docs/CONTINUITY.md`
 
 - Date: 2026-07-15
 - GitHub Issue: `#13` - https://github.com/VietCT04/TicketPass/issues/13
@@ -286,8 +303,8 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 ## Active Work
 
-- Current GitHub Issue: `#13` - https://github.com/VietCT04/TicketPass/issues/13
-- Current goal: Review and merge the protected frontend `/sell` route pull request.
+- Current GitHub Issue: `#45` - https://github.com/VietCT04/TicketPass/issues/45
+- Current goal: Review and merge the public event-detail backend API pull request.
 - Current blocker: None.
 
 ## Important User Stories
@@ -319,6 +336,6 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 ## Next Recommended Steps
 
-1. Merge the issue `#13` protected `/sell` route pull request after review.
-2. Implement the public event-detail backend API in issue `#45`.
-3. Build the public event-detail frontend page in issue `#46`.
+1. Merge the issue `#45` public event-detail backend API pull request after review.
+2. Build the public event-detail frontend page in issue `#46`.
+3. Define the next buyer checkout or reservation user story after event-detail read-only browsing is complete.
