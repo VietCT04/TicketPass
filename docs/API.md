@@ -491,3 +491,149 @@ The public browse events response must not include:
 Browse events support only `VND` for MVP. Listings in another currency are not browse-eligible and must not affect event visibility, lowest price, or available listing count.
 
 The listing creation contract also stores new MVP listings as `VND` and does not accept `currency` from the client. Issue `#34` implements this backend and database alignment.
+
+### Event Detail With Available Listings
+
+```http
+GET /api/events/{eventId}?page=1&page_size=20
+```
+
+Returns a public event summary and the event's paginated browse-eligible listings in one response.
+
+This endpoint is public, but event eligibility, listing availability, pagination, ordering, and sensitive-data exclusions must be enforced server-side. The public event summary and listing collection are intentionally not split into separate MVP requests.
+
+Issue `#44` defines this contract only. Backend implementation belongs to issue `#45`, and the frontend event-detail page belongs to issue `#46`.
+
+#### Path Parameters
+
+| Field | Type | Required | Notes |
+|---|---|---:|---|
+| `eventId` | UUID | Yes | Event identifier. Malformed UUID values return `400 Bad Request`. |
+
+#### Query Parameters
+
+| Field | Type | Required | Default | Notes |
+|---|---|---:|---:|---|
+| `page` | integer | No | `1` | 1-based page number. Minimum `1`. |
+| `page_size` | integer | No | `20` | Minimum `1`. Maximum `50`. |
+
+Invalid or non-integer pagination values return `400 Bad Request`.
+
+A page beyond the final page returns `200 OK` with an empty `listings` array and accurate `total_items` and `total_pages`.
+
+#### Browse-Eligible Listing Rule
+
+The event detail listing collection must reuse the exact same browse-eligible listing definition as `GET /api/events`:
+
+- `listings.status` is `ACTIVE`.
+- The related `events.starts_at` is in the future at request time.
+- `listings.currency` is `VND`.
+- The listing is currently available for purchase under the listing status rules in `docs/flows/LISTING_STATUS_FLOW.md`.
+
+Do not add a `PLATFORM_TRANSFER`-only filter. Return listings for every transfer method that satisfies the shared browse-eligibility rule so event browse counts, lowest-price aggregates, and event-detail inventory stay consistent.
+
+The current seller form creates only `PLATFORM_TRANSFER` listings, but this public contract must not silently define a different browse-eligible set from `GET /api/events`.
+
+#### Ordering
+
+Listings are ordered deterministically:
+
+1. `asking_price_minor ASC`
+2. `created_at ASC`
+3. listing `id ASC`
+
+`created_at` is used only for ordering and is not exposed in the response.
+
+#### Response Body
+
+```json
+{
+  "event": {
+    "id": "22222222-2222-2222-2222-222222222222",
+    "name": "Example Concert",
+    "starts_at": "2026-08-15T12:30:00Z",
+    "venue": "Example Arena",
+    "city": "Ho Chi Minh City",
+    "image_url": null
+  },
+  "listings": [
+    {
+      "id": "33333333-3333-3333-3333-333333333333",
+      "ticket_type": "General Admission",
+      "seat_info": "Section 101, Row B, Seat 12",
+      "event_platform": "Ticketmaster",
+      "asking_price_minor": 1250000,
+      "currency": "VND",
+      "transfer_method": "PLATFORM_TRANSFER"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "page_size": 20,
+    "total_items": 3,
+    "total_pages": 1
+  }
+}
+```
+
+#### Response Fields
+
+| Field | Type | Notes |
+|---|---|---|
+| `event` | object | Public event summary. |
+| `event.id` | UUID string | Event identifier. |
+| `event.name` | string | Event display name. |
+| `event.starts_at` | ISO-8601 datetime | Event start timestamp. |
+| `event.venue` | string | Venue name. |
+| `event.city` | string | Event city/location. |
+| `event.image_url` | string or null | Always present. `null` means the frontend should render a safe placeholder. MVP currently returns `null`. |
+| `listings` | array | Browse-eligible listing summaries for the requested page. Empty when the event has no currently browse-eligible listings or the requested page is beyond the final page. |
+| `listings[].id` | UUID string | Listing identifier. |
+| `listings[].ticket_type` | string | Public ticket type label. |
+| `listings[].seat_info` | string | Public seat/location description. |
+| `listings[].event_platform` | string | Listing-level event platform or ticket provider. |
+| `listings[].asking_price_minor` | integer | Asking price in whole minor units for the listing currency. For MVP `VND`, this is whole dong. |
+| `listings[].currency` | string | Always `VND` for browse MVP. |
+| `listings[].transfer_method` | string | Listing transfer method. |
+| `pagination.page` | integer | Current 1-based page. |
+| `pagination.page_size` | integer | Applied page size after defaulting and validation. |
+| `pagination.total_items` | integer | Total number of browse-eligible listings for this event before pagination. |
+| `pagination.total_pages` | integer | Total number of pages for the applied page size. |
+
+Do not repeat `lowest_price_minor` or `available_listing_count` inside the `event` object. `pagination.total_items` represents the available listing count, and the first ordered listing provides the lowest displayed price.
+
+#### Event And Error Behavior
+
+- Upcoming existing event with browse-eligible listings returns `200 OK`.
+- Upcoming existing event with no browse-eligible listings returns `200 OK` with `listings: []` and zero pagination totals.
+- Valid UUID for a missing event returns `404 Not Found`.
+- Existing event whose `starts_at` is no longer in the future returns `404 Not Found`.
+- Malformed event UUID path values return `400 Bad Request`.
+- Unexpected server failures use the standard API `5xx` behavior.
+
+The public detail flow intentionally treats no-longer-upcoming events as not found for MVP.
+
+#### Sensitive Data Exclusions
+
+The public event-detail response must not include:
+
+- Seller ID or seller identity.
+- Seller contact information.
+- Ownership data.
+- `public_notes`.
+- `quantity`, because MVP quantity is fixed at one.
+- `is_transferable_confirmed`.
+- Internal listing status.
+- Creation and update timestamps.
+- QR codes.
+- Barcodes.
+- Ticket files.
+- Private transfer links.
+- Platform credentials.
+- Other sensitive ticket payload data.
+
+#### Availability Guarantee
+
+The response is a current marketplace snapshot, not a reservation guarantee.
+
+Future reservation or checkout logic must independently revalidate listing status, event eligibility, currency, transfer method rules, and availability because inventory may change after this response is loaded.

@@ -127,6 +127,43 @@ Public event browse responses must not include:
 
 `image_url` is nullable in the API contract. Until trusted event image source and moderation rules exist, clients should render safe placeholders when `image_url` is `null`.
 
+## Public Event Detail Security
+
+The public `GET /api/events/{eventId}` detail contract exposes one public event summary and browse-eligible listing summaries only.
+
+Event eligibility, listing availability, pagination, and ordering must be enforced server-side. Frontend state must not be trusted to decide whether an event is upcoming, whether a listing is active, whether a listing is available, or whether a listing can proceed to a future reservation or checkout flow.
+
+The detail endpoint must reuse the same browse-eligible listing rule as `GET /api/events`: active, future, VND listings that are currently available for purchase under the listing status rules. The endpoint must not add a transfer-method-specific filter unless the shared browse-eligible rule is explicitly changed in `docs/API.md`.
+
+Public event detail responses may include:
+
+- Event name, start timestamp, venue, city, and nullable image URL.
+- Listing ID.
+- Ticket type.
+- Seat information.
+- Listing-level event platform or ticket provider.
+- Asking price and `VND` currency.
+- Transfer method.
+
+Public event detail responses must not include:
+
+- Seller ID or seller identity.
+- Seller contact information.
+- Ownership data.
+- `public_notes`.
+- `quantity`.
+- `is_transferable_confirmed`.
+- Internal listing status.
+- Creation and update timestamps.
+- QR codes.
+- Barcodes.
+- Ticket files.
+- Private transfer links.
+- Platform credentials.
+- Other sensitive ticket payload data.
+
+The public detail response is only a current marketplace snapshot. Any future reservation, checkout, payment, escrow, or ticket-reveal flow must independently revalidate event eligibility, listing status, currency, availability, and ownership server-side before continuing.
+
 ## Seller Event Autocomplete Security
 
 The authenticated `GET /api/events/autocomplete` endpoint exposes seller-safe existing event summaries only.

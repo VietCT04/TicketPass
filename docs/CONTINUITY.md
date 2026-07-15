@@ -2,9 +2,18 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, authenticated seller listing creation, a backend authenticated seller event autocomplete endpoint, backend event-linked listing creation that requires an existing future event, a backend public event browse API, a frontend homepage event browse page, a frontend `/sell` event selector and seller listing form, and frontend signup/login/logout screens.
+TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, authenticated seller listing creation, a backend authenticated seller event autocomplete endpoint, backend event-linked listing creation that requires an existing future event, a backend public event browse API, a documented public event-detail API contract, a frontend homepage event browse page, a frontend `/sell` event selector and seller listing form, and frontend signup/login/logout screens.
 
 ## Latest Completed Work
+
+- Date: 2026-07-15
+- GitHub Issue: `#44` - https://github.com/VietCT04/TicketPass/issues/44
+- Summary: Defined the docs-only public `GET /api/events/{eventId}` contract for opening an event and viewing its currently browse-eligible listings. The contract returns the event summary and paginated listing summaries in one response, reuses the public browse-eligible listing rule, keeps listing ordering deterministic, documents no-longer-upcoming events as `404`, excludes seller/private/ticket payload data, and states that the response is a current marketplace snapshot rather than a reservation guarantee. Backend implementation belongs to `#45`; frontend implementation belongs to `#46`.
+- Files changed:
+  - `docs/API.md`
+  - `docs/SECURITY.md`
+  - `docs/CONCERNS.md`
+  - `docs/CONTINUITY.md`
 
 - Date: 2026-07-15
 - GitHub Issue: `#27` - https://github.com/VietCT04/TicketPass/issues/27
@@ -246,8 +255,8 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 ## Active Work
 
-- Current GitHub Issue: `#27` - https://github.com/VietCT04/TicketPass/issues/27
-- Current goal: Review and merge the frontend public browse events page pull request.
+- Current GitHub Issue: `#44` - https://github.com/VietCT04/TicketPass/issues/44
+- Current goal: Review and merge the public event-detail API contract pull request.
 - Current blocker: None.
 
 ## Important User Stories
@@ -274,10 +283,10 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 - Sellers cannot list tickets for missing events until a later event request/reporting user story is defined.
 - Event autocomplete query performance may require indexes or a dedicated search strategy after production-volume review.
 - Event local timezone preservation and display rules are unresolved.
-- Listing availability can change between event-detail page load and a future reservation attempt.
+- Listing availability can change between event-detail page load and a future reservation attempt; `GET /api/events/{eventId}` is only a marketplace snapshot.
 
 ## Next Recommended Steps
 
-1. Merge the issue `#27` frontend browse events page pull request after review.
-2. Define the US-0005 event-detail contract in issue `#44`.
-3. Implement the event-detail backend and frontend follow-ups after the contract is approved.
+1. Merge the issue `#44` event-detail API contract pull request after review.
+2. Implement the public event-detail backend API in issue `#45`.
+3. Build the public event-detail frontend page in issue `#46`.
