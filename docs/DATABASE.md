@@ -52,6 +52,8 @@ Issue `#3` implements the initial seller listing persistence contract with Flywa
 
 The user-facing seller listing flow is documented in `docs/flows/SELLER_LISTING_FLOW.md`.
 
+Issue `#5` adds the first audit table and records seller listing creation with Flyway migration `apps/api/src/main/resources/db/migration/V3__create_audit_events.sql`.
+
 ## Tables
 
 ### `events`
@@ -89,6 +91,21 @@ Stores seller-created listings. Each listing represents exactly one ticket for M
 | `public_notes` | text | Buyer-visible notes. MVP does not perform sensitive content classification on this free-text field. |
 | `created_at` | timestamp | Creation time. |
 | `updated_at` | timestamp | Last update time. |
+
+### `audit_events`
+
+Stores immutable audit records for security-sensitive business actions.
+
+Issue `#5` emits only `LISTING_CREATED` records when an authenticated seller creates a listing.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID/string id | Primary key. |
+| `actor_user_id` | UUID/string id | Authenticated user who performed the action. References `users.id` and must not cascade delete. |
+| `action` | string | Bounded action value. Issue `#5` supports `LISTING_CREATED` only. |
+| `entity_type` | string | Bounded entity type value. Issue `#5` supports `LISTING` only. |
+| `entity_id` | UUID/string id | Identifier of the affected entity. Generic value; no foreign key is declared to `listings`. |
+| `created_at` | timestamp with timezone | Server-generated audit timestamp. |
 
 ## Listing Statuses
 
@@ -132,6 +149,16 @@ These values describe the expected transfer path only. Raw ticket payload storag
 - `SOLD` listings must never become purchasable again.
 - Public listing metadata must not include dedicated columns for QR codes, barcodes, ticket files, private transfer links, platform credentials, or other sensitive ticket payload data.
 - MVP does not classify free-text `listings.public_notes` for sensitive content; this limitation is tracked in `docs/CONCERNS.md`.
+
+## Audit Constraints
+
+- Listing creation and its `LISTING_CREATED` audit record must be written in the same transaction.
+- A listing creation failure must not leave an audit record without the listing.
+- An audit insertion failure must roll back listing creation.
+- `audit_events.created_at` must be generated server-side with the injected application clock.
+- Application code may insert audit records, but existing audit records must not be updated or deleted as part of normal product workflows.
+- Audit records must not contain request bodies, seller contact data, public notes, seat information, ticket type, asking price, QR codes, barcodes, ticket files, private transfer links, platform credentials, passwords, session tokens, cookies, or email addresses.
+- Issue `#5` adds only `idx_audit_events_entity` on `(entity_type, entity_id)`. Actor, action, and timestamp indexes should wait for a concrete audit search or viewer use case.
 
 ## Public Browse Events Contract
 

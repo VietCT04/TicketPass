@@ -212,6 +212,39 @@ The MVP frontend form submits `transfer_method = PLATFORM_TRANSFER` and does not
 
 When event cancellation, hidden, public/private, or moderation fields exist, listing creation must also enforce those eligibility rules server-side.
 
+## Audit Log Security
+
+Issue `#5` records the first backend audit event for seller listing creation.
+
+When an authenticated seller creates a listing, the backend must insert a `LISTING_CREATED` audit event in the same transaction as the listing insert. If the audit insert fails, listing creation must roll back so a successful listing cannot exist without its required audit record.
+
+The issue `#5` audit record may contain only:
+
+- Authenticated actor user ID.
+- Fixed action value `LISTING_CREATED`.
+- Fixed entity type value `LISTING`.
+- Created listing ID.
+- Server-generated timestamp.
+
+Audit records must not include:
+
+- Request bodies.
+- `public_notes`.
+- Seat information.
+- Ticket type.
+- Asking price.
+- QR codes.
+- Barcodes.
+- Ticket files.
+- Private transfer links.
+- Platform credentials.
+- Passwords.
+- Session tokens.
+- Cookies.
+- Email addresses.
+
+Audit records are append-only for normal product workflows. TicketPass does not expose audit editing, deletion, viewer, or search APIs in issue `#5`.
+
 ## Transferability Confirmation
 
 Sellers must confirm the ticket is transferable before listing creation. This confirmation reduces accidental invalid listings but does not prove transferability. Platform-specific verification remains an unresolved concern.

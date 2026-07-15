@@ -7,6 +7,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.ticketpass.api.audit.AuditService;
 import com.ticketpass.api.common.ApiException;
 import com.ticketpass.api.user.UserEntity;
 import com.ticketpass.api.user.UserRepository;
@@ -25,6 +26,7 @@ class ListingServiceTest {
     private UserRepository userRepository;
     private EventRepository eventRepository;
     private ListingRepository listingRepository;
+    private AuditService auditService;
     private ListingService listingService;
     private Clock clock;
 
@@ -33,8 +35,9 @@ class ListingServiceTest {
         userRepository = org.mockito.Mockito.mock(UserRepository.class);
         eventRepository = org.mockito.Mockito.mock(EventRepository.class);
         listingRepository = org.mockito.Mockito.mock(ListingRepository.class);
+        auditService = org.mockito.Mockito.mock(AuditService.class);
         clock = Clock.fixed(Instant.parse("2026-07-11T10:00:00Z"), ZoneOffset.UTC);
-        listingService = new ListingService(userRepository, eventRepository, listingRepository, clock);
+        listingService = new ListingService(userRepository, eventRepository, listingRepository, auditService, clock);
     }
 
     @Test
@@ -45,11 +48,17 @@ class ListingServiceTest {
         EventEntity event = event(eventId);
         when(userRepository.findById(sellerId)).thenReturn(Optional.of(seller));
         when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
-        when(listingRepository.save(any(ListingEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        UUID listingId = UUID.fromString("33333333-3333-3333-3333-333333333333");
+        when(listingRepository.save(any(ListingEntity.class))).thenAnswer(invocation -> {
+            ListingEntity savedListing = invocation.getArgument(0);
+            ReflectionTestUtils.setField(savedListing, "id", listingId);
+            return savedListing;
+        });
 
         ListingEntity listing = listingService.createListing(sellerId, request());
 
         verify(eventRepository, never()).save(any(EventEntity.class));
+        verify(auditService).recordListingCreated(sellerId, listingId);
         assertThat(listing.getSeller()).isSameAs(seller);
         assertThat(listing.getEvent()).isSameAs(event);
         assertThat(listing.getEventPlatform()).isEqualTo("Ticketmaster");
@@ -80,6 +89,7 @@ class ListingServiceTest {
                 .extracting("status")
                 .isEqualTo(HttpStatus.BAD_REQUEST);
         verify(listingRepository, never()).save(any());
+        verify(auditService, never()).recordListingCreated(any(), any());
     }
 
     @Test
@@ -96,6 +106,7 @@ class ListingServiceTest {
                 .extracting("status")
                 .isEqualTo(HttpStatus.CONFLICT);
         verify(listingRepository, never()).save(any());
+        verify(auditService, never()).recordListingCreated(any(), any());
     }
 
     private static CreateListingRequest request() {

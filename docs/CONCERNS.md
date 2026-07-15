@@ -70,15 +70,15 @@ Open
 
 Date: 2026-07-10
 Related User Story: `docs/user-stories/US-0002-authenticate-user.md`
-Related GitHub Issues: `#10` - https://github.com/VietCT04/TicketPass/issues/10, `#3` - https://github.com/VietCT04/TicketPass/issues/3
+Related GitHub Issues: `#10` - https://github.com/VietCT04/TicketPass/issues/10, `#3` - https://github.com/VietCT04/TicketPass/issues/3, `#5` - https://github.com/VietCT04/TicketPass/issues/5
 
 ### Concern
 
-The backend project targets Java 21, but the current local Maven runtime uses Java 19.
+The backend project targets Java 21, but the current local Java runtime uses Java 19.
 
 ### Risk
 
-`mvn test` cannot compile the project locally, so backend tests added for issues `#10` and `#3` could not be fully verified in this environment.
+Backend compile/test commands cannot be run locally with the current Java runtime, so backend changes for issues `#10`, `#3`, and `#5` could not be fully verified in this environment.
 
 ### Recommendation
 
@@ -92,7 +92,7 @@ Open
 
 Date: 2026-07-11
 Related User Story: `docs/user-stories/US-0001-list-transferable-ticket.md`
-Related GitHub Issue: `#3` - https://github.com/VietCT04/TicketPass/issues/3
+Related GitHub Issues: `#3` - https://github.com/VietCT04/TicketPass/issues/3, `#5` - https://github.com/VietCT04/TicketPass/issues/5
 
 ### Concern
 
@@ -105,6 +105,28 @@ A seller may accidentally or intentionally put sensitive ticket data into public
 ### Recommendation
 
 Keep dedicated sensitive ticket payload fields out of public listing metadata now. Add content classification, stricter public note rules, moderation, or ticket-upload separation in a later issue before public launch or broader seller access.
+
+### Status
+
+Open
+
+## CONCERN-0018: Audit Retention Policy Is Undefined
+
+Date: 2026-07-15
+Related User Story: `docs/user-stories/US-0001-list-transferable-ticket.md`
+Related GitHub Issue: `#5` - https://github.com/VietCT04/TicketPass/issues/5
+
+### Concern
+
+Issue `#5` creates append-only audit records for seller listing creation, but TicketPass does not yet define audit retention, deletion, export, or compliance review rules.
+
+### Risk
+
+Keeping audit records indefinitely may create privacy or compliance risk, while deleting them too aggressively may weaken dispute handling, fraud investigation, and marketplace trust.
+
+### Recommendation
+
+Define audit retention and access policy before adding broad audit event coverage, audit viewers, admin search, or compliance workflows.
 
 ### Status
 

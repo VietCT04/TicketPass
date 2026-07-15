@@ -64,7 +64,8 @@ Out of scope:
 11. Backend validates all required fields server-side, including selected event existence and eligibility.
 12. Backend associates the listing to the selected event without creating, renaming, or modifying the event record.
 13. Backend creates one listing with `quantity = 1`, listing-level `event_platform`, and `currency = VND`.
-14. Backend returns public listing metadata only.
+14. Backend records a `LISTING_CREATED` audit event for the authenticated seller and created listing in the same transaction.
+15. Backend returns public listing metadata only.
 
 Issue `#35` adds the frontend `/sell` event selector and selected-event summary. Issue `#6` extends the same page with ticket-specific fields, listing submission, same-page success confirmation, and a create-another-listing action.
 
@@ -123,11 +124,13 @@ The listing flow must not create a path where a `RESERVED`, `SOLD`, `CANCELLED`,
 
 ## Audit Expectations
 
-Listing creation should produce an auditable record showing who created the listing, what listing was created, and when it happened.
+Listing creation produces an auditable record showing who created the listing, what listing was created, and when it happened.
 
-Detailed audit implementation belongs to GitHub Issue `#5`.
+GitHub Issue `#5` implements this as a minimal `LISTING_CREATED` audit event.
 
-Audit records must not include raw QR codes, barcodes, ticket PDFs, private transfer links, platform credentials, or other sensitive ticket payload data.
+The listing insert and audit insert must happen in the same transaction. If audit insertion fails, listing creation must roll back.
+
+Audit records must not include public notes, seat information, ticket type, asking price, raw QR codes, barcodes, ticket PDFs, private transfer links, platform credentials, request bodies, passwords, session tokens, cookies, email addresses, or other sensitive ticket payload data.
 
 ## Security Notes
 
