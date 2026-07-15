@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { login, signup } from "@/lib/auth";
+import { buildAuthHref, getSafeAuthRedirectTarget } from "@/lib/redirects";
 
 type AuthFormProps = {
   mode: "signup" | "login";
@@ -11,6 +12,8 @@ type AuthFormProps = {
 
 export function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const safeNext = getSafeAuthRedirectTarget(searchParams.get("next"));
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -36,7 +39,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         await login({ email, password });
       }
 
-      router.push("/");
+      router.replace(safeNext);
       router.refresh();
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Authentication failed");
@@ -132,7 +135,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         <p className="text-sm text-slate-600">
           {isSignup ? "Already have an account?" : "Need an account?"}{" "}
           <Link
-            href={isSignup ? "/login" : "/signup"}
+            href={buildAuthHref(isSignup ? "/login" : "/signup", safeNext)}
             className="font-medium text-slate-950 underline underline-offset-4"
           >
             {isSignup ? "Log in" : "Sign up"}

@@ -2,9 +2,23 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, authenticated seller listing creation with a minimal `LISTING_CREATED` audit event, a backend authenticated seller event autocomplete endpoint, backend event-linked listing creation that requires an existing future event, a backend public event browse API, a documented public event-detail API contract, a frontend homepage event browse page, a frontend `/sell` event selector and seller listing form, and frontend signup/login/logout screens.
+TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, a protected frontend `/sell` route, authenticated seller listing creation with a minimal `LISTING_CREATED` audit event, a backend authenticated seller event autocomplete endpoint, backend event-linked listing creation that requires an existing future event, a backend public event browse API, a documented public event-detail API contract, a frontend homepage event browse page, a frontend `/sell` event selector and seller listing form, and frontend signup/login/logout screens.
 
 ## Latest Completed Work
+
+- Date: 2026-07-15
+- GitHub Issue: `#13` - https://github.com/VietCT04/TicketPass/issues/13
+- Summary: Protected the existing `/sell` frontend route with a reusable client-side auth guard that verifies sessions through `GET /api/me`, redirects signed-out users to `/login?next=/sell` with `router.replace(...)`, blocks the seller listing form from mounting before authentication succeeds, shows a generic retryable error state for unexpected session-check failures, and updates login/signup to honor only safe `next=/sell` redirects before falling back to `/`.
+- Files changed:
+  - `apps/web/src/components/RequireAuth.tsx`
+  - `apps/web/src/lib/redirects.ts`
+  - `apps/web/src/app/sell/page.tsx`
+  - `apps/web/src/app/login/page.tsx`
+  - `apps/web/src/app/signup/page.tsx`
+  - `apps/web/src/components/AuthForm.tsx`
+  - `apps/web/src/components/SellerListingForm.tsx`
+  - `docs/SECURITY.md`
+  - `docs/CONTINUITY.md`
 
 - Date: 2026-07-15
 - GitHub Issue: `#5` - https://github.com/VietCT04/TicketPass/issues/5
@@ -272,8 +286,8 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 ## Active Work
 
-- Current GitHub Issue: `#5` - https://github.com/VietCT04/TicketPass/issues/5
-- Current goal: Review and merge the seller listing audit event pull request.
+- Current GitHub Issue: `#13` - https://github.com/VietCT04/TicketPass/issues/13
+- Current goal: Review and merge the protected frontend `/sell` route pull request.
 - Current blocker: None.
 
 ## Important User Stories
@@ -305,6 +319,6 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 ## Next Recommended Steps
 
-1. Merge the issue `#5` seller listing audit event pull request after review.
+1. Merge the issue `#13` protected `/sell` route pull request after review.
 2. Implement the public event-detail backend API in issue `#45`.
 3. Build the public event-detail frontend page in issue `#46`.

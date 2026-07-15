@@ -279,7 +279,7 @@ export function SellerListingForm({
               <p>{errorMessage}</p>
               {isAuthError ? (
                 <Link
-                  href="/login"
+                  href="/login?next=%2Fsell"
                   className="mt-2 inline-flex font-medium text-red-900 underline underline-offset-4"
                 >
                   Log in
