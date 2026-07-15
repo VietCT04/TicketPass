@@ -44,6 +44,32 @@ TicketPass uses email/password authentication with server-side opaque sessions f
 - Seller, buyer, order, payment, ticket, reveal, and dispute ownership checks must use the authenticated user.
 - Frontend route protection is a usability layer only; backend authorization remains required.
 
+## Frontend Protected Routes
+
+Issue `#13` protects the existing `/sell` frontend route with a small reusable client-side auth guard.
+
+The guard uses `GET /api/me` through the existing `getCurrentUser()` helper as the source of truth for session validity. It must not treat the presence of the opaque session cookie as proof of authentication, and it must not store session tokens or current-user data in `localStorage` or `sessionStorage`.
+
+The `/sell` seller listing form must not mount until `GET /api/me` confirms an authenticated user.
+
+Signed-out access to `/sell` redirects with `router.replace(...)` to:
+
+```text
+/login?next=/sell
+```
+
+Login and signup completion may redirect only to approved return destinations. For MVP, the only approved `next` destination is:
+
+```text
+/sell
+```
+
+Missing, malformed, external, protocol-based, or unsupported `next` values must fall back to `/`. Login/signup links may preserve only this safe `next=/sell` destination.
+
+Unexpected session-check failures must show a generic retryable error state, not backend response bodies or technical session details.
+
+Frontend route protection does not replace backend authorization. The seller listing API and event autocomplete API must continue enforcing authenticated access server-side, and submission-time `401` handling should preserve seller-entered form data rather than automatically redirecting away.
+
 ## Seller-Owned API Identity Pattern
 
 - Seller-owned routes must be protected by Spring Security before controller execution.
