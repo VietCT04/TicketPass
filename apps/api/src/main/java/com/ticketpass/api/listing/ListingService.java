@@ -1,5 +1,6 @@
 package com.ticketpass.api.listing;
 
+import com.ticketpass.api.audit.AuditService;
 import com.ticketpass.api.common.ApiException;
 import com.ticketpass.api.user.UserEntity;
 import com.ticketpass.api.user.UserRepository;
@@ -15,16 +16,19 @@ public class ListingService {
     private final UserRepository userRepository;
     private final EventRepository eventRepository;
     private final ListingRepository listingRepository;
+    private final AuditService auditService;
     private final Clock clock;
 
     public ListingService(
             UserRepository userRepository,
             EventRepository eventRepository,
             ListingRepository listingRepository,
+            AuditService auditService,
             Clock clock) {
         this.userRepository = userRepository;
         this.eventRepository = eventRepository;
         this.listingRepository = listingRepository;
+        this.auditService = auditService;
         this.clock = clock;
     }
 
@@ -56,7 +60,10 @@ public class ListingService {
         listing.setTransferableConfirmed(true);
         listing.setStatus(ListingStatus.ACTIVE);
         listing.setPublicNotes(optionalTrim(request.publicNotes()));
-        return listingRepository.save(listing);
+
+        ListingEntity savedListing = listingRepository.save(listing);
+        auditService.recordListingCreated(sellerId, savedListing.getId());
+        return savedListing;
     }
 
     private static String trim(String value) {

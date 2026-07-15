@@ -2,9 +2,26 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, authenticated seller listing creation, a backend authenticated seller event autocomplete endpoint, backend event-linked listing creation that requires an existing future event, a backend public event browse API, a documented public event-detail API contract, a frontend homepage event browse page, a frontend `/sell` event selector and seller listing form, and frontend signup/login/logout screens.
+TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, authenticated seller listing creation with a minimal `LISTING_CREATED` audit event, a backend authenticated seller event autocomplete endpoint, backend event-linked listing creation that requires an existing future event, a backend public event browse API, a documented public event-detail API contract, a frontend homepage event browse page, a frontend `/sell` event selector and seller listing form, and frontend signup/login/logout screens.
 
 ## Latest Completed Work
+
+- Date: 2026-07-15
+- GitHub Issue: `#5` - https://github.com/VietCT04/TicketPass/issues/5
+- Summary: Added the initial backend audit foundation for seller listing creation. The new `audit_events` table records immutable `LISTING_CREATED` events with actor user ID, entity type `LISTING`, created listing ID, and a server-generated timestamp. Listing creation now writes the listing and audit event in the same transaction, with no request bodies, seller contact data, public notes, seat details, pricing, ticket payload data, credentials, or session data stored in audit rows.
+- Files changed:
+  - `apps/api/src/main/java/com/ticketpass/api/audit/AuditAction.java`
+  - `apps/api/src/main/java/com/ticketpass/api/audit/AuditEntityType.java`
+  - `apps/api/src/main/java/com/ticketpass/api/audit/AuditEventEntity.java`
+  - `apps/api/src/main/java/com/ticketpass/api/audit/AuditEventRepository.java`
+  - `apps/api/src/main/java/com/ticketpass/api/audit/AuditService.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/ListingService.java`
+  - `apps/api/src/main/resources/db/migration/V3__create_audit_events.sql`
+  - `docs/DATABASE.md`
+  - `docs/SECURITY.md`
+  - `docs/flows/SELLER_LISTING_FLOW.md`
+  - `docs/CONCERNS.md`
+  - `docs/CONTINUITY.md`
 
 - Date: 2026-07-15
 - GitHub Issue: `#44` - https://github.com/VietCT04/TicketPass/issues/44
@@ -255,8 +272,8 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 ## Active Work
 
-- Current GitHub Issue: `#44` - https://github.com/VietCT04/TicketPass/issues/44
-- Current goal: Review and merge the public event-detail API contract pull request.
+- Current GitHub Issue: `#5` - https://github.com/VietCT04/TicketPass/issues/5
+- Current goal: Review and merge the seller listing audit event pull request.
 - Current blocker: None.
 
 ## Important User Stories
@@ -284,9 +301,10 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 - Event autocomplete query performance may require indexes or a dedicated search strategy after production-volume review.
 - Event local timezone preservation and display rules are unresolved.
 - Listing availability can change between event-detail page load and a future reservation attempt; `GET /api/events/{eventId}` is only a marketplace snapshot.
+- Audit retention, deletion, export, and compliance rules are not defined.
 
 ## Next Recommended Steps
 
-1. Merge the issue `#44` event-detail API contract pull request after review.
+1. Merge the issue `#5` seller listing audit event pull request after review.
 2. Implement the public event-detail backend API in issue `#45`.
 3. Build the public event-detail frontend page in issue `#46`.
