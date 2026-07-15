@@ -155,11 +155,13 @@ Public event browse responses must not include:
 
 ## Public Event Detail Security
 
-The public `GET /api/events/{eventId}` detail contract exposes one public event summary and browse-eligible listing summaries only.
+Issue `#45` implements the public `GET /api/events/{eventId}` detail endpoint. The endpoint exposes one public event summary and browse-eligible listing summaries only.
 
 Event eligibility, listing availability, pagination, and ordering must be enforced server-side. Frontend state must not be trusted to decide whether an event is upcoming, whether a listing is active, whether a listing is available, or whether a listing can proceed to a future reservation or checkout flow.
 
-The detail endpoint must reuse the same browse-eligible listing rule as `GET /api/events`: active, future, VND listings that are currently available for purchase under the listing status rules. The endpoint must not add a transfer-method-specific filter unless the shared browse-eligible rule is explicitly changed in `docs/API.md`.
+The detail endpoint reuses the same browse-eligible listing rule as `GET /api/events`: active, future, VND listings that are currently available for purchase under the listing status rules. The endpoint must not add a transfer-method-specific filter unless the shared browse-eligible rule is explicitly changed in `docs/API.md`.
+
+The public browse route and public detail route must be explicitly permitted in API security configuration. The authenticated `/api/events/autocomplete` route must remain separately matched and protected so the public detail matcher does not make seller autocomplete public.
 
 Public event detail responses may include:
 

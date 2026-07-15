@@ -2,6 +2,7 @@ package com.ticketpass.api.listing;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -48,9 +49,7 @@ public interface EventRepository extends JpaRepository<EventEntity, UUID> {
                     )
                     from ListingEntity listing
                     join listing.event event
-                    where listing.status = :status
-                        and listing.currency = :currency
-                        and event.startsAt > :now
+                    where """ + PublicListingEligibility.JPQL_PREDICATE + """
                     group by event.id, event.name, event.startsAt, event.venue, event.city
                     order by event.startsAt asc, event.id asc
                     """,
@@ -58,14 +57,22 @@ public interface EventRepository extends JpaRepository<EventEntity, UUID> {
                     select count(distinct event.id)
                     from ListingEntity listing
                     join listing.event event
-                    where listing.status = :status
-                        and listing.currency = :currency
-                        and event.startsAt > :now
+                    where """ + PublicListingEligibility.JPQL_PREDICATE + """
                     """)
     Page<EventBrowseRow> browsePublicEvents(
             @Param("status") ListingStatus status,
             @Param("currency") String currency,
             @Param("now") Instant now,
             Pageable pageable);
+
+    @Query("""
+            select event
+            from EventEntity event
+            where event.id = :id
+                and event.startsAt > :now
+            """)
+    Optional<EventEntity> findPublicUpcomingEventById(
+            @Param("id") UUID id,
+            @Param("now") Instant now);
 }
 
