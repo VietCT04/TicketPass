@@ -2,9 +2,21 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, strict origin validation and credentialed CORS for unsafe cookie-authenticated API requests, a protected frontend `/sell` route, authenticated seller listing creation with a minimal `LISTING_CREATED` audit event, a backend authenticated seller event autocomplete endpoint, backend event-linked listing creation that requires an existing future event, public event browse and event-detail APIs, a frontend homepage event browse page, a frontend `/events/{eventId}` listing-comparison page with an authenticated buyer reservation action, a frontend `/sell` event selector and seller listing form, frontend signup/login/logout screens, and backend buyer reservations with 10-minute server-controlled holds, request-time expiry reconciliation, and scheduled expiry cleanup. The provider-neutral checkout, order, payment-authority, expiry, and safe-response contract is documented, but checkout persistence, provider sessions, webhooks, and browser checkout remain unimplemented.
+TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, strict origin validation and credentialed CORS for unsafe cookie-authenticated API requests, a protected frontend `/sell` route, authenticated seller listing creation with a minimal `LISTING_CREATED` audit event, a backend authenticated seller event autocomplete endpoint, backend event-linked listing creation that requires an existing future event, public event browse and event-detail APIs, a frontend homepage event browse page, a frontend `/events/{eventId}` listing-comparison page with an authenticated buyer reservation action, a frontend `/sell` event selector and seller listing form, frontend signup/login/logout screens, and backend buyer reservations with 10-minute server-controlled holds, request-time expiry reconciliation, and scheduled expiry cleanup. The provider-neutral checkout contract and core one-order-per-reservation persistence are implemented; checkout endpoints, provider sessions, webhooks, lifecycle transitions, and browser checkout remain unimplemented.
 
 ## Latest Completed Work
+
+- Date: 2026-07-17
+- GitHub Issue: `#66` - https://github.com/VietCT04/TicketPass/issues/66
+- Summary: Implemented provider-neutral checkout order persistence. Flyway migration `V5` creates the bounded `orders` table with non-cascading foreign keys, one-order-per-reservation uniqueness, VND and payment-state constraints, expiry and paid-timestamp checks, and only buyer and pending-expiry indexes. Added the dedicated `order` entity, status enum, and repository. No checkout endpoints, provider fields, hosted sessions, webhooks, lifecycle transitions, frontend behavior, payment audit events, or tests were added.
+- Files changed:
+  - `apps/api/src/main/resources/db/migration/V5__create_orders.sql`
+  - `apps/api/src/main/java/com/ticketpass/api/order/OrderEntity.java`
+  - `apps/api/src/main/java/com/ticketpass/api/order/OrderStatus.java`
+  - `apps/api/src/main/java/com/ticketpass/api/order/OrderRepository.java`
+  - `docs/DATABASE.md`
+  - `docs/SECURITY.md`
+  - `docs/CONTINUITY.md`
 
 - Date: 2026-07-16
 - GitHub Issue: `#65` - https://github.com/VietCT04/TicketPass/issues/65
@@ -404,8 +416,8 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 ## Active Work
 
-- Current GitHub Issue: `#65` - https://github.com/VietCT04/TicketPass/issues/65
-- Current goal: Review and merge the checkout and order contract documentation pull request.
+- Current GitHub Issue: `#66` - https://github.com/VietCT04/TicketPass/issues/66
+- Current goal: Review and merge the provider-neutral checkout order persistence pull request.
 - Current blocker: None.
 
 ## Important User Stories
@@ -442,6 +454,6 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 ## Next Recommended Steps
 
-1. Review and merge the issue `#65` checkout and order contract pull request.
-2. Implement the one-order-per-reservation persistence contract in issue `#66`.
-3. Select and approve a hosted payment provider with deadline support in issue `#67`.
+1. Review and merge the issue `#66` provider-neutral checkout order persistence pull request.
+2. Select and approve a hosted payment provider with deadline support in issue `#67`.
+3. Implement the transaction-safe checkout create-or-return service after the provider boundary is approved.

@@ -116,9 +116,9 @@ Defines the reservation ownership record for the buyer listing reservation contr
 
 Reservation records are separate from the listing so buyer ownership is not stored directly on `listings`. `V4__create_listing_reservations.sql` enforces at most one `ACTIVE` reservation row for a listing with a PostgreSQL partial unique index, while allowing historical `EXPIRED` and `CANCELLED` rows. It also indexes `buyer_user_id` and `(status, expires_at)` for ownership lookup and bounded expiration scans. Expiration is `expires_at <= now`, where `now` comes from the injected application clock. Expiring a row under the existing pessimistic listing lock flushes `ACTIVE -> EXPIRED` before a replacement active reservation can be inserted, preserving the partial unique-index invariant.
 
-### `orders` (Planned Checkout Contract)
+### `orders`
 
-Issue `#65` defines this provider-neutral planned table; issue `#66` owns the migration and entity implementation. It does not exist yet.
+Issue `#65` defines the provider-neutral checkout contract. Issue `#66` implements its core persistence with Flyway migration `V5__create_orders.sql`, `OrderEntity`, `OrderStatus`, and `OrderRepository`. No checkout endpoint, provider integration, webhook, or transition service is included.
 
 | Column | Type | Notes |
 |---|---|---|
@@ -135,9 +135,13 @@ Issue `#65` defines this provider-neutral planned table; issue `#66` owns the mi
 | `created_at` | timestamp with timezone | Server-generated creation time. |
 | `updated_at` | timestamp with timezone | Server-generated last-update time. |
 
-Provider customer, payment, session, and event references belong in provider-specific operational payment records defined by later issues, not in the public order API or this core contract. Hosted payment URLs are short-lived redirect data and must not be stored as browser state.
+`V5__create_orders.sql` uses non-cascading foreign keys, so historical financial records cannot disappear through deletion of referenced marketplace records. It enforces one order per reservation with `uq_orders_reservation`, positive amounts, `VND` currency, bounded statuses, `paid_at` only for `PAID` orders, and an expiry after creation. The migration adds only `idx_orders_buyer_user_id` and `idx_orders_status_expires_at`; the reservation uniqueness constraint provides its own lookup index.
 
-### Order Statuses (Planned)
+The entity maps `reservation` as a lazy one-to-one relationship and `listing` as a lazy many-to-one relationship. Buyer and seller remain UUID snapshot columns rather than JPA user relationships. Order timestamps are assigned explicitly by future services from the injected application `Clock`; the entity has no lifecycle timestamp callbacks.
+
+Provider customer, payment, session, and event references belong in provider-specific operational payment records defined by later issues, not in the public order API or this core order row. Hosted payment URLs are short-lived redirect data and must not be stored as browser state. The core row excludes provider secrets, authorization data, browser session data, seller contact details, public notes, private transfer data, QR codes, barcodes, ticket files, and platform credentials.
+
+### Order Statuses
 
 | Status | Meaning |
 |---|---|
@@ -147,7 +151,7 @@ Provider customer, payment, session, and event references belong in provider-spe
 | `CANCELLED` | Trusted cancellation flow ended payment. Terminal. |
 | `EXPIRED` | The inherited payment deadline elapsed. Terminal. |
 
-The only permitted transitions are from `PAYMENT_PENDING` to one terminal status. A failed, cancelled, or expired order cannot return to `PAYMENT_PENDING`. Issue `#66` must enforce a unique `reservation_id` and transaction-safe concurrent creation so repeated checkout starts resolve to the same order.
+The only permitted transitions are from `PAYMENT_PENDING` to one terminal status. A failed, cancelled, or expired order cannot return to `PAYMENT_PENDING`. The database enforces the `reservation_id` uniqueness invariant. Issue `#67` must implement transaction-safe create-or-return behavior by reloading the existing order when a concurrent insert reaches the unique constraint.
 
 ### `audit_events`
 

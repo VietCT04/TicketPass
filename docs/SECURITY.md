@@ -231,7 +231,7 @@ The frontend validates enough of a `200` or `201` response to avoid rendering a 
 
 ## Buyer Checkout And Order Security
 
-Issue `#65` defines the checkout security contract for `US-0007`; it does not implement endpoints, persistence, payment integration, or webhooks.
+Issue `#65` defines the checkout security contract for `US-0007`. Issue `#66` implements only the core provider-neutral order persistence; checkout endpoints, payment integration, webhooks, and lifecycle transitions remain unimplemented.
 
 - `POST /api/reservations/{reservationId}/checkout` and `GET /api/orders/{orderId}` require authenticated server-side session validation. Buyer ownership is derived from `AuthenticatedUser`, never from browser input.
 - Checkout start has no body. The server derives and revalidates the buyer, seller, reservation, listing, amount, currency, order status, and expiry with the injected `Clock`.
@@ -243,6 +243,7 @@ Issue `#65` defines the checkout security contract for `US-0007`; it does not im
 - Only a verified provider webhook or equivalent trusted server-to-server confirmation may atomically move an order from `PAYMENT_PENDING` to `PAID` and its listing from `RESERVED` to `SOLD`, after server-side revalidation of the full order, reservation, listing, monetary, and provider state.
 - Provider failures, cancellation, expiry, and late confirmations must not reactivate a `SOLD` listing, sell unrelated inventory, or silently discard paid funds. Browser cancellation returns are non-authoritative; operational late-payment handling and refunds remain future work.
 - Provider replay/deduplication records and provider references are restricted operational payment records. They are not automatically added to generic `audit_events`; broader payment audit access and retention are deferred to issue `#70`.
+- The implemented core `orders` row stores only reservation, listing, buyer and seller UUID snapshots, amount, currency, status, expiry, and timestamps. It excludes provider secrets and identifiers, payment URLs, raw provider payloads, seller contact information, public notes, private transfer data, QR codes, barcodes, ticket files, credentials, and other sensitive ticket payloads.
 
 ## Seller Event Autocomplete Security
 
