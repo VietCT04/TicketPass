@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { EventDateTime } from "@/components/EventDateTime";
 import { BrowseEventSummary } from "@/lib/events";
 
@@ -32,6 +33,12 @@ export function EventBrowseCard({ event }: EventBrowseCardProps) {
           <p className="mt-1 text-sm text-slate-600">
             {formatAvailableTickets(event.available_listing_count)}
           </p>
+          <Link
+            href={`/events/${event.id}`}
+            className="mt-4 inline-flex text-sm font-medium text-slate-950 underline decoration-slate-300 underline-offset-4 transition hover:decoration-slate-950"
+          >
+            View tickets
+          </Link>
         </div>
       </div>
     </article>

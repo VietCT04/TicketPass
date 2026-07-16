@@ -2,9 +2,22 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, a protected frontend `/sell` route, authenticated seller listing creation with a minimal `LISTING_CREATED` audit event, a backend authenticated seller event autocomplete endpoint, backend event-linked listing creation that requires an existing future event, a backend public event browse API, a backend public event-detail API, a frontend homepage event browse page, a frontend `/sell` event selector and seller listing form, frontend signup/login/logout screens, and a documented buyer reservation API/data contract awaiting focused backend, expiration, CSRF, and frontend implementation issues.
+TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, a protected frontend `/sell` route, authenticated seller listing creation with a minimal `LISTING_CREATED` audit event, a backend authenticated seller event autocomplete endpoint, backend event-linked listing creation that requires an existing future event, public event browse and event-detail APIs, a frontend homepage event browse page, a frontend read-only `/events/{eventId}` listing-comparison page, a frontend `/sell` event selector and seller listing form, frontend signup/login/logout screens, and a documented buyer reservation API/data contract awaiting focused backend, expiration, CSRF, and frontend implementation issues.
 
 ## Latest Completed Work
+
+- Date: 2026-07-16
+- GitHub Issue: `#46` - https://github.com/VietCT04/TicketPass/issues/46
+- Summary: Implemented the public, server-rendered `/events/{eventId}` page using the existing public event-detail API. Homepage event cards now provide an explicit `View tickets` link. The detail page uses no-store fetching, normalizes invalid pagination to page 1, redirects pages beyond the final valid page, renders safe event and read-only listing data only, supports all returned transfer methods, formats VND prices, and provides loading, empty, unavailable-event, and unexpected-error states. It does not introduce reservation, checkout, seller identity, `public_notes`, or sensitive ticket payload rendering.
+- Files changed:
+  - `apps/web/src/app/events/[eventId]/page.tsx`
+  - `apps/web/src/app/events/[eventId]/loading.tsx`
+  - `apps/web/src/components/EventBrowseCard.tsx`
+  - `apps/web/src/components/EventDetailSkeleton.tsx`
+  - `apps/web/src/components/EventListingCard.tsx`
+  - `apps/web/src/components/EventListingPagination.tsx`
+  - `apps/web/src/lib/events.ts`
+  - `docs/CONTINUITY.md`
 
 - Date: 2026-07-16
 - GitHub Issue: `#53` - https://github.com/VietCT04/TicketPass/issues/53
@@ -314,8 +327,8 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 ## Active Work
 
-- Current GitHub Issue: `#53` - https://github.com/VietCT04/TicketPass/issues/53
-- Current goal: Review and merge the buyer reservation API and data contract documentation pull request.
+- Current GitHub Issue: `#46` - https://github.com/VietCT04/TicketPass/issues/46
+- Current goal: Review and merge the public event-detail frontend pull request.
 - Current blocker: None.
 
 ## Important User Stories
