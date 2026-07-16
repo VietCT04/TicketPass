@@ -229,6 +229,21 @@ The browser must not call `/api/me` before reservation submission or trust the p
 
 The frontend validates enough of a `200` or `201` response to avoid rendering a false hold, keeps reservation data only in memory, and refreshes server-rendered inventory after `404`, `409`, or local countdown expiry. A hard refresh may hide an active hold, but it must never change the backend reservation, ownership, or expiry state. The card never exposes seller contact, buyer identity, ticket payloads, session data, or private transfer information. Checkout, payment, transfer, and ticket reveal remain unavailable.
 
+## Buyer Checkout And Order Security
+
+Issue `#65` defines the checkout security contract for `US-0007`; it does not implement endpoints, persistence, payment integration, or webhooks.
+
+- `POST /api/reservations/{reservationId}/checkout` and `GET /api/orders/{orderId}` require authenticated server-side session validation. Buyer ownership is derived from `AuthenticatedUser`, never from browser input.
+- Checkout start has no body. The server derives and revalidates the buyer, seller, reservation, listing, amount, currency, order status, and expiry with the injected `Clock`.
+- The server returns `404` for both absent and non-owned reservations or orders, preventing another buyer from discovering their existence. Self-checkout and unavailable checkout use the general `409 Checkout is no longer available` response.
+- A public event page, reservation response, browser countdown, frontend state, provider return URL, query parameter, or hosted-session creation is never authority to start checkout, release inventory, mark an order paid, or sell a listing.
+- `order.expires_at` must equal the reservation expiry. Hosted payment sessions must expire or become server-side unusable no later than that timestamp. Browser storage must not retain payment URLs or use frontend state as checkout recovery.
+- Safe checkout and order responses may include only the order identifiers, status, amount, currency, timestamps, and minimum event/ticket summary. They must exclude buyer or seller identity/contact details, provider identifiers/secrets/payloads, `public_notes`, session data, private transfer data, and all ticket payload data.
+- Exactly one order belongs to each reservation and at most one provider session may be usable for that order at a time. Later persistence and provider work must make duplicate or concurrent starts resolve safely to the same order.
+- Only a verified provider webhook or equivalent trusted server-to-server confirmation may atomically move an order from `PAYMENT_PENDING` to `PAID` and its listing from `RESERVED` to `SOLD`, after server-side revalidation of the full order, reservation, listing, monetary, and provider state.
+- Provider failures, cancellation, expiry, and late confirmations must not reactivate a `SOLD` listing, sell unrelated inventory, or silently discard paid funds. Browser cancellation returns are non-authoritative; operational late-payment handling and refunds remain future work.
+- Provider replay/deduplication records and provider references are restricted operational payment records. They are not automatically added to generic `audit_events`; broader payment audit access and retention are deferred to issue `#70`.
+
 ## Seller Event Autocomplete Security
 
 The authenticated `GET /api/events/autocomplete` endpoint exposes seller-safe existing event summaries only.

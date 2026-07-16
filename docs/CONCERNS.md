@@ -1,5 +1,27 @@
 # Concerns
 
+## CONCERN-0021: Hosted Payment Deadline And Late Confirmation Operations
+
+Date: 2026-07-16  
+Related GitHub Issue: `#65` - https://github.com/VietCT04/TicketPass/issues/65  
+Related User Story: `docs/user-stories/US-0007-complete-checkout-for-reserved-ticket.md`
+
+### Concern
+
+Checkout inherits the short reservation deadline, but no provider has been selected. A provider may not natively expire or cancel a hosted payment session at the exact inherited deadline, and a verified payment event may arrive after TicketPass has already expired the order and released the listing.
+
+### Risk
+
+An implementation could accidentally extend a hold, sell a listing after it was safely released, or leave paid funds without an automated disposition. That can oversell inventory or create an unresolved buyer-payment obligation.
+
+### Recommendation
+
+Issue `#67` must select a provider only after confirming deadline support or defining an approved server-side invalidation path. Issues `#68` and `#69` must durably deduplicate late trusted events, preserve terminal local state, prevent sale completion, and route the case to explicit manual handling or later refund operations.
+
+### Status
+
+Open
+
 ## CONCERN-0020: Browser Reservation Hold Recovery
 
 Date: 2026-07-16

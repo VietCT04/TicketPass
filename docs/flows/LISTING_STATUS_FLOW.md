@@ -6,6 +6,8 @@ User Story: `docs/user-stories/US-0001-list-transferable-ticket.md`
 GitHub Issue: `#4` - https://github.com/VietCT04/TicketPass/issues/4
 
 Reservation contract: `docs/user-stories/US-0006-reserve-available-ticket-listing.md`
+
+Checkout contract: `docs/user-stories/US-0007-complete-checkout-for-reserved-ticket.md`
 GitHub Issue: `#53` - https://github.com/VietCT04/TicketPass/issues/53
 
 ## Goal
@@ -38,8 +40,8 @@ Only `ACTIVE` listings can start a buyer purchase or reservation attempt.
 | `ACTIVE` | `RESERVED` | Authenticated buyer creates a reservation. | Creates a separate `ACTIVE` reservation with a server-controlled 10-minute expiry; must be atomic server-side. |
 | `ACTIVE` | `CANCELLED` | Seller cancels before reservation or sale. | Terminal. |
 | `ACTIVE` | `EXPIRED` | Event or listing window expires. | Terminal. |
-| `RESERVED` | `ACTIVE` | Reservation expires or a future payment attempt fails before completion. | On reservation expiry, mark the reservation `EXPIRED`; listing becomes purchasable again only when all other eligibility rules still hold. |
-| `RESERVED` | `SOLD` | Payment/escrow and sale completion rules allow sale finalization. | Terminal. |
+| `RESERVED` | `ACTIVE` | Reservation expiry or a trusted provider terminal failure/cancellation releases the still-reserved checkout path. | Release only when the listing is still `RESERVED` by that path; never overwrite `SOLD`, `CANCELLED`, `EXPIRED`, or another later state. Browser cancellation redirects are non-authoritative. |
+| `RESERVED` | `SOLD` | Verified provider webhook or equivalent trusted server-to-server confirmation completes payment. | Atomically paired with `PAYMENT_PENDING -> PAID` after server-side revalidation. Terminal. |
 | `RESERVED` | `CANCELLED` | Admin cancels reserved listing due to risk or support action. | Terminal. |
 
 ## Terminal Statuses
@@ -67,6 +69,10 @@ These rules must always hold:
 - A same-buyer retry while their reservation remains active must return that reservation without creating another record or extending its expiry.
 - A reservation at `expires_at <= now` must become `EXPIRED` and stop owning the listing. Scheduled and request-time reconciliation use server time and the same pessimistic listing lock.
 - Expiration restores `RESERVED -> ACTIVE` only when the listing is still `RESERVED`; it must not overwrite `SOLD`, `CANCELLED`, `EXPIRED`, or another later status.
+- Checkout creates no replacement inventory deadline: `order.expires_at` must exactly equal the reservation expiry.
+- One reservation may have exactly one order; concurrent or repeated checkout starts must resolve to that same order.
+- Only trusted server-to-server payment confirmation may atomically move `RESERVED -> SOLD` with `PAYMENT_PENDING -> PAID`. Browser redirects, browser state, and hosted-session creation are not payment authority.
+- A verified successful payment received after order or reservation expiry must not sell the listing, overwrite a terminal order, or reactivate any inventory. It must be retained for operational handling.
 - A seller must not reserve their own listing.
 - A `SOLD` listing must never be sold again.
 - Frontend state must never be trusted to decide whether a listing is available.
@@ -92,16 +98,16 @@ Recommended implementation direction:
 
 - Listing creation starts as `ACTIVE` in the MVP contract from `docs/API.md`.
 - Issue `#53` defines `ACTIVE -> RESERVED` as an authenticated buyer's 10-minute server-controlled reservation. Issues `#54` and `#55` implement creation, expiry, and guarded reactivation, but do not define checkout or payment.
-- Buyer checkout and payment may later drive `RESERVED -> SOLD` or `RESERVED -> ACTIVE` under separate contracts.
-- Payment and escrow rules decide when a reserved listing can become `SOLD`.
+- Issue `#65` defines provider-neutral checkout and payment authority. Issues `#66` through `#70` own persistence, provider sessions, verified completion, expiry/failure coordination, and payment operations.
+- Checkout may drive `RESERVED -> SOLD` only through verified provider confirmation, or `RESERVED -> ACTIVE` only through an approved trusted expiry/failure release flow.
 - Ticket reveal must not occur just because a listing is `RESERVED`.
 - Disputes and admin actions may need additional transitions in later issues.
 
 ## Out Of Scope
 
 - Implementing database constraints or service logic.
-- Buyer checkout.
-- Payment and escrow state transitions.
+- Checkout implementation, provider selection, and payment-session creation.
+- Payment webhook, failure, expiry, and reconciliation implementation.
 - Ticket reveal.
 - Dispute handling.
 - Admin recovery from terminal statuses.
