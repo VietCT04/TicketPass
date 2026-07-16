@@ -192,6 +192,26 @@ Public event detail responses must not include:
 
 The public detail response is only a current marketplace snapshot. Any future reservation, checkout, payment, escrow, or ticket-reveal flow must independently revalidate event eligibility, listing status, currency, availability, and ownership server-side before continuing.
 
+## Buyer Listing Reservation Security
+
+Issue `#53` defines the authenticated `POST /api/listings/{listingId}/reservations` contract. Implementation belongs to issues `#54` and `#55`.
+
+- Reservation creation requires Spring Security authentication before controller execution.
+- The controller must receive the immutable `AuthenticatedUser` principal with `@AuthenticationPrincipal`; the buyer ID is derived exclusively from that principal.
+- The request has no body and must not accept buyer, seller, owner, duration, expiry, listing status, payment, or reservation-status fields from the client.
+- The server must revalidate listing existence, `ACTIVE` status, `VND` currency, future event, seller ownership, and competing reservation state at reservation time. A loaded event-detail page is not proof that a listing remains available.
+- A seller must not reserve their own listing. Self-reservation uses the same general `409 Listing is no longer available` response as other unavailable states so the endpoint does not disclose availability or reservation ownership details.
+- The `ACTIVE -> RESERVED` transition and creation of the associated reservation must be atomic. Concurrent buyer requests must not both succeed.
+- The 10-minute expiry must be generated from the injected application clock. Clients cannot choose, extend, or renew it.
+- Same-buyer active retries return the existing reservation without creating a duplicate or extending expiry.
+- An expired reservation must stop owning the listing; reactivation and any cleanup mechanism remain backend implementation work.
+
+Reservation responses may include only reservation ID, listing ID, reservation status, and expiry. They must not expose seller identity or contact details, buyer email, ticket payload data, `public_notes`, private transfer links, credentials, session tokens, or cookies.
+
+Issue `#53` does not add audit events. Add reservation audit coverage only after audit retention and access policy are defined.
+
+The existing cookie-authenticated CSRF concern applies to this state-changing endpoint. Issue `#56` must define and implement the appropriate protection before a browser reservation action is exposed.
+
 ## Seller Event Autocomplete Security
 
 The authenticated `GET /api/events/autocomplete` endpoint exposes seller-safe existing event summaries only.

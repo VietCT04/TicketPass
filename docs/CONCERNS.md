@@ -25,8 +25,8 @@ Open
 ## CONCERN-0005: Session Cookie CSRF Hardening
 
 Date: 2026-07-10
-Related User Story: `docs/user-stories/US-0002-authenticate-user.md`
-Related GitHub Issue: `#9` - https://github.com/VietCT04/TicketPass/issues/9
+Related User Stories: `docs/user-stories/US-0002-authenticate-user.md`, `docs/user-stories/US-0006-reserve-available-ticket-listing.md`
+Related GitHub Issues: `#9` - https://github.com/VietCT04/TicketPass/issues/9, `#53` - https://github.com/VietCT04/TicketPass/issues/53, `#56` - https://github.com/VietCT04/TicketPass/issues/56
 
 ### Concern
 
@@ -38,7 +38,7 @@ State-changing authenticated endpoints could be exposed to CSRF risk if cookie b
 
 ### Recommendation
 
-Review CSRF strategy during backend auth implementation and add CSRF tokens or stricter cookie/domain rules if needed.
+Define and implement CSRF protection before exposing browser reservation mutations. Review cookie behavior, CORS, frontend deployment domains, and whether CSRF tokens or stricter cookie/domain rules are appropriate.
 
 ### Status
 
@@ -312,7 +312,7 @@ Open
 
 Date: 2026-07-15
 Related User Story: `docs/user-stories/US-0005-view-available-listings-for-event.md`
-Related GitHub Issues: `#44` - https://github.com/VietCT04/TicketPass/issues/44, `#45` - https://github.com/VietCT04/TicketPass/issues/45, `#46` - https://github.com/VietCT04/TicketPass/issues/46
+Related GitHub Issues: `#44` - https://github.com/VietCT04/TicketPass/issues/44, `#45` - https://github.com/VietCT04/TicketPass/issues/45, `#46` - https://github.com/VietCT04/TicketPass/issues/46, `#53` - https://github.com/VietCT04/TicketPass/issues/53
 
 ### Concern
 
@@ -325,6 +325,28 @@ A buyer may view a listing that becomes sold, reserved, cancelled, expired, or o
 ### Recommendation
 
 Treat `GET /api/events/{eventId}` as a current marketplace snapshot only. Future reservation and checkout logic must independently revalidate listing status, event eligibility, currency, transfer method rules, ownership, and availability server-side immediately before reserving or accepting payment.
+
+### Status
+
+Open
+
+## CONCERN-0019: Reservation Atomicity And Expiration Recovery
+
+Date: 2026-07-16
+Related User Story: `docs/user-stories/US-0006-reserve-available-ticket-listing.md`
+Related GitHub Issues: `#53` - https://github.com/VietCT04/TicketPass/issues/53, `#54` - https://github.com/VietCT04/TicketPass/issues/54, `#55` - https://github.com/VietCT04/TicketPass/issues/55
+
+### Concern
+
+The approved reservation contract requires exactly one concurrent buyer to acquire an `ACTIVE` listing and requires expired holds to release listings back to `ACTIVE`, but it does not select the transactional locking strategy or expiration reconciliation mechanism.
+
+### Risk
+
+An unsafe implementation could create multiple active reservations for one listing, leave a listing stuck in `RESERVED` after its hold expires, or reactivate a listing that is no longer eligible.
+
+### Recommendation
+
+Issue `#54` should implement one transactional mechanism that atomically creates the reservation and transitions the listing. Issue `#55` should implement reliable expiry reconciliation using server time and revalidate listing eligibility before restoring `ACTIVE` status. Both issues should include focused concurrency and expiration coverage when the local test environment is available.
 
 ### Status
 

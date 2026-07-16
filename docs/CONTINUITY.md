@@ -2,15 +2,19 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, a protected frontend `/sell` route, authenticated seller listing creation with a minimal `LISTING_CREATED` audit event, a backend authenticated seller event autocomplete endpoint, backend event-linked listing creation that requires an existing future event, a backend public event browse API, a backend public event-detail API, a frontend homepage event browse page, a frontend `/sell` event selector and seller listing form, frontend signup/login/logout screens, and an approved buyer reservation user story with a focused API/data-contract issue.
+TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, a protected frontend `/sell` route, authenticated seller listing creation with a minimal `LISTING_CREATED` audit event, a backend authenticated seller event autocomplete endpoint, backend event-linked listing creation that requires an existing future event, a backend public event browse API, a backend public event-detail API, a frontend homepage event browse page, a frontend `/sell` event selector and seller listing form, frontend signup/login/logout screens, and a documented buyer reservation API/data contract awaiting focused backend, expiration, CSRF, and frontend implementation issues.
 
 ## Latest Completed Work
 
 - Date: 2026-07-16
 - GitHub Issue: `#53` - https://github.com/VietCT04/TicketPass/issues/53
-- Summary: Added `US-0006` for authenticated buyers to place a server-controlled 10-minute hold on one available listing before checkout. Created and approved the focused docs-only reservation contract issue covering `POST /api/listings/{listingId}/reservations`, separate reservation persistence, seller self-reservation prevention, atomic `ACTIVE -> RESERVED` concurrency behavior, idempotent same-buyer retries without expiry extension, automatic expiration back to `ACTIVE`, safe responses, and deferred payment, escrow, sale completion, reveal, manual release, and broader audit events.
+- Summary: Documented the approved buyer reservation API and data contract for `POST /api/listings/{listingId}/reservations`. The contract requires authentication, a separate reservation record, a server-controlled 10-minute hold, atomic `ACTIVE -> RESERVED` behavior, seller self-reservation prevention, same-buyer idempotency without expiry extension, automatic expiry back to `ACTIVE`, safe responses, a general availability conflict response, and no payment, escrow, sale completion, reveal, manual release, or audit expansion.
 - Files changed:
-  - `docs/user-stories/US-0006-reserve-available-ticket-listing.md`
+  - `docs/API.md`
+  - `docs/DATABASE.md`
+  - `docs/SECURITY.md`
+  - `docs/flows/LISTING_STATUS_FLOW.md`
+  - `docs/CONCERNS.md`
   - `docs/CONTINUITY.md`
 
 - Date: 2026-07-15
@@ -310,8 +314,8 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 ## Active Work
 
-- Current GitHub Issue: `#45` - https://github.com/VietCT04/TicketPass/issues/45
-- Current goal: Review and merge the public event-detail backend API pull request.
+- Current GitHub Issue: `#53` - https://github.com/VietCT04/TicketPass/issues/53
+- Current goal: Review and merge the buyer reservation API and data contract documentation pull request.
 - Current blocker: None.
 
 ## Important User Stories
@@ -340,11 +344,11 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 - Event autocomplete query performance may require indexes or a dedicated search strategy after production-volume review.
 - Event local timezone preservation and display rules are unresolved.
 - Listing availability can change between event-detail page load and a future reservation attempt; `GET /api/events/{eventId}` is only a marketplace snapshot.
-- Reservation concurrency and expiration cleanup mechanisms remain to be defined and implemented after issue `#53` documents the contract.
+- Reservation concurrency and expiration cleanup mechanisms are documented as requirements but remain to be implemented in issues `#54` and `#55`.
 - Audit retention, deletion, export, and compliance rules are not defined.
 
 ## Next Recommended Steps
 
-1. Merge the issue `#45` public event-detail backend API pull request after review.
-2. Implement the docs-only buyer reservation contract in issue `#53`.
-3. Build the public event-detail frontend page in issue `#46` after `#45` is available.
+1. Merge the issue `#53` buyer reservation API and data contract pull request.
+2. Implement atomic buyer listing reservation persistence and creation in issue `#54`.
+3. Implement reservation expiry and listing reactivation in issue `#55`, then complete CSRF hardening in issue `#56` before exposing the browser action in issue `#57`.
