@@ -254,6 +254,79 @@ The `409` case covers an event that was valid when selected through autocomplete
 
 The listing API does not define dedicated request or response fields for raw QR codes, barcodes, ticket images, ticket PDFs, private transfer links, or platform credentials. Secure ticket upload, storage, and reveal belong to a separate ticket reveal flow.
 
+### Create Listing Reservation
+
+```http
+POST /api/listings/{listingId}/reservations
+```
+
+Creates a server-controlled, 10-minute hold for the authenticated buyer before a future checkout flow. This endpoint has no request body. The server derives the buyer from the authenticated session and calculates the expiry using the injected application clock; clients cannot choose, extend, or renew the hold duration.
+
+Authentication is required. The controller must receive the immutable `AuthenticatedUser` principal with `@AuthenticationPrincipal`; reservation services must receive the trusted buyer ID and must not parse cookies, accept client-provided ownership, or trust an earlier public event-detail response as proof of availability.
+
+#### Eligibility And Concurrency
+
+A reservation may start only when all of the following are true at the server:
+
+- The listing exists.
+- Its status is `ACTIVE`.
+- Its currency is `VND`.
+- Its related event is still upcoming.
+- The authenticated buyer is not the listing seller.
+- No competing valid reservation owns the listing.
+
+Every transfer method that satisfies these shared eligibility rules is reservable. The MVP does not add a `PLATFORM_TRANSFER`-only rule.
+
+The listing transition from `ACTIVE` to `RESERVED` and the reservation creation must be atomic. Concurrent buyers must not both succeed: exactly one buyer may acquire the hold, while losing or stale requests receive the general availability conflict response. Frontend state and the earlier event-detail response are never authoritative for availability.
+
+#### Response Body
+
+A newly created reservation returns `201 Created`:
+
+```json
+{
+  "reservation": {
+    "id": "44444444-4444-4444-4444-444444444444",
+    "listing_id": "33333333-3333-3333-3333-333333333333",
+    "status": "ACTIVE",
+    "expires_at": "2026-07-16T04:30:00Z"
+  }
+}
+```
+
+| Field | Type | Notes |
+|---|---|---|
+| `reservation.id` | UUID string | Server-issued reservation identifier. |
+| `reservation.listing_id` | UUID string | Reserved listing identifier. |
+| `reservation.status` | string | `ACTIVE` while the hold owns the listing. |
+| `reservation.expires_at` | ISO-8601 datetime | Server-generated expiry, exactly 10 minutes after creation for a new reservation. |
+
+The response must not include seller identity or contact information, buyer email, ticket payload data, `public_notes`, private transfer links, credentials, session tokens, or cookies.
+
+#### Idempotent Retry
+
+When the same authenticated buyer repeats the request while their reservation remains active, the server returns that existing reservation with `200 OK`. It must not create another row or extend `expires_at`.
+
+#### Expiration
+
+Once `expires_at` is reached, server time is authoritative: the reservation becomes `EXPIRED`, no longer owns the listing, and the listing returns from `RESERVED` to `ACTIVE`. The listing is publicly browse-eligible and reservable again only if it still satisfies every other eligibility rule.
+
+This contract requires automatic expiration behavior. The smallest reliable cleanup or request-time reconciliation mechanism is deferred to implementation issues `#54` and `#55`.
+
+#### Error Behavior
+
+- Malformed `listingId`: `400 Bad Request`.
+- Missing listing: `404 Not Found`.
+- Missing, malformed, unknown, expired, or revoked session: `401 Unauthorized`.
+- Self-owned, already reserved, cancelled, sold, expired, or otherwise unavailable listing: `409 Conflict` with the general message `Listing is no longer available`.
+- Unexpected server failures use the standard API `5xx` behavior.
+
+The `409` response must not reveal whether another buyer owns a reservation.
+
+#### Out Of Scope
+
+This endpoint does not define checkout, payment, escrow, `RESERVED -> SOLD`, ticket transfer or reveal, seller contact exchange, buyer-initiated release, extension or renewal, refunds, disputes, admin reservation management, or new audit event types.
+
 ## Events
 
 Events let buyers browse upcoming event-first marketplace inventory without exposing sensitive ticket or seller information.

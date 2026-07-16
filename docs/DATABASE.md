@@ -92,6 +92,30 @@ Stores seller-created listings. Each listing represents exactly one ticket for M
 | `created_at` | timestamp | Creation time. |
 | `updated_at` | timestamp | Last update time. |
 
+### `listing_reservations`
+
+Defines the reservation ownership record for the buyer listing reservation contract in issue `#53`. This is a documentation contract only; migration and persistence implementation belong to issues `#54` and `#55`.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID/string id | Primary key. |
+| `listing_id` | UUID/string id | References `listings.id`. |
+| `buyer_user_id` | UUID/string id | References the authenticated buyer/user. Must be derived server-side. |
+| `status` | enum/string | Reservation lifecycle status. |
+| `expires_at` | timestamp with timezone | Server-generated hold expiry. A newly created MVP reservation expires exactly 10 minutes after creation. |
+| `created_at` | timestamp with timezone | Server-generated creation time. |
+| `updated_at` | timestamp with timezone | Server-generated last-update time. |
+
+### Reservation Statuses
+
+| Status | Meaning |
+|---|---|
+| `ACTIVE` | Reservation currently owns the listing hold. |
+| `EXPIRED` | Reservation reached `expires_at` and no longer owns the listing. |
+| `CANCELLED` | Reservation was cancelled by a future authorized flow. This issue does not define who may cancel or how. |
+
+Reservation records are separate from the listing so buyer ownership is not stored directly on `listings`. Only one valid active reservation may own a listing at a time. Same-buyer retries return the existing active record and must not create a duplicate or extend `expires_at`.
+
 ### `audit_events`
 
 Stores immutable audit records for security-sensitive business actions.
@@ -146,6 +170,11 @@ These values describe the expected transfer path only. Raw ticket payload storag
 - For VND, `asking_price_minor` represents whole dong, not cents.
 - `is_transferable_confirmed` must be `true` before a listing can become `ACTIVE`.
 - Only `ACTIVE` listings can be reserved or purchased.
+- Reservation creation must atomically write an `ACTIVE` reservation record and transition its listing from `ACTIVE` to `RESERVED`.
+- A reservation is valid only while its status is `ACTIVE` and `expires_at` has not been reached according to server time.
+- When a reservation expires, it must become `EXPIRED` and release the listing from `RESERVED` to `ACTIVE` if the listing remains otherwise eligible.
+- A listing seller must not be able to own a reservation for that listing.
+- A valid reservation must not be inferred from frontend state or from a prior public event-detail response.
 - `SOLD` listings must never become purchasable again.
 - Public listing metadata must not include dedicated columns for QR codes, barcodes, ticket files, private transfer links, platform credentials, or other sensitive ticket payload data.
 - MVP does not classify free-text `listings.public_notes` for sensitive content; this limitation is tracked in `docs/CONCERNS.md`.
@@ -159,6 +188,8 @@ These values describe the expected transfer path only. Raw ticket payload storag
 - Application code may insert audit records, but existing audit records must not be updated or deleted as part of normal product workflows.
 - Audit records must not contain request bodies, seller contact data, public notes, seat information, ticket type, asking price, QR codes, barcodes, ticket files, private transfer links, platform credentials, passwords, session tokens, cookies, or email addresses.
 - Issue `#5` adds only `idx_audit_events_entity` on `(entity_type, entity_id)`. Actor, action, and timestamp indexes should wait for a concrete audit search or viewer use case.
+
+Issue `#53` does not add reservation audit events. Broader audit coverage remains deferred until audit retention and access policy are defined.
 
 ## Public Browse Events Contract
 
