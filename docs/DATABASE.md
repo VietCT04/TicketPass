@@ -94,7 +94,7 @@ Stores seller-created listings. Each listing represents exactly one ticket for M
 
 ### `listing_reservations`
 
-Defines the reservation ownership record for the buyer listing reservation contract in issue `#53`. Issue `#54` implements the table through Flyway migration `V4__create_listing_reservations.sql`; expiration and listing reactivation remain issue `#55` work.
+Defines the reservation ownership record for the buyer listing reservation contract in issue `#53`. Issue `#54` implements the table through Flyway migration `V4__create_listing_reservations.sql`; issue `#55` implements database-backed expiration reconciliation and listing reactivation.
 
 | Column | Type | Notes |
 |---|---|---|
@@ -114,7 +114,7 @@ Defines the reservation ownership record for the buyer listing reservation contr
 | `EXPIRED` | Reservation reached `expires_at` and no longer owns the listing. |
 | `CANCELLED` | Reservation was cancelled by a future authorized flow. This issue does not define who may cancel or how. |
 
-Reservation records are separate from the listing so buyer ownership is not stored directly on `listings`. `V4__create_listing_reservations.sql` enforces at most one `ACTIVE` reservation row for a listing with a PostgreSQL partial unique index, while allowing historical `EXPIRED` and `CANCELLED` rows. It also indexes `buyer_user_id` and `(status, expires_at)` for ownership lookup and future expiration processing. Same-buyer retries return the existing unexpired active record and must not create a duplicate or extend `expires_at`.
+Reservation records are separate from the listing so buyer ownership is not stored directly on `listings`. `V4__create_listing_reservations.sql` enforces at most one `ACTIVE` reservation row for a listing with a PostgreSQL partial unique index, while allowing historical `EXPIRED` and `CANCELLED` rows. It also indexes `buyer_user_id` and `(status, expires_at)` for ownership lookup and bounded expiration scans. Expiration is `expires_at <= now`, where `now` comes from the injected application clock. Expiring a row under the existing pessimistic listing lock flushes `ACTIVE -> EXPIRED` before a replacement active reservation can be inserted, preserving the partial unique-index invariant.
 
 ### `audit_events`
 
@@ -172,7 +172,7 @@ These values describe the expected transfer path only. Raw ticket payload storag
 - Only `ACTIVE` listings can be reserved or purchased.
 - Reservation creation atomically writes an `ACTIVE` reservation record and transitions its listing from `ACTIVE` to `RESERVED` under a pessimistic listing lock.
 - A reservation is valid only while its status is `ACTIVE` and `expires_at` has not been reached according to server time.
-- When a reservation expires, it must become `EXPIRED` and release the listing from `RESERVED` to `ACTIVE` if the listing remains otherwise eligible. Issue `#54` does not perform that reconciliation; issue `#55` owns it.
+- When a reservation expires, it becomes `EXPIRED`. The listing is released from `RESERVED` to `ACTIVE` only if its current status remains `RESERVED`; a later terminal or sale-related listing status is never overwritten. Request-time and scheduled reconciliation both use the existing pessimistic listing lock and server time.
 - A listing seller must not be able to own a reservation for that listing.
 - A valid reservation must not be inferred from frontend state or from a prior public event-detail response.
 - `SOLD` listings must never become purchasable again.

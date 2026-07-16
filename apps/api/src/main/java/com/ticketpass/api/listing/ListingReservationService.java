@@ -40,11 +40,13 @@ public class ListingReservationService {
                 .findByListingIdAndStatus(listingId, ListingReservationStatus.ACTIVE)
                 .orElse(null);
         if (activeReservation != null) {
-            if (activeReservation.getExpiresAt().isAfter(now)
-                    && activeReservation.getBuyerUserId().equals(buyerId)) {
+            if (!activeReservation.getExpiresAt().isAfter(now)) {
+                expireReservation(activeReservation, listing, now);
+            } else if (activeReservation.getBuyerUserId().equals(buyerId)) {
                 return new ListingReservationResult(activeReservation, false);
+            } else {
+                throw unavailable();
             }
-            throw unavailable();
         }
 
         if (listing.getStatus() != ListingStatus.ACTIVE
@@ -76,6 +78,18 @@ public class ListingReservationService {
         } catch (IllegalArgumentException exception) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "listingId must be a UUID");
         }
+    }
+
+    private void expireReservation(
+            ListingReservationEntity reservation,
+            ListingEntity listing,
+            Instant now) {
+        reservation.setStatus(ListingReservationStatus.EXPIRED);
+        reservation.setUpdatedAt(now);
+        if (listing.getStatus() == ListingStatus.RESERVED) {
+            listing.setStatus(ListingStatus.ACTIVE);
+        }
+        reservationRepository.saveAndFlush(reservation);
     }
 
     private static ApiException unavailable() {
