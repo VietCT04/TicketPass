@@ -49,7 +49,7 @@ This story introduces reservation only. It does not define payment, escrow, sale
 
 ## Follow-up Issues
 
-- Define buyer listing reservation API and data contract.
+- GitHub Issue `#53`: Define buyer listing reservation API and data contract - https://github.com/VietCT04/TicketPass/issues/53
 - Implement atomic buyer listing reservation and expiration.
 - Add buyer reservation action after the public event-detail page is available.
 - Define checkout, payment, escrow, sale completion, and ticket reveal in separate user stories.
