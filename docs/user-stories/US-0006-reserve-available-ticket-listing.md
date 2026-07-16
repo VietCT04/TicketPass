@@ -50,6 +50,17 @@ This story introduces reservation only. It does not define payment, escrow, sale
 ## Follow-up Issues
 
 - GitHub Issue `#53`: Define buyer listing reservation API and data contract - https://github.com/VietCT04/TicketPass/issues/53
-- Implement atomic buyer listing reservation and expiration.
-- Add buyer reservation action after the public event-detail page is available.
-- Define checkout, payment, escrow, sale completion, and ticket reveal in separate user stories.
+- GitHub Issue `#54`: Implement atomic buyer listing reservation backend - https://github.com/VietCT04/TicketPass/issues/54
+- GitHub Issue `#55`: Implement reservation expiration and listing reactivation - https://github.com/VietCT04/TicketPass/issues/55
+- GitHub Issue `#56`: Harden reservation mutations against CSRF - https://github.com/VietCT04/TicketPass/issues/56
+- GitHub Issue `#57`: Build buyer reservation action and hold countdown - https://github.com/VietCT04/TicketPass/issues/57
+
+## Implementation Order
+
+1. Approve and complete the reservation contract in `#53`.
+2. Implement atomic reservation persistence and creation in `#54`.
+3. Implement expiration and listing reactivation in `#55`.
+4. Complete CSRF hardening in `#56` before exposing reservation mutations in the browser.
+5. Complete the public event-detail page in `#46`, then add the reservation action and countdown in `#57`.
+
+Checkout, payment, escrow, sale completion, and ticket reveal remain separate future user stories.
