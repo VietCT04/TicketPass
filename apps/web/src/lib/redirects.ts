@@ -1,11 +1,16 @@
 const allowedAuthRedirectTargets = new Set(["/sell"]);
+const eventDetailPathPattern = /^\/events\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?:\?page=([1-9][0-9]*))?$/i;
 
-export function getSafeAuthRedirectTarget(next: string | null): "/" | "/sell" {
+export function getSafeAuthRedirectTarget(next: string | null): string {
   if (!next) {
     return "/";
   }
 
-  return allowedAuthRedirectTargets.has(next) ? (next as "/sell") : "/";
+  if (allowedAuthRedirectTargets.has(next) || eventDetailPathPattern.test(next)) {
+    return next;
+  }
+
+  return "/";
 }
 
 export function buildAuthHref(path: "/login" | "/signup", next: string | null): string {

@@ -1,5 +1,27 @@
 # Concerns
 
+## CONCERN-0020: Browser Reservation Hold Recovery
+
+Date: 2026-07-16
+Related User Story: `docs/user-stories/US-0006-reserve-available-ticket-listing.md`
+Related GitHub Issue: `#57` - https://github.com/VietCT04/TicketPass/issues/57
+
+### Concern
+
+The issue `#57` reservation panel keeps its active hold and countdown only in React memory. A hard refresh, a new browser session, or navigation away from the event page can remove the visible hold panel while the server-side reservation remains active.
+
+### Risk
+
+The buyer may not immediately see a hold that still prevents other buyers from reserving the listing. Retrying the same listing can recover the active reservation through the idempotent POST, but there is no dedicated read or account recovery view.
+
+### Recommendation
+
+Define a current-reservation or checkout recovery experience in a future user story. Keep all recovery data server-derived and do not use browser storage as a substitute for authoritative reservation state.
+
+### Status
+
+Open
+
 ## CONCERN-0004: Password Policy Needs Review
 
 Date: 2026-07-10

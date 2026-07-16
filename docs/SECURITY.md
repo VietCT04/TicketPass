@@ -223,7 +223,11 @@ Reservation responses may include only reservation ID, listing ID, reservation s
 
 Issue `#53` does not add audit events. Add reservation audit coverage only after audit retention and access policy are defined.
 
-The existing cookie-authenticated CSRF concern applies to this state-changing endpoint. Issue `#56` must define and implement the appropriate protection before a browser reservation action is exposed. No frontend reservation control is implemented in issues `#54` or `#55`.
+Issue `#57` exposes the browser action only after issue `#56` origin protection. The client submits the cookie-authenticated request directly with `credentials: "include"`; it sends no body, CSRF token, custom CSRF header, session token, or browser-stored security data. The server-side exact-origin rule remains the CSRF control.
+
+The browser must not call `/api/me` before reservation submission or trust the public event-detail snapshot for eligibility. On `401`, it may redirect only through a safe login or signup return target: `/sell`, `/events/{valid UUID}`, or `/events/{valid UUID}?page={positive integer}`. No external URL, protocol-relative URL, fragment, unsupported path, unexpected parameter, malformed UUID, or invalid page may be preserved.
+
+The frontend validates enough of a `200` or `201` response to avoid rendering a false hold, keeps reservation data only in memory, and refreshes server-rendered inventory after `404`, `409`, or local countdown expiry. A hard refresh may hide an active hold, but it must never change the backend reservation, ownership, or expiry state. The card never exposes seller contact, buyer identity, ticket payloads, session data, or private transfer information. Checkout, payment, transfer, and ticket reveal remain unavailable.
 
 ## Seller Event Autocomplete Security
 
