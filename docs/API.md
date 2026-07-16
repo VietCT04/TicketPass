@@ -277,7 +277,7 @@ A reservation may start only when all of the following are true at the server:
 
 Every transfer method that satisfies these shared eligibility rules is reservable. The MVP does not add a `PLATFORM_TRANSFER`-only rule.
 
-The listing transition from `ACTIVE` to `RESERVED` and the reservation creation must be atomic. Concurrent buyers must not both succeed: exactly one buyer may acquire the hold, while losing or stale requests receive the general availability conflict response. Frontend state and the earlier event-detail response are never authoritative for availability.
+The listing transition from `ACTIVE` to `RESERVED` and the reservation creation are implemented atomically in issue `#54` using a transaction-scoped pessimistic listing lock plus a database partial unique index for active reservations. Concurrent buyers cannot both succeed: exactly one buyer may acquire the hold, while losing or stale requests receive the general availability conflict response. Frontend state and the earlier event-detail response are never authoritative for availability.
 
 #### Response Body
 
@@ -309,9 +309,9 @@ When the same authenticated buyer repeats the request while their reservation re
 
 #### Expiration
 
-Once `expires_at` is reached, server time is authoritative: the reservation becomes `EXPIRED`, no longer owns the listing, and the listing returns from `RESERVED` to `ACTIVE`. The listing is publicly browse-eligible and reservable again only if it still satisfies every other eligibility rule.
+Once `expires_at` is reached, server time is authoritative: the reservation must become `EXPIRED`, no longer own the listing, and the listing must return from `RESERVED` to `ACTIVE` only if it still satisfies every other eligibility rule.
 
-This contract requires automatic expiration behavior. The smallest reliable cleanup or request-time reconciliation mechanism is deferred to implementation issues `#54` and `#55`.
+Issue `#54` creates and persists reservations but deliberately does not perform expiration cleanup or request-time reconciliation. An `ACTIVE` reservation whose expiry has passed returns the general `409 Conflict` response until issue `#55` implements expiration and listing reactivation. Reservation creation must not silently expire a row or repair a `RESERVED` listing in this interim state.
 
 #### Error Behavior
 

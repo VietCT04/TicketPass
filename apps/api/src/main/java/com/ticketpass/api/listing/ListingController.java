@@ -10,6 +10,8 @@ import jakarta.validation.Validator;
 import java.util.Set;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,14 +29,17 @@ public class ListingController {
             "currency");
 
     private final ListingService listingService;
+    private final ListingReservationService listingReservationService;
     private final ObjectMapper objectMapper;
     private final Validator validator;
 
     public ListingController(
             ListingService listingService,
+            ListingReservationService listingReservationService,
             ObjectMapper objectMapper,
             Validator validator) {
         this.listingService = listingService;
+        this.listingReservationService = listingReservationService;
         this.objectMapper = objectMapper;
         this.validator = validator;
     }
@@ -45,6 +50,15 @@ public class ListingController {
             @RequestBody JsonNode body) {
         CreateListingRequest request = parseRequest(body);
         return ListingResponse.from(listingService.createListing(currentUser.id(), request));
+    }
+
+    @PostMapping("/{listingId}/reservations")
+    public ResponseEntity<ListingReservationResponse> createReservation(
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            @PathVariable String listingId) {
+        ListingReservationResult result = listingReservationService.createReservation(currentUser.id(), listingId);
+        return ResponseEntity.status(result.created() ? HttpStatus.CREATED : HttpStatus.OK)
+                .body(ListingReservationResponse.from(result.reservation()));
     }
 
     private CreateListingRequest parseRequest(JsonNode body) {

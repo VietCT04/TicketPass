@@ -194,23 +194,23 @@ The public detail response is only a current marketplace snapshot. Any future re
 
 ## Buyer Listing Reservation Security
 
-Issue `#53` defines the authenticated `POST /api/listings/{listingId}/reservations` contract. Implementation belongs to issues `#54` and `#55`.
+Issue `#53` defines the authenticated `POST /api/listings/{listingId}/reservations` contract. Issue `#54` implements atomic reservation creation; issue `#55` owns expiration and reactivation.
 
 - Reservation creation requires Spring Security authentication before controller execution.
 - The controller must receive the immutable `AuthenticatedUser` principal with `@AuthenticationPrincipal`; the buyer ID is derived exclusively from that principal.
 - The request has no body and must not accept buyer, seller, owner, duration, expiry, listing status, payment, or reservation-status fields from the client.
 - The server must revalidate listing existence, `ACTIVE` status, `VND` currency, future event, seller ownership, and competing reservation state at reservation time. A loaded event-detail page is not proof that a listing remains available.
 - A seller must not reserve their own listing. Self-reservation uses the same general `409 Listing is no longer available` response as other unavailable states so the endpoint does not disclose availability or reservation ownership details.
-- The `ACTIVE -> RESERVED` transition and creation of the associated reservation must be atomic. Concurrent buyer requests must not both succeed.
+- The `ACTIVE -> RESERVED` transition and creation of the associated reservation are atomic under a pessimistic listing lock, with a database partial unique index as the final active-reservation integrity guard. Concurrent buyer requests must not both succeed.
 - The 10-minute expiry must be generated from the injected application clock. Clients cannot choose, extend, or renew it.
 - Same-buyer active retries return the existing reservation without creating a duplicate or extending expiry.
-- An expired reservation must stop owning the listing; reactivation and any cleanup mechanism remain backend implementation work.
+- An expired reservation must stop owning the listing. Issue `#54` rejects an expired but still-`ACTIVE` reservation as unavailable without repairing it; issue `#55` must implement reactivation and cleanup before any browser reservation action is exposed.
 
 Reservation responses may include only reservation ID, listing ID, reservation status, and expiry. They must not expose seller identity or contact details, buyer email, ticket payload data, `public_notes`, private transfer links, credentials, session tokens, or cookies.
 
 Issue `#53` does not add audit events. Add reservation audit coverage only after audit retention and access policy are defined.
 
-The existing cookie-authenticated CSRF concern applies to this state-changing endpoint. Issue `#56` must define and implement the appropriate protection before a browser reservation action is exposed.
+The existing cookie-authenticated CSRF concern applies to this state-changing endpoint. Issue `#56` must define and implement the appropriate protection before a browser reservation action is exposed. No frontend reservation control is implemented in issue `#54`.
 
 ## Seller Event Autocomplete Security
 

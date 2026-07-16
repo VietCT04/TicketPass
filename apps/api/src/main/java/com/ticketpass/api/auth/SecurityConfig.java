@@ -36,6 +36,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/events").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/events/*").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/listings").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/listings/*/reservations").authenticated()
                         .anyRequest().permitAll())
                 .addFilterBefore(sessionAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();

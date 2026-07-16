@@ -12,7 +12,7 @@ GitHub Issue: `#53` - https://github.com/VietCT04/TicketPass/issues/53
 
 Define listing status rules that prevent the same ticket listing from being sold twice.
 
-This document defines the contract for status meanings, allowed transitions, and duplicate-sale prevention invariants. Implementation belongs to later backend/database work.
+This document defines the contract for status meanings, allowed transitions, and duplicate-sale prevention invariants. Issue `#54` implements only atomic reservation creation; expiration reconciliation remains later backend work in issue `#55`.
 
 ## Statuses
 
@@ -60,7 +60,7 @@ These rules must always hold:
 - `quantity` is always `1`.
 - Only `ACTIVE` listings can be reserved or purchased.
 - `RESERVED`, `SOLD`, `CANCELLED`, and `EXPIRED` listings must not be purchasable.
-- A transition from `ACTIVE` to `RESERVED` must be atomic and server-side.
+- A transition from `ACTIVE` to `RESERVED` is atomic and server-side under a pessimistic listing lock, with a partial unique active-reservation index as an integrity safeguard.
 - Concurrent buyers must not be able to reserve the same listing.
 - Reservation ownership must be stored in a separate reservation record linked to the listing and authenticated buyer.
 - Only one valid `ACTIVE` reservation may own a listing at a time.
@@ -78,19 +78,19 @@ Database implementation should support duplicate-sale prevention with transactio
 
 Recommended implementation direction:
 
-- Read the listing row in a transaction.
+- Read and pessimistically lock the listing row in a transaction.
 - Revalidate that the listing exists, is `ACTIVE`, uses `VND`, belongs to an upcoming event, and is not owned by the authenticated buyer.
 - Confirm no competing valid reservation owns the listing.
-- Atomically create the reservation and update status to `RESERVED`.
+- Atomically create the reservation and update status to `RESERVED`; the database permits at most one `ACTIVE` reservation record per listing.
 - Treat zero updated rows or stale state as a failed reservation.
 - Return the existing active reservation for a same-buyer retry without extending its expiry.
-- Reconcile expired reservations so they become `EXPIRED` and release their listings back to `ACTIVE` when otherwise eligible.
+- Issue `#54` returns a conflict for an expired but still-`ACTIVE` reservation. Issue `#55` must reconcile those rows to `EXPIRED` and release eligible listings back to `ACTIVE`.
 - Do not allow client-provided status changes for sensitive transitions.
 
 ## Relationship To Other Flows
 
 - Listing creation starts as `ACTIVE` in the MVP contract from `docs/API.md`.
-- Issue `#53` defines `ACTIVE -> RESERVED` as an authenticated buyer's 10-minute server-controlled reservation. It does not define checkout or payment.
+- Issue `#53` defines `ACTIVE -> RESERVED` as an authenticated buyer's 10-minute server-controlled reservation. Issue `#54` implements its creation and persistence, but does not define checkout, payment, or expiration recovery.
 - Buyer checkout and payment may later drive `RESERVED -> SOLD` or `RESERVED -> ACTIVE` under separate contracts.
 - Payment and escrow rules decide when a reserved listing can become `SOLD`.
 - Ticket reveal must not occur just because a listing is `RESERVED`.

@@ -338,15 +338,15 @@ Related GitHub Issues: `#53` - https://github.com/VietCT04/TicketPass/issues/53,
 
 ### Concern
 
-The approved reservation contract requires exactly one concurrent buyer to acquire an `ACTIVE` listing and requires expired holds to release listings back to `ACTIVE`, but it does not select the transactional locking strategy or expiration reconciliation mechanism.
+Issue `#54` uses a transaction-scoped pessimistic listing lock and a partial unique index to ensure only one concurrent buyer acquires an `ACTIVE` listing. Expired holds still require the separate expiration reconciliation and reactivation mechanism in issue `#55`.
 
 ### Risk
 
-An unsafe implementation could create multiple active reservations for one listing, leave a listing stuck in `RESERVED` after its hold expires, or reactivate a listing that is no longer eligible.
+Without issue `#55`, a listing can remain `RESERVED` after its hold expires, which delays its return to public availability. An unsafe future expiration implementation could also reactivate a listing that is no longer eligible.
 
 ### Recommendation
 
-Issue `#54` should implement one transactional mechanism that atomically creates the reservation and transitions the listing. Issue `#55` should implement reliable expiry reconciliation using server time and revalidate listing eligibility before restoring `ACTIVE` status. Both issues should include focused concurrency and expiration coverage when the local test environment is available.
+Keep the issue `#54` lock and unique-index safeguards intact. Issue `#55` should implement reliable expiry reconciliation using server time and revalidate listing eligibility before restoring `ACTIVE` status. Add focused concurrency and expiration coverage during the later verification phase.
 
 ### Status
 
