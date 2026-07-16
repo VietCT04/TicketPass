@@ -25,6 +25,22 @@ export type EventBrowseResponse = {
   pagination: EventBrowsePagination;
 };
 
+export type EventListingSummary = {
+  id: string;
+  ticket_type: string;
+  seat_info: string;
+  event_platform: string;
+  asking_price_minor: number;
+  currency: "VND";
+  transfer_method: string;
+};
+
+export type EventDetailResponse = {
+  event: EventSummary & { image_url: string | null };
+  listings: EventListingSummary[];
+  pagination: EventBrowsePagination;
+};
+
 type EventAutocompleteResponse = {
   events: EventSummary[];
 };
@@ -35,6 +51,13 @@ export class EventAutocompleteAuthError extends Error {
   constructor() {
     super("Sign in to search and select an event.");
     this.name = "EventAutocompleteAuthError";
+  }
+}
+
+export class EventDetailUnavailableError extends Error {
+  constructor() {
+    super("Event unavailable");
+    this.name = "EventDetailUnavailableError";
   }
 }
 
@@ -75,6 +98,26 @@ export async function browseEvents(page: number): Promise<EventBrowseResponse> {
   }
 
   return (await response.json()) as EventBrowseResponse;
+}
+
+export async function getEventDetail(
+  eventId: string,
+  page: number
+): Promise<EventDetailResponse> {
+  const params = new URLSearchParams({ page: page.toString(), page_size: "20" });
+  const response = await fetch(`${apiBaseUrl}/api/events/${eventId}?${params}`, {
+    cache: "no-store"
+  });
+
+  if (response.status === 400 || response.status === 404) {
+    throw new EventDetailUnavailableError();
+  }
+
+  if (!response.ok) {
+    throw new Error(await readError(response, "Could not load event"));
+  }
+
+  return (await response.json()) as EventDetailResponse;
 }
 
 async function readError(response: Response, fallbackMessage: string): Promise<string> {
