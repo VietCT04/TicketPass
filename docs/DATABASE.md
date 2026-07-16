@@ -139,7 +139,7 @@ Issue `#65` defines the provider-neutral checkout contract. Issue `#66` implemen
 
 The entity maps `reservation` as a lazy one-to-one relationship and `listing` as a lazy many-to-one relationship. Buyer and seller remain UUID snapshot columns rather than JPA user relationships. Order timestamps are assigned explicitly by future services from the injected application `Clock`; the entity has no lifecycle timestamp callbacks.
 
-Provider customer, payment, session, and event references belong in provider-specific operational payment records defined by later issues, not in the public order API or this core order row. Hosted payment URLs are short-lived redirect data and must not be stored as browser state. The core row excludes provider secrets, authorization data, browser session data, seller contact details, public notes, private transfer data, QR codes, barcodes, ticket files, and platform credentials.
+Provider customer, payment, session, and event references belong in operational payment records, not in the public order API or core order row. Hosted payment URLs are short-lived redirect data and must not be stored as browser state. The core row excludes provider secrets, authorization data, browser session data, seller contact details, public notes, private transfer data, QR codes, barcodes, ticket files, and platform credentials.
 
 ### Order Statuses
 
@@ -151,7 +151,19 @@ Provider customer, payment, session, and event references belong in provider-spe
 | `CANCELLED` | Trusted cancellation flow ended payment. Terminal. |
 | `EXPIRED` | The inherited payment deadline elapsed. Terminal. |
 
-The only permitted transitions are from `PAYMENT_PENDING` to one terminal status. A failed, cancelled, or expired order cannot return to `PAYMENT_PENDING`. The database enforces the `reservation_id` uniqueness invariant. Issue `#67` must implement transaction-safe create-or-return behavior by reloading the existing order when a concurrent insert reaches the unique constraint.
+The only permitted transitions are from `PAYMENT_PENDING` to one terminal status. A failed, cancelled, or expired order cannot return to `PAYMENT_PENDING`. The database enforces the `reservation_id` uniqueness invariant. Issue `#67` implements transaction-safe create-or-return behavior by reloading the existing order when a concurrent insert reaches the unique constraint.
+
+### `payment_sessions`
+
+Issue `#67` adds `V6__create_payment_sessions.sql` with provider-neutral operational session rows. Each row references one order without cascade deletion and stores provider name, opaque provider session id, bounded status, inherited expiry, and explicit application-clock timestamps. `provider_session_id` is unique; the partial unique index permits only one usable `CREATING` or `PENDING` session per order while retaining terminal history. The initial provider set contains `MOCK` only and session statuses are `CREATING`, `PENDING`, `PAID`, `FAILED`, `CANCELLED`, and `EXPIRED`.
+
+`payment_sessions.expires_at` equals the order and reservation expiry. The entity has no lifecycle timestamp callbacks. It contains no payment credentials, provider payloads, browser URLs, cookies, buyer or seller contact data, ticket payloads, or TicketPass order transition state.
+
+### `mock_provider_sessions` And `mock_payment_events`
+
+The same migration persists an isolated mock-provider session record with amount, currency, inherited expiry, and provider-only state (`PENDING`, `PAID`, `FAILED`, `CANCELLED`, or `EXPIRED`). It separately persists mock provider events with one of `PAYMENT_SUCCEEDED`, `PAYMENT_FAILED`, or `PAYMENT_CANCELLED` and delivery state `PENDING` or `DELIVERED`.
+
+The mock provider changes only its own session and event records. It does not directly transition TicketPass orders, reservations, or listings. Issue `#68` must add signed event delivery, receipt, replay protection, and trusted sale completion.
 
 ### `audit_events`
 
