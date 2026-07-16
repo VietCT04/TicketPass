@@ -132,6 +132,29 @@ Returns `401` when the session is missing, malformed, unknown, expired, or revok
 - Logout revokes the session server-side by setting `auth_sessions.revoked_at`.
 - Logout clears the cookie using the same name, path, domain if configured, `HttpOnly`, `Secure`, and `SameSite` attributes, with `Max-Age=0`.
 
+### Cookie-Authenticated Request Origin Protection
+
+For MVP, the frontend and API must be deployed same-site, such as `app.ticketpass.com` and `api.ticketpass.com`. A fully cross-site deployment requiring `SameSite=None` is not supported.
+
+Unsafe `/api/**` requests (`POST`, `PUT`, `PATCH`, and `DELETE`) that carry a `ticketpass_session` cookie must originate from an exact configured trusted frontend origin. The backend checks `Origin` first; only when it is absent does it check the origin component of `Referer`. Missing, malformed, or untrusted values return:
+
+```http
+403 Forbidden
+Content-Type: application/json
+```
+
+```json
+{
+  "error": "Invalid request origin"
+}
+```
+
+The default development trusted origin is `http://localhost:3000`, configured through `ticketpass.security.allowed-origins`. Production must explicitly configure its real frontend origin or origins. Trusted origins are normalized by scheme, host, and effective port, then compared exactly; wildcard and partial-host matching are not supported.
+
+This applies to existing cookie-authenticated mutations, including signup or login when a session cookie is already present, logout, listing creation, and reservation creation. Requests without a session cookie, including ordinary signup and login, remain usable without origin headers. `GET`, `HEAD`, and `OPTIONS` remain unaffected.
+
+Credentialed CORS uses the same trusted-origin configuration. It permits only those origins and never uses `*` with credentials. `SameSite=Lax` remains part of the cookie configuration, but is not the sole CSRF defense.
+
 ## Listings
 
 Listings let authenticated sellers offer one transferable ticket for resale.

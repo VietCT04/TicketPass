@@ -23,5 +23,8 @@ management:
         include: health,info
 
 ticketpass:
+  security:
+    allowed-origins:
+      - http://localhost:3000
   reservations:
     expiration-interval-ms: 60000

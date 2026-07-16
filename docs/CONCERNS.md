@@ -30,19 +30,19 @@ Related GitHub Issues: `#9` - https://github.com/VietCT04/TicketPass/issues/9, `
 
 ### Concern
 
-The MVP auth contract uses `HttpOnly` cookies with `SameSite=Lax`, but CSRF hardening may need additional controls as deployment and cross-origin behavior become clearer.
+Issue `#56` adds exact trusted-origin validation and credentialed CORS for unsafe cookie-authenticated API requests. The MVP remains limited to same-site frontend and API deployments.
 
 ### Risk
 
-State-changing authenticated endpoints could be exposed to CSRF risk if cookie behavior, CORS, and frontend deployment domains are not aligned.
+A future cross-site deployment requiring `SameSite=None`, wildcard origins, or a different browser-client model could invalidate this narrow origin-validation design.
 
 ### Recommendation
 
-Define and implement CSRF protection before exposing browser reservation mutations. Review cookie behavior, CORS, frontend deployment domains, and whether CSRF tokens or stricter cookie/domain rules are appropriate.
+Before any cross-site deployment, perform a new cookie, CORS, and CSRF design review rather than weakening the trusted-origin allowlist.
 
 ### Status
 
-Open
+Resolved for the same-site MVP; reopen for a cross-site deployment.
 
 ## CONCERN-0006: Deferred Account Recovery And Verification
 

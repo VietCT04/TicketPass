@@ -34,6 +34,18 @@ TicketPass uses email/password authentication with server-side opaque sessions f
 - Frontend `GET /api/me` handling must treat `401` as the expected signed-out state, not as a user-facing failure.
 - Frontend auth forms must prevent duplicate signup, login, or logout submissions while a request is in flight.
 
+## CSRF And Credentialed CORS
+
+Issue `#56` protects unsafe cookie-authenticated `/api/**` requests with server-side exact-origin validation. The protected methods are `POST`, `PUT`, `PATCH`, and `DELETE`; safe methods including `GET`, `HEAD`, and `OPTIONS` are not rejected. The rule applies to existing and future unsafe API endpoints without endpoint-specific bypasses.
+
+When a request carries `ticketpass_session`, the server accepts an `Origin` header only when its normalized scheme, host, and effective port exactly match `ticketpass.security.allowed-origins`. If `Origin` is absent, the server may use only the normalized origin component of `Referer`. Missing, malformed, wildcard, partial-host, or untrusted origins return `403` JSON with `{"error":"Invalid request origin"}`. The configured allowlist is not returned to clients.
+
+For MVP, frontend and API deployments must be same-site, for example `app.ticketpass.com` and `api.ticketpass.com`. The development default is `http://localhost:3000`; production must explicitly configure its real frontend origin or origins. Blank or invalid configured origins fail application startup. A deployment needing `SameSite=None` is outside this MVP and needs a broader review.
+
+Spring Security's default CSRF mechanism remains disabled because TicketPass uses a focused origin filter rather than JavaScript-readable tokens. No CSRF token endpoint, token cookie, browser storage token, or custom header treated as standalone proof is used. Existing frontend calls continue to use `credentials: "include"` without accessing the opaque session token.
+
+Credentialed CORS uses the same normalized trusted-origin source as the CSRF origin filter. It allows only configured exact origins, permits required API methods and `Accept`/`Content-Type` request headers, and allows `OPTIONS` preflight. `SameSite=Lax` remains required for the session cookie, but is not considered the only CSRF control.
+
 ## Current User And Ownership
 
 - Backend services must derive the current user from authenticated session state.

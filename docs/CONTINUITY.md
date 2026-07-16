@@ -2,9 +2,23 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, a protected frontend `/sell` route, authenticated seller listing creation with a minimal `LISTING_CREATED` audit event, a backend authenticated seller event autocomplete endpoint, backend event-linked listing creation that requires an existing future event, public event browse and event-detail APIs, a frontend homepage event browse page, a frontend read-only `/events/{eventId}` listing-comparison page, a frontend `/sell` event selector and seller listing form, frontend signup/login/logout screens, and backend buyer reservations with 10-minute server-controlled holds, request-time expiry reconciliation, and scheduled expiry cleanup. CSRF hardening and browser controls remain separate issues.
+TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, strict origin validation and credentialed CORS for unsafe cookie-authenticated API requests, a protected frontend `/sell` route, authenticated seller listing creation with a minimal `LISTING_CREATED` audit event, a backend authenticated seller event autocomplete endpoint, backend event-linked listing creation that requires an existing future event, public event browse and event-detail APIs, a frontend homepage event browse page, a frontend read-only `/events/{eventId}` listing-comparison page, a frontend `/sell` event selector and seller listing form, frontend signup/login/logout screens, and backend buyer reservations with 10-minute server-controlled holds, request-time expiry reconciliation, and scheduled expiry cleanup. Browser reservation controls remain a separate issue.
 
 ## Latest Completed Work
+
+- Date: 2026-07-16
+- GitHub Issue: `#56` - https://github.com/VietCT04/TicketPass/issues/56
+- Summary: Implemented same-site MVP CSRF hardening for unsafe cookie-authenticated API requests. A validated configurable trusted-origin policy now backs both credentialed CORS and a focused `OncePerRequestFilter`. It requires exact normalized `Origin`, or `Referer` only when `Origin` is absent, and returns controlled `403` JSON errors without exposing the configured allowlist. The opaque `HttpOnly`, `SameSite=Lax` session model and frontend `credentials: "include"` requests remain unchanged.
+- Files changed:
+  - `apps/api/src/main/java/com/ticketpass/api/auth/CsrfOriginValidationFilter.java`
+  - `apps/api/src/main/java/com/ticketpass/api/auth/SecurityConfig.java`
+  - `apps/api/src/main/java/com/ticketpass/api/config/CorsConfig.java`
+  - `apps/api/src/main/java/com/ticketpass/api/config/TrustedOriginPolicy.java`
+  - `apps/api/src/main/resources/application.yml`
+  - `docs/API.md`
+  - `docs/SECURITY.md`
+  - `docs/CONCERNS.md`
+  - `docs/CONTINUITY.md`
 
 - Date: 2026-07-16
 - GitHub Issue: `#55` - https://github.com/VietCT04/TicketPass/issues/55
@@ -366,8 +380,8 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 ## Active Work
 
-- Current GitHub Issue: `#55` - https://github.com/VietCT04/TicketPass/issues/55
-- Current goal: Review and merge the reservation expiration and listing reactivation pull request.
+- Current GitHub Issue: `#56` - https://github.com/VietCT04/TicketPass/issues/56
+- Current goal: Review and merge the CSRF origin protection pull request.
 - Current blocker: None.
 
 ## Important User Stories
@@ -383,7 +397,7 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 - See `docs/CONCERNS.md`.
 - Password policy is defined for MVP but still needs review before public launch.
-- Session cookie CSRF hardening needs review.
+- Cross-site frontend/API deployment requires a new CSRF and cookie review; same-site origin protection is implemented in issue `#56`.
 - Account recovery and verification features are deferred.
 - Local verification requires Java 21; current Maven runtime uses Java 19 and cannot compile the project.
 - MVP does not classify seller listing `public_notes` for sensitive ticket payload content.
@@ -401,6 +415,6 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 ## Next Recommended Steps
 
-1. Review and merge the issue `#55` reservation expiration and listing reactivation pull request.
-2. Complete CSRF hardening in issue `#56` before exposing the browser action in issue `#57`.
-3. Implement the browser reservation action and hold countdown in issue `#57` after CSRF protection is available.
+1. Review and merge the issue `#56` CSRF origin protection pull request.
+2. Implement the browser reservation action and hold countdown in issue `#57` after CSRF protection is available.
+3. Define a new security review before any cross-site frontend/API deployment.
