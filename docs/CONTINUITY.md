@@ -2,9 +2,22 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, strict origin validation and credentialed CORS for unsafe cookie-authenticated API requests, a protected frontend `/sell` route, authenticated seller listing creation with a minimal `LISTING_CREATED` audit event, a backend authenticated seller event autocomplete endpoint, backend event-linked listing creation that requires an existing future event, public event browse and event-detail APIs, a frontend homepage event browse page, a frontend read-only `/events/{eventId}` listing-comparison page, a frontend `/sell` event selector and seller listing form, frontend signup/login/logout screens, and backend buyer reservations with 10-minute server-controlled holds, request-time expiry reconciliation, and scheduled expiry cleanup. Browser reservation controls remain a separate issue.
+TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, strict origin validation and credentialed CORS for unsafe cookie-authenticated API requests, a protected frontend `/sell` route, authenticated seller listing creation with a minimal `LISTING_CREATED` audit event, a backend authenticated seller event autocomplete endpoint, backend event-linked listing creation that requires an existing future event, public event browse and event-detail APIs, a frontend homepage event browse page, a frontend `/events/{eventId}` listing-comparison page with an authenticated buyer reservation action, a frontend `/sell` event selector and seller listing form, frontend signup/login/logout screens, and backend buyer reservations with 10-minute server-controlled holds, request-time expiry reconciliation, and scheduled expiry cleanup.
 
 ## Latest Completed Work
+
+- Date: 2026-07-16
+- GitHub Issue: `#57` - https://github.com/VietCT04/TicketPass/issues/57
+- Summary: Implemented the browser reservation action on each public event-detail listing card. The client submits the existing cookie-authenticated reservation request directly, handles `201` and idempotent `200` holds only after validating safe response fields, shows an inline server-expiry countdown, refreshes stale inventory after conflicts or expiry, and preserves a strictly validated event-detail return route for login/signup after `401`. Reservation state intentionally remains in memory; no checkout, payment, seller contact, ticket reveal, browser storage, or new backend endpoint was added.
+- Files changed:
+  - `apps/web/src/app/events/[eventId]/page.tsx`
+  - `apps/web/src/components/EventListingCard.tsx`
+  - `apps/web/src/lib/redirects.ts`
+  - `apps/web/src/lib/reservations.ts`
+  - `docs/flows/BUYER_RESERVATION_FLOW.md`
+  - `docs/SECURITY.md`
+  - `docs/CONCERNS.md`
+  - `docs/CONTINUITY.md`
 
 - Date: 2026-07-16
 - GitHub Issue: `#56` - https://github.com/VietCT04/TicketPass/issues/56
@@ -380,8 +393,8 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 ## Active Work
 
-- Current GitHub Issue: `#56` - https://github.com/VietCT04/TicketPass/issues/56
-- Current goal: Review and merge the CSRF origin protection pull request.
+- Current GitHub Issue: `#57` - https://github.com/VietCT04/TicketPass/issues/57
+- Current goal: Review and merge the browser reservation action pull request.
 - Current blocker: None.
 
 ## Important User Stories
@@ -410,11 +423,12 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 - Event autocomplete query performance may require indexes or a dedicated search strategy after production-volume review.
 - Event local timezone preservation and display rules are unresolved.
 - Listing availability can change between event-detail page load and a future reservation attempt; `GET /api/events/{eventId}` is only a marketplace snapshot.
-- Reservation creation, expiry cleanup, and guarded listing reactivation are implemented in issues `#54` and `#55`.
+- Reservation creation, expiry cleanup, guarded listing reactivation, CSRF origin protection, and browser reservation actions are implemented in issues `#54` through `#57`.
+- Browser reservation state is intentionally in-memory only; see `CONCERN-0020`.
 - Audit retention, deletion, export, and compliance rules are not defined.
 
 ## Next Recommended Steps
 
-1. Review and merge the issue `#56` CSRF origin protection pull request.
-2. Implement the browser reservation action and hold countdown in issue `#57` after CSRF protection is available.
+1. Review and merge the issue `#57` browser reservation action pull request.
+2. Define a current-reservation or checkout recovery story for the hard-refresh limitation in `CONCERN-0020`.
 3. Define a new security review before any cross-site frontend/API deployment.

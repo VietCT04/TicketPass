@@ -33,6 +33,9 @@ export default async function EventDetailPage({ params, searchParams }: EventDet
     );
   }
 
+  const loginReturnTarget =
+    requestedPage === 1 ? `/events/${eventId}` : `/events/${eventId}?page=${requestedPage}`;
+
   return (
     <main className="min-h-screen px-6 py-10">
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-8">
@@ -74,7 +77,11 @@ export default async function EventDetailPage({ params, searchParams }: EventDet
         {listings.length > 0 ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {listings.map((listing) => (
-              <EventListingCard key={listing.id} listing={listing} />
+              <EventListingCard
+                key={listing.id}
+                listing={listing}
+                loginReturnTarget={loginReturnTarget}
+              />
             ))}
           </div>
         ) : (
