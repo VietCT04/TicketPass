@@ -2,9 +2,27 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, a protected frontend `/sell` route, authenticated seller listing creation with a minimal `LISTING_CREATED` audit event, a backend authenticated seller event autocomplete endpoint, backend event-linked listing creation that requires an existing future event, public event browse and event-detail APIs, a frontend homepage event browse page, a frontend read-only `/events/{eventId}` listing-comparison page, a frontend `/sell` event selector and seller listing form, frontend signup/login/logout screens, and backend atomic buyer reservation creation with a 10-minute server-controlled hold. Reservation expiration/release, CSRF hardening, and browser controls remain separate issues.
+TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, a protected frontend `/sell` route, authenticated seller listing creation with a minimal `LISTING_CREATED` audit event, a backend authenticated seller event autocomplete endpoint, backend event-linked listing creation that requires an existing future event, public event browse and event-detail APIs, a frontend homepage event browse page, a frontend read-only `/events/{eventId}` listing-comparison page, a frontend `/sell` event selector and seller listing form, frontend signup/login/logout screens, and backend buyer reservations with 10-minute server-controlled holds, request-time expiry reconciliation, and scheduled expiry cleanup. CSRF hardening and browser controls remain separate issues.
 
 ## Latest Completed Work
+
+- Date: 2026-07-16
+- GitHub Issue: `#55` - https://github.com/VietCT04/TicketPass/issues/55
+- Summary: Implemented database-backed reservation expiration. A configurable 60-second fixed-delay scheduler selects up to 100 expired active reservations deterministically and processes each in an isolated transaction. Both scheduled and request-time paths lock the listing first, recheck active reservation state using the injected clock, expire the hold, and reactivate only a still-`RESERVED` listing. Request-time expiration flushes the old row before creating a replacement active reservation, preserving the partial unique index.
+- Files changed:
+  - `apps/api/src/main/java/com/ticketpass/api/TicketPassApiApplication.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/ListingReservationExpirationCandidate.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/ListingReservationExpirationScheduler.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/ListingReservationExpirationService.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/ListingReservationRepository.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/ListingReservationService.java`
+  - `apps/api/src/main/resources/application.yml`
+  - `docs/API.md`
+  - `docs/DATABASE.md`
+  - `docs/SECURITY.md`
+  - `docs/flows/LISTING_STATUS_FLOW.md`
+  - `docs/CONCERNS.md`
+  - `docs/CONTINUITY.md`
 
 - Date: 2026-07-16
 - GitHub Issue: `#54` - https://github.com/VietCT04/TicketPass/issues/54
@@ -348,8 +366,8 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 ## Active Work
 
-- Current GitHub Issue: `#46` - https://github.com/VietCT04/TicketPass/issues/46
-- Current goal: Review and merge the public event-detail frontend pull request.
+- Current GitHub Issue: `#55` - https://github.com/VietCT04/TicketPass/issues/55
+- Current goal: Review and merge the reservation expiration and listing reactivation pull request.
 - Current blocker: None.
 
 ## Important User Stories
@@ -378,11 +396,11 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 - Event autocomplete query performance may require indexes or a dedicated search strategy after production-volume review.
 - Event local timezone preservation and display rules are unresolved.
 - Listing availability can change between event-detail page load and a future reservation attempt; `GET /api/events/{eventId}` is only a marketplace snapshot.
-- Reservation creation and concurrency safeguards are implemented in issue `#54`; expiration cleanup and listing reactivation remain issue `#55` work.
+- Reservation creation, expiry cleanup, and guarded listing reactivation are implemented in issues `#54` and `#55`.
 - Audit retention, deletion, export, and compliance rules are not defined.
 
 ## Next Recommended Steps
 
-1. Review and merge the issue `#54` atomic buyer reservation backend pull request.
-2. Implement reservation expiry and listing reactivation in issue `#55`.
-3. Complete CSRF hardening in issue `#56` before exposing the browser action in issue `#57`.
+1. Review and merge the issue `#55` reservation expiration and listing reactivation pull request.
+2. Complete CSRF hardening in issue `#56` before exposing the browser action in issue `#57`.
+3. Implement the browser reservation action and hold countdown in issue `#57` after CSRF protection is available.

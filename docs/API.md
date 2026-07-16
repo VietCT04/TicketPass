@@ -309,9 +309,9 @@ When the same authenticated buyer repeats the request while their reservation re
 
 #### Expiration
 
-Once `expires_at` is reached, server time is authoritative: the reservation must become `EXPIRED`, no longer own the listing, and the listing must return from `RESERVED` to `ACTIVE` only if it still satisfies every other eligibility rule.
+At `expires_at` or later, server time is authoritative: the reservation is expired when `expires_at <= now`. Issue `#55` reconciles expiry both through a configurable fixed-delay cleanup scan (default `60000` ms, at most 100 candidates ordered by `expires_at ASC, id ASC`) and during a new reservation request after the target listing is pessimistically locked.
 
-Issue `#54` creates and persists reservations but deliberately does not perform expiration cleanup or request-time reconciliation. An `ACTIVE` reservation whose expiry has passed returns the general `409 Conflict` response until issue `#55` implements expiration and listing reactivation. Reservation creation must not silently expire a row or repair a `RESERVED` listing in this interim state.
+Expiration changes the reservation from `ACTIVE` to `EXPIRED` and updates its timestamp using the captured server time. The listing returns from `RESERVED` to `ACTIVE` only when its current status is still `RESERVED`; a later `SOLD`, `CANCELLED`, `EXPIRED`, or other state is never overwritten. Expiry processing is idempotent across application instances. An expired hold is never returned as a `200 OK` idempotent retry: a requester instead receives a newly created `201 Created` reservation when the listing remains eligible.
 
 #### Error Behavior
 

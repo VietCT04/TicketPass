@@ -338,19 +338,19 @@ Related GitHub Issues: `#53` - https://github.com/VietCT04/TicketPass/issues/53,
 
 ### Concern
 
-Issue `#54` uses a transaction-scoped pessimistic listing lock and a partial unique index to ensure only one concurrent buyer acquires an `ACTIVE` listing. Expired holds still require the separate expiration reconciliation and reactivation mechanism in issue `#55`.
+Issues `#54` and `#55` use a transaction-scoped pessimistic listing lock and a partial unique index to ensure only one concurrent buyer acquires an `ACTIVE` listing. Issue `#55` reconciles holds at `expires_at <= now` through both scheduled and request-time paths, and reactivates a listing only while it remains `RESERVED`.
 
 ### Risk
 
-Without issue `#55`, a listing can remain `RESERVED` after its hold expires, which delays its return to public availability. An unsafe future expiration implementation could also reactivate a listing that is no longer eligible.
+The functional expiration and reactivation risk is addressed. Verification coverage for expiration timing, multi-instance races, and partial-index replacement ordering is still deferred to the dedicated verification phase.
 
 ### Recommendation
 
-Keep the issue `#54` lock and unique-index safeguards intact. Issue `#55` should implement reliable expiry reconciliation using server time and revalidate listing eligibility before restoring `ACTIVE` status. Add focused concurrency and expiration coverage during the later verification phase.
+Keep the issue `#54` lock and unique-index safeguards intact. Add focused concurrency and expiration coverage during the later verification phase.
 
 ### Status
 
-Open
+Resolved
 
 ## CONCERN-0001: Platform-Specific Transferability Rules
 

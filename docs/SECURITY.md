@@ -194,7 +194,7 @@ The public detail response is only a current marketplace snapshot. Any future re
 
 ## Buyer Listing Reservation Security
 
-Issue `#53` defines the authenticated `POST /api/listings/{listingId}/reservations` contract. Issue `#54` implements atomic reservation creation; issue `#55` owns expiration and reactivation.
+Issue `#53` defines the authenticated `POST /api/listings/{listingId}/reservations` contract. Issue `#54` implements atomic reservation creation; issue `#55` implements expiration and reactivation.
 
 - Reservation creation requires Spring Security authentication before controller execution.
 - The controller must receive the immutable `AuthenticatedUser` principal with `@AuthenticationPrincipal`; the buyer ID is derived exclusively from that principal.
@@ -204,13 +204,14 @@ Issue `#53` defines the authenticated `POST /api/listings/{listingId}/reservatio
 - The `ACTIVE -> RESERVED` transition and creation of the associated reservation are atomic under a pessimistic listing lock, with a database partial unique index as the final active-reservation integrity guard. Concurrent buyer requests must not both succeed.
 - The 10-minute expiry must be generated from the injected application clock. Clients cannot choose, extend, or renew it.
 - Same-buyer active retries return the existing reservation without creating a duplicate or extending expiry.
-- An expired reservation must stop owning the listing. Issue `#54` rejects an expired but still-`ACTIVE` reservation as unavailable without repairing it; issue `#55` must implement reactivation and cleanup before any browser reservation action is exposed.
+- An expired reservation stops owning the listing at `expires_at <= now`, using the injected application clock. Request-time reconciliation and the bounded scheduled cleanup both lock the listing first, re-read the active reservation, and are safe when multiple application instances process the same candidate.
+- Expiration changes a listing back to `ACTIVE` only while it remains `RESERVED`; it never restores a later sale-related or terminal status. Scheduler failure logs contain only reservation and listing identifiers, never buyer identity, ticket payloads, credentials, cookies, or session data.
 
 Reservation responses may include only reservation ID, listing ID, reservation status, and expiry. They must not expose seller identity or contact details, buyer email, ticket payload data, `public_notes`, private transfer links, credentials, session tokens, or cookies.
 
 Issue `#53` does not add audit events. Add reservation audit coverage only after audit retention and access policy are defined.
 
-The existing cookie-authenticated CSRF concern applies to this state-changing endpoint. Issue `#56` must define and implement the appropriate protection before a browser reservation action is exposed. No frontend reservation control is implemented in issue `#54`.
+The existing cookie-authenticated CSRF concern applies to this state-changing endpoint. Issue `#56` must define and implement the appropriate protection before a browser reservation action is exposed. No frontend reservation control is implemented in issues `#54` or `#55`.
 
 ## Seller Event Autocomplete Security
 
