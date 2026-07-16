@@ -116,6 +116,39 @@ Defines the reservation ownership record for the buyer listing reservation contr
 
 Reservation records are separate from the listing so buyer ownership is not stored directly on `listings`. `V4__create_listing_reservations.sql` enforces at most one `ACTIVE` reservation row for a listing with a PostgreSQL partial unique index, while allowing historical `EXPIRED` and `CANCELLED` rows. It also indexes `buyer_user_id` and `(status, expires_at)` for ownership lookup and bounded expiration scans. Expiration is `expires_at <= now`, where `now` comes from the injected application clock. Expiring a row under the existing pessimistic listing lock flushes `ACTIVE -> EXPIRED` before a replacement active reservation can be inserted, preserving the partial unique-index invariant.
 
+### `orders` (Planned Checkout Contract)
+
+Issue `#65` defines this provider-neutral planned table; issue `#66` owns the migration and entity implementation. It does not exist yet.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID/string id | Primary key. |
+| `reservation_id` | UUID/string id | References `listing_reservations.id`; unique so one reservation has exactly one order. |
+| `buyer_user_id` | UUID/string id | Authenticated buyer snapshot derived server-side. |
+| `seller_user_id` | UUID/string id | Listing seller snapshot derived server-side. |
+| `listing_id` | UUID/string id | References the reserved listing. |
+| `amount_minor` | integer | Server-derived listing amount; VND MVP values represent whole dong. |
+| `currency` | string | Server-derived listing currency; VND only for the current MVP scope. |
+| `status` | enum/string | Order lifecycle status. |
+| `expires_at` | timestamp with timezone | Exactly equals the associated reservation `expires_at`; never extends the hold. |
+| `paid_at` | timestamp with timezone nullable | Set only by trusted payment completion. |
+| `created_at` | timestamp with timezone | Server-generated creation time. |
+| `updated_at` | timestamp with timezone | Server-generated last-update time. |
+
+Provider customer, payment, session, and event references belong in provider-specific operational payment records defined by later issues, not in the public order API or this core contract. Hosted payment URLs are short-lived redirect data and must not be stored as browser state.
+
+### Order Statuses (Planned)
+
+| Status | Meaning |
+|---|---|
+| `PAYMENT_PENDING` | Order is valid and awaits trusted payment confirmation before its inherited reservation deadline. |
+| `PAID` | Verified provider confirmation completed the sale atomically. Terminal. |
+| `PAYMENT_FAILED` | Trusted provider failure ended payment. Terminal. |
+| `CANCELLED` | Trusted cancellation flow ended payment. Terminal. |
+| `EXPIRED` | The inherited payment deadline elapsed. Terminal. |
+
+The only permitted transitions are from `PAYMENT_PENDING` to one terminal status. A failed, cancelled, or expired order cannot return to `PAYMENT_PENDING`. Issue `#66` must enforce a unique `reservation_id` and transaction-safe concurrent creation so repeated checkout starts resolve to the same order.
+
 ### `audit_events`
 
 Stores immutable audit records for security-sensitive business actions.
@@ -175,6 +208,11 @@ These values describe the expected transfer path only. Raw ticket payload storag
 - When a reservation expires, it becomes `EXPIRED`. The listing is released from `RESERVED` to `ACTIVE` only if its current status remains `RESERVED`; a later terminal or sale-related listing status is never overwritten. Request-time and scheduled reconciliation both use the existing pessimistic listing lock and server time.
 - A listing seller must not be able to own a reservation for that listing.
 - A valid reservation must not be inferred from frontend state or from a prior public event-detail response.
+- Each reservation may have exactly one order. The order expiry must equal the reservation expiry and must not extend, renew, or replace it.
+- Only a verified provider webhook or equivalent trusted server-to-server confirmation may atomically transition `PAYMENT_PENDING -> PAID` and `RESERVED -> SOLD` after revalidating order, reservation, listing, amount, currency, provider references, and trusted payment status.
+- An order read must reconcile an overdue `PAYMENT_PENDING` order using the injected application clock; stale pending status must not rely on scheduler timing.
+- Provider failure, cancellation, or expiry may reactivate a listing only while it remains `RESERVED` by that checkout path. A `SOLD` listing must never be reactivated by reservation or order expiry.
+- A verified late payment after terminal local expiry must not sell a listing or overwrite terminal order state; it requires durable operational handling for manual review or refund processing.
 - `SOLD` listings must never become purchasable again.
 - Public listing metadata must not include dedicated columns for QR codes, barcodes, ticket files, private transfer links, platform credentials, or other sensitive ticket payload data.
 - MVP does not classify free-text `listings.public_notes` for sensitive content; this limitation is tracked in `docs/CONCERNS.md`.
@@ -189,7 +227,7 @@ These values describe the expected transfer path only. Raw ticket payload storag
 - Audit records must not contain request bodies, seller contact data, public notes, seat information, ticket type, asking price, QR codes, barcodes, ticket files, private transfer links, platform credentials, passwords, session tokens, cookies, or email addresses.
 - Issue `#5` adds only `idx_audit_events_entity` on `(entity_type, entity_id)`. Actor, action, and timestamp indexes should wait for a concrete audit search or viewer use case.
 
-Issue `#53` does not add reservation audit events. Broader audit coverage remains deferred until audit retention and access policy are defined.
+Issue `#53` does not add reservation audit events. Issue `#65` also does not add generic payment audit events: provider replay/deduplication records are operational payment records, and broader payment-audit coverage remains deferred to issue `#70` after retention, access, and compliance requirements are defined.
 
 ## Public Browse Events Contract
 

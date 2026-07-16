@@ -350,6 +350,131 @@ The `409` response must not reveal whether another buyer owns a reservation.
 
 This endpoint does not define checkout, payment, escrow, `RESERVED -> SOLD`, ticket transfer or reveal, seller contact exchange, buyer-initiated release, extension or renewal, refunds, disputes, admin reservation management, or new audit event types.
 
+## Orders And Checkout
+
+Issue `#65` defines the provider-neutral checkout and order contract for `US-0007`. Database persistence belongs to issue `#66`, hosted payment-session integration belongs to issue `#67`, verified payment completion belongs to issue `#68`, and expiry or failure reconciliation belongs to issue `#69`.
+
+### Start Checkout
+
+```http
+POST /api/reservations/{reservationId}/checkout
+```
+
+Starts checkout for the authenticated buyer's active reservation. This endpoint has no request body. The server derives the buyer, reservation, listing, seller, amount, currency, order state, and order expiry; the browser must not send or override any of those values, provider references, or payment success.
+
+The server must revalidate all of the following using the injected application `Clock` before creating or returning an order:
+
+- The caller is authenticated.
+- The reservation exists, belongs to the caller, is `ACTIVE`, and has `expires_at > now`.
+- The reservation and listing still belong to the same checkout path.
+- The listing remains `RESERVED`.
+- The caller is not the listing seller.
+- The listing amount and currency remain valid for the MVP checkout scope.
+
+An event-detail response, browser countdown, frontend state, or earlier reservation response is never proof that checkout remains eligible.
+
+#### Success And Idempotency
+
+- Return `201 Created` when a new order is created for the reservation.
+- Return `200 OK` when the reservation already has its one order and that order may be returned.
+- A `PAYMENT_PENDING` order returns the same order and may include a currently valid hosted session when later issue `#67` creates or recovers one.
+- A `PAID` order returns the same safe order representation without a payment URL.
+- A `PAYMENT_FAILED`, `CANCELLED`, or `EXPIRED` order returns `409 Conflict` with `Checkout is no longer available`.
+
+Exactly one order may exist for each reservation. Issue `#66` must enforce this with a unique `reservation_id`, transaction-safe concurrent creation, and behavior that resolves repeated or concurrent checkout-start attempts to that same order. One order may have at most one usable hosted payment session at a time. A replacement session is permitted only after the prior session is confirmed unusable, cancelled, or expired, and must remain associated with the same order.
+
+#### Checkout Response
+
+Both `201` and successful `200` results use the following safe order representation:
+
+```json
+{
+  "order": {
+    "id": "55555555-5555-5555-5555-555555555555",
+    "reservation_id": "44444444-4444-4444-4444-444444444444",
+    "listing_id": "33333333-3333-3333-3333-333333333333",
+    "status": "PAYMENT_PENDING",
+    "amount_minor": 1250000,
+    "currency": "VND",
+    "expires_at": "2026-07-16T04:30:00Z",
+    "created_at": "2026-07-16T04:20:00Z",
+    "updated_at": "2026-07-16T04:20:00Z",
+    "paid_at": null,
+    "event": {
+      "name": "Example Concert",
+      "starts_at": "2026-08-15T19:30:00+07:00",
+      "venue": "Example Arena",
+      "city": "Ho Chi Minh City"
+    },
+    "ticket": {
+      "ticket_type": "General Admission",
+      "seat_info": "Section 101, Row B, Seat 12",
+      "transfer_method": "PLATFORM_TRANSFER"
+    }
+  },
+  "payment_url": "https://provider.example/hosted-session",
+  "payment_url_expires_at": "2026-07-16T04:30:00Z"
+}
+```
+
+`payment_url` and `payment_url_expires_at` are optional short-lived redirect data, present only when the order remains payable and a valid hosted session exists. They are not payment proof, must not be logged, and must not be persisted in `localStorage` or `sessionStorage`.
+
+The response must exclude buyer identity and email, seller identity or contact data, provider customer/payment/session/event identifiers, provider secrets or raw payloads, `public_notes`, session tokens or cookies, private transfer information, and QR codes, barcodes, ticket files, credentials, or other sensitive ticket payload data.
+
+#### Expiry And Statuses
+
+`order.expires_at` is exactly `reservation.expires_at`. Checkout never creates a second inventory deadline and never extends, renews, or replaces the reservation deadline. A hosted payment session must become unusable no later than `order.expires_at`; issue `#67` must provide an approved server-side invalidation mechanism if the selected provider cannot enforce that deadline.
+
+The MVP order statuses are `PAYMENT_PENDING`, `PAID`, `PAYMENT_FAILED`, `CANCELLED`, and `EXPIRED`. The only allowed transitions are:
+
+```text
+PAYMENT_PENDING -> PAID
+PAYMENT_PENDING -> PAYMENT_FAILED
+PAYMENT_PENDING -> CANCELLED
+PAYMENT_PENDING -> EXPIRED
+```
+
+`PAID`, `PAYMENT_FAILED`, `CANCELLED`, and `EXPIRED` are terminal. Failed, cancelled, and expired orders must not be reactivated. A valid pending retry recovers the same order and its one usable provider session.
+
+#### Error And Privacy Behavior
+
+- Malformed `reservationId` or `orderId`: `400 Bad Request`.
+- Missing, malformed, unknown, expired, or revoked session: `401 Unauthorized`.
+- Missing reservation or a reservation owned by another buyer: `404 Not Found`.
+- Expired reservation, seller self-checkout, inconsistent reservation or listing state, terminal order, or otherwise unavailable checkout: `409 Conflict` with `Checkout is no longer available`.
+- Temporary hosted-payment-provider unavailability during later session creation: `503 Service Unavailable` with a controlled response.
+
+Errors must not reveal seller identity, reservation ownership, provider references or configuration, webhook state, or internal financial details. The same `404` behavior for absent and non-owned reservations prevents ownership enumeration.
+
+### Read Order
+
+```http
+GET /api/orders/{orderId}
+```
+
+Returns a safe order representation only to its authenticated buyer. It supports `/checkout/{orderId}`, hard-refresh recovery, navigation back to checkout, provider return routes, and server-authoritative state refresh.
+
+Before responding, the server must reconcile an overdue `PAYMENT_PENDING` order with the injected `Clock`; scheduled cleanup not having run is not a reason to return stale pending state. The response uses the safe order representation above but never includes a stored provider checkout URL. A new or recovered payable URL belongs only to checkout-start or later approved session recovery.
+
+Malformed `orderId` returns `400 Bad Request`; missing, non-owned, or otherwise inaccessible orders return `404 Not Found`; missing or invalid authentication returns `401 Unauthorized`.
+
+### Payment Completion Authority
+
+Only a verified provider webhook or equivalent trusted server-to-server confirmation may atomically perform:
+
+```text
+order:   PAYMENT_PENDING -> PAID
+listing: RESERVED -> SOLD
+```
+
+That confirmation must revalidate the order, reservation identity/ownership/status/expiry, listing identity/status, amount, currency, approved provider references, and trusted provider payment status. Browser redirects, query parameters, frontend state, hosted-session creation, and browser API calls can never mark an order paid or a listing sold.
+
+A trusted terminal provider failure or cancellation must eventually transition the order, expire or cancel its reservation through the approved server-side flow, and reactivate the listing only when it remains `RESERVED` by that checkout path and has not become `SOLD`, `CANCELLED`, `EXPIRED`, or another later state. A browser cancellation redirect alone is non-authoritative. Exact provider-event mapping, lock ordering, reconciliation, scheduling, and inventory-release implementation belong to issue `#69`.
+
+When verified success arrives after local order or reservation expiry, the server must not mark the listing `SOLD`, overwrite the terminal order state, or alter unrelated inventory. It must durably record or deduplicate the trusted provider event and surface it for future manual handling or refund processing. Refund execution is outside this contract.
+
+Provider-specific objects and payloads must not become part of the TicketPass order API or core domain model. Issue `#67` will select the initial hosted provider and define its integration, idempotency key, session references, return URLs, expiry support, configuration, and provider-specific error mapping. This contract adds no generic payment audit events; provider replay/deduplication records are operational payment records, while broader payment audit coverage is deferred to issue `#70`.
+
 ## Events
 
 Events let buyers browse upcoming event-first marketplace inventory without exposing sensitive ticket or seller information.
