@@ -17,4 +17,8 @@ public interface OrderRepository extends JpaRepository<OrderEntity, UUID> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select checkoutOrder from OrderEntity checkoutOrder where checkoutOrder.reservation.id = :reservationId")
     Optional<OrderEntity> findByReservationIdForCheckout(@Param("reservationId") UUID reservationId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select checkoutOrder from OrderEntity checkoutOrder where checkoutOrder.id = :orderId")
+    Optional<OrderEntity> findByIdForPayment(@Param("orderId") UUID orderId);
 }

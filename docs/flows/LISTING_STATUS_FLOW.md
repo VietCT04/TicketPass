@@ -107,7 +107,7 @@ Recommended implementation direction:
 
 - Implementing database constraints or service logic.
 - Checkout implementation, provider selection, and payment-session creation.
-- Payment webhook, failure, expiry, and reconciliation implementation.
+- Payment failure, expiry, and reconciliation implementation. Issue `#68` implements verified successful webhook completion only; issue `#69` owns failure/cancellation transitions and inventory release.
 - Ticket reveal.
 - Dispute handling.
 - Admin recovery from terminal statuses.

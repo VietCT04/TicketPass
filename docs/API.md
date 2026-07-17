@@ -459,7 +459,19 @@ POST /mock-provider/sessions/{providerSessionId}/cancel
 
 These routes are public provider-facing routes and do not require a TicketPass login. The page displays only amount, currency, server-provided expiry, and provider session state. It accepts a success, decline, or cancellation action only while the mock session is `PENDING` and unexpired. A valid action changes only mock provider state, writes one durable pending provider event, and redirects to the configured frontend `/checkout/{orderId}` route with `provider_return=success`, `failed`, or `cancelled`.
 
-The return query parameter is a presentation hint only. It cannot transition the TicketPass order, reservation, or listing. At or after expiry the mock provider marks the session unavailable and rejects payment actions. Signed event delivery, webhook receipt, replay protection, and all TicketPass payment completion remain issue `#68` work.
+The return query parameter is a presentation hint only. It cannot transition the TicketPass order, reservation, or listing. At or after expiry the mock provider marks the session unavailable and rejects payment actions.
+
+### Mock Payment Webhook
+
+```http
+POST /api/payments/webhooks/mock
+```
+
+This public provider-to-provider endpoint accepts no browser authentication or CORS authority. The mock provider signs the exact UTF-8 JSON bytes with `X-Mock-Timestamp` (Unix seconds) and `X-Mock-Signature: v1=<lowercase HMAC-SHA256 hex>` over `<timestamp>.<raw body>`. TicketPass verifies the HMAC in constant time and rejects timestamps more than five minutes from the injected server `Clock` before parsing JSON.
+
+The minimal payload contains only `event_id`, `event_type`, `provider_session_id`, `amount_minor`, `currency`, and `occurred_at`. It must not contain TicketPass IDs, identities, checkout URLs, ticket data, or payment credentials. Valid requests return `200` for processing, duplicates, deferred failures/cancellations, ignored events, and safe late/inconsistent outcomes; malformed payloads return `400`; missing, malformed, stale, or invalid signatures return a controlled `401`; transient failures return `500`.
+
+The mock outbox posts these signed bytes over HTTP on a bounded retry schedule. It marks an event delivered only after `2xx`, retries failed delivery at bounded exponential delays, and dead-letters after eight attempts. TicketPass atomically deduplicates each provider event in a webhook receipt ledger. A verified successful event locks listing, reservation, order, then payment session; revalidates their relationships, amount, currency, matching expiry, and current state; then atomically moves `PENDING -> PAID`, `PAYMENT_PENDING -> PAID`, and `RESERVED -> SOLD`. Late or inconsistent success is recorded as `REQUIRES_ACTION` without changing marketplace state. Verified failure and cancellation events are recorded as `DEFERRED`; issue `#69` owns their terminal transitions and guarded inventory release.
 
 ### Read Order
 

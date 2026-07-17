@@ -23,10 +23,10 @@ TicketPass may collect payment in this story, but it must not describe that beha
 - [ ] TicketPass keeps its core order and lifecycle rules provider-neutral; issue `#67` uses an in-application mock hosted provider, while production-provider selection is deferred to a later user story.
 - [ ] The hosted payment session expires no later than the reservation `expires_at` and checkout never extends or renews the reservation.
 - [ ] A browser success redirect, cancellation redirect, query parameter, or client-side state cannot mark an order paid.
-- [ ] Only a verified provider webhook or equivalent trusted server-to-server confirmation may complete payment.
-- [ ] Payment confirmation revalidates the order, reservation, listing, amount, currency, provider references, and current states server-side.
-- [ ] Successful payment atomically transitions the order from `PAYMENT_PENDING` to `PAID` and the listing from `RESERVED` to `SOLD`.
-- [ ] Duplicate or concurrently delivered provider events cannot create duplicate financial effects or sell the same listing twice.
+- [x] Only a verified provider webhook or equivalent trusted server-to-server confirmation may complete payment.
+- [x] Payment confirmation revalidates the order, reservation, listing, amount, currency, provider references, and current states server-side.
+- [x] Successful payment atomically transitions the order from `PAYMENT_PENDING` to `PAID` and the listing from `RESERVED` to `SOLD`.
+- [x] Duplicate or concurrently delivered provider events cannot create duplicate financial effects or sell the same listing twice.
 - [ ] Reservation expiration never reactivates a listing after it has become `SOLD`.
 - [ ] Abandoned, cancelled, failed, and expired unpaid checkout attempts reach controlled order states without leaving eligible inventory permanently stuck in `RESERVED`.
 - [ ] Unexpected successful provider confirmation after local expiry follows an explicitly documented safe policy rather than silently overselling inventory or ignoring paid funds.
