@@ -2,9 +2,21 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with authenticated seller listings, event browsing/detail, buyer reservations, checkout-session preparation, and a mock hosted payment provider. Mock payment events are delivered through signed HTTP webhooks and an atomic receipt ledger; verified, timely payment success completes the order and sells the reserved listing. Checkout reconciliation handles trusted failure, cancellation, and expiry without releasing inventory when payment requires manual action, and authenticated buyers can read their safe order state. The mock lifecycle is now fail-closed at the route boundary, startup-validated, and bounded for webhook input and network delivery.
+TicketPass is an early monorepo scaffold with authenticated seller listings, event browsing/detail, buyer reservations, and protected browser checkout recovery backed by a mock hosted payment provider. Mock payment events are delivered through signed HTTP webhooks and an atomic receipt ledger; verified, timely payment success completes the order and sells the reserved listing. Checkout reconciliation handles trusted failure, cancellation, and expiry without releasing inventory when payment requires manual action, and authenticated buyers can reload their safe server-authoritative order state. The mock lifecycle is fail-closed at the route boundary, startup-validated, and bounded for webhook input and network delivery.
 
 ## Latest Completed Work
+
+- Date: 2026-07-18
+- GitHub Issue: `#71` - https://github.com/VietCT04/TicketPass/issues/71
+- Summary: Added the protected buyer `/checkout/{orderId}` recovery route and strict checkout/order API client. Active reservations now expose an explicit checkout action; valid hosted-payment URLs remain ephemeral and redirect only after controlled responses. The checkout UI reloads only safe server-authoritative order data, treats provider-return values and countdowns as non-authoritative presentation context, bounds visible-page return polling, and clearly keeps ticket delivery/reveal and seller payout out of the paid state.
+- Files changed:
+  - `apps/web/src/app/checkout/[orderId]/page.tsx`
+  - `apps/web/src/components/CheckoutPanel.tsx`
+  - `apps/web/src/components/EventListingCard.tsx`
+  - `apps/web/src/components/RequireAuth.tsx`
+  - `apps/web/src/lib/checkout.ts`
+  - `apps/web/src/lib/redirects.ts`
+  - `docs/flows/BUYER_CHECKOUT_FLOW.md`, `docs/flows/BUYER_RESERVATION_FLOW.md`, `docs/SECURITY.md`, `docs/CONCERNS.md`, `docs/user-stories/US-0007-complete-checkout-for-reserved-ticket.md`, `docs/CONTINUITY.md`
 
 - Date: 2026-07-18
 - GitHub Issue: `#70` - https://github.com/VietCT04/TicketPass/issues/70
@@ -472,8 +484,8 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 
 ## Active Work
 
-- Current GitHub Issue: `#70` - https://github.com/VietCT04/TicketPass/issues/70
-- Current goal: Review and merge checkout payment security and operations hardening.
+- Current GitHub Issue: `#71` - https://github.com/VietCT04/TicketPass/issues/71
+- Current goal: Review and merge the protected buyer checkout and recovery UI.
 - Current blocker: None.
 
 ## Important User Stories
@@ -510,6 +522,6 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 
 ## Next Recommended Steps
 
-1. Review and merge the issue `#70` checkout security hardening pull request.
-2. Build the protected buyer checkout and recovery UI in issue `#71`.
+1. Review and merge the issue `#71` protected buyer checkout and recovery pull request.
+2. Define a current-reservation recovery experience for holds that have not started checkout.
 3. Define a production-provider user story before any production payment collection.

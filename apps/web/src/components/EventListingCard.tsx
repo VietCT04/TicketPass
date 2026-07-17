@@ -8,6 +8,7 @@ import {
   ReservationRequestError,
   reserveListing
 } from "@/lib/reservations";
+import { CheckoutRequestError, startCheckout } from "@/lib/checkout";
 
 type EventListingCardProps = {
   listing: EventListingSummary;
@@ -20,6 +21,7 @@ export function EventListingCard({ listing, loginReturnTarget }: EventListingCar
   const [reservation, setReservation] = useState<ListingReservation | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isRefreshingAvailability, setIsRefreshingAvailability] = useState(false);
+  const [isStartingCheckout, setIsStartingCheckout] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const [hasExpired, setHasExpired] = useState(false);
 
@@ -92,6 +94,54 @@ export function EventListingCard({ listing, loginReturnTarget }: EventListingCar
     }
   }
 
+  async function handleCheckout() {
+    if (!reservation || isStartingCheckout || hasExpired) {
+      return;
+    }
+
+    setIsStartingCheckout(true);
+    setErrorMessage(null);
+
+    try {
+      const result = await startCheckout(reservation.id);
+
+      if (result.payment_url) {
+        window.location.assign(result.payment_url);
+        return;
+      }
+
+      router.push(`/checkout/${result.order.id}`);
+    } catch (error) {
+      if (error instanceof CheckoutRequestError) {
+        if (error.status === 401) {
+          router.push(`/login?next=${encodeURIComponent(loginReturnTarget)}`);
+          return;
+        }
+
+        if (error.status === 403) {
+          setErrorMessage("Request rejected. Reload the page and try again.");
+          return;
+        }
+
+        if (error.status === 404 || error.status === 409) {
+          setErrorMessage("This checkout is no longer available. Refreshing availability...");
+          setIsRefreshingAvailability(true);
+          router.refresh();
+          return;
+        }
+
+        if (error.status === 503) {
+          setErrorMessage("The payment provider is temporarily unavailable. Please try again.");
+          return;
+        }
+      }
+
+      setErrorMessage("Could not start checkout. Please try again.");
+    } finally {
+      setIsStartingCheckout(false);
+    }
+  }
+
   const remainingSeconds = reservation
     ? Math.max(0, Math.ceil((Date.parse(reservation.expires_at) - now) / 1000))
     : 0;
@@ -132,7 +182,17 @@ export function EventListingCard({ listing, loginReturnTarget }: EventListingCar
           </p>
           {hasExpired ? (
             <p className="mt-2 font-medium text-emerald-900">Refreshing availability...</p>
-          ) : null}
+          ) : (
+            <button
+              type="button"
+              onClick={handleCheckout}
+              disabled={isStartingCheckout}
+              className="mt-4 rounded-md bg-slate-950 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+            >
+              {isStartingCheckout ? "Opening checkout..." : "Continue to checkout"}
+            </button>
+          )}
+          {errorMessage ? <p className="mt-3 text-sm font-medium text-red-800">{errorMessage}</p> : null}
         </section>
       ) : (
         <section className="flex flex-col gap-3 border-t border-slate-100 pt-4">
