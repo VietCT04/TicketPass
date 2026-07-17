@@ -2,6 +2,7 @@ package com.ticketpass.api.payment;
 
 import com.ticketpass.api.auth.AuthenticatedUser;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,6 +25,8 @@ public class CheckoutController {
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             @PathVariable String reservationId) {
         CheckoutService.CheckoutResult result = checkoutService.checkout(currentUser.id(), reservationId);
-        return ResponseEntity.status(result.created() ? HttpStatus.CREATED : HttpStatus.OK).body(result.response());
+        return ResponseEntity.status(result.created() ? HttpStatus.CREATED : HttpStatus.OK)
+                .header(HttpHeaders.CACHE_CONTROL, "no-store")
+                .body(result.response());
     }
 }

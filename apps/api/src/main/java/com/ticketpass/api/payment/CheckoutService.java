@@ -3,11 +3,15 @@ package com.ticketpass.api.payment;
 import com.ticketpass.api.order.OrderStatus;
 import com.ticketpass.api.order.SafeOrderResponseService;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 @Service
 public class CheckoutService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(CheckoutService.class);
 
     private final CheckoutPreparationService preparationService;
     private final PaymentProvider paymentProvider;
@@ -24,6 +28,8 @@ public class CheckoutService {
 
     public CheckoutResult checkout(UUID buyerId, String reservationId) {
         CheckoutPreparation preparation = prepareWithConcurrencyRecovery(buyerId, reservationId);
+        LOGGER.info("Checkout order {} {}", preparation.order().getId(),
+                preparation.orderCreated() ? "created" : "recovered");
         if (preparation.order().getStatus() == OrderStatus.PAID) {
             return new CheckoutResult(
                     new CheckoutResponse(safeOrderResponseService.forCheckout(preparation.order().getId()), null, null),

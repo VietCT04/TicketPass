@@ -34,7 +34,9 @@ ticketpass:
     reconciliation-batch-size: ${PAYMENT_RECONCILIATION_BATCH_SIZE:100}
     frontend-base-url: ${TICKETPASS_FRONTEND_BASE_URL:http://localhost:3000}
     mock:
+      enabled: ${MOCK_PAYMENT_ENABLED:true}
       provider-base-url: ${MOCK_PAYMENT_PROVIDER_BASE_URL:http://localhost:8080}
-      webhook-secret: ${MOCK_PAYMENT_WEBHOOK_SECRET:local-development-secret}
+      webhook-secret: ${MOCK_PAYMENT_WEBHOOK_SECRET:}
       webhook-url: ${MOCK_PAYMENT_WEBHOOK_URL:http://localhost:8080/api/payments/webhooks/mock}
+      allow-non-loopback: ${MOCK_PAYMENT_ALLOW_NON_LOOPBACK:false}
       delivery-interval-ms: ${MOCK_PAYMENT_DELIVERY_INTERVAL_MS:5000}

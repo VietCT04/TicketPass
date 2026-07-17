@@ -2,9 +2,17 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with authenticated seller listings, event browsing/detail, buyer reservations, checkout-session preparation, and a mock hosted payment provider. Mock payment events are delivered through signed HTTP webhooks and an atomic receipt ledger; verified, timely payment success completes the order and sells the reserved listing. Checkout reconciliation now handles trusted failure, cancellation, and expiry without releasing inventory when payment requires manual action, and authenticated buyers can read their safe order state.
+TicketPass is an early monorepo scaffold with authenticated seller listings, event browsing/detail, buyer reservations, checkout-session preparation, and a mock hosted payment provider. Mock payment events are delivered through signed HTTP webhooks and an atomic receipt ledger; verified, timely payment success completes the order and sells the reserved listing. Checkout reconciliation handles trusted failure, cancellation, and expiry without releasing inventory when payment requires manual action, and authenticated buyers can read their safe order state. The mock lifecycle is now fail-closed at the route boundary, startup-validated, and bounded for webhook input and network delivery.
 
 ## Latest Completed Work
+
+- Date: 2026-07-18
+- GitHub Issue: `#70` - https://github.com/VietCT04/TicketPass/issues/70
+- Summary: Hardened the mock checkout lifecycle with deny-by-default route authorization, exact webhook browser-security exclusions, immutable validated payment configuration, external webhook-secret enforcement, safe URI construction, no-store checkout responses, hosted-page headers, webhook size/header limits, and claim/call/finalize mock delivery. No schema migration or generic audit event was added.
+- Files changed:
+  - `apps/api/src/main/java/com/ticketpass/api/{auth,config,payment}/*`
+  - `apps/api/src/main/resources/application.yml`
+  - `docs/API.md`, `docs/SECURITY.md`, `docs/DATABASE.md`, `docs/CONCERNS.md`, `docs/user-stories/US-0007-complete-checkout-for-reserved-ticket.md`, `docs/CONTINUITY.md`
 
 - Date: 2026-07-17
 - GitHub Issue: `#69` - https://github.com/VietCT04/TicketPass/issues/69
@@ -464,8 +472,8 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 
 ## Active Work
 
-- Current GitHub Issue: `#69` - https://github.com/VietCT04/TicketPass/issues/69
-- Current goal: Review and merge checkout terminal reconciliation and protected order reads.
+- Current GitHub Issue: `#70` - https://github.com/VietCT04/TicketPass/issues/70
+- Current goal: Review and merge checkout payment security and operations hardening.
 - Current blocker: None.
 
 ## Important User Stories
@@ -502,6 +510,6 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 
 ## Next Recommended Steps
 
-1. Review and merge the issue `#69` checkout reconciliation pull request.
-2. Complete payment security and operational hardening in issue `#70`.
-3. Build the protected buyer checkout and recovery UI in issue `#71`.
+1. Review and merge the issue `#70` checkout security hardening pull request.
+2. Build the protected buyer checkout and recovery UI in issue `#71`.
+3. Define a production-provider user story before any production payment collection.

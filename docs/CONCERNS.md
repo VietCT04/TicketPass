@@ -3,7 +3,7 @@
 ## CONCERN-0021: Hosted Payment Deadline And Late Confirmation Operations
 
 Date: 2026-07-16  
-Related GitHub Issues: `#65` - https://github.com/VietCT04/TicketPass/issues/65; `#67` - https://github.com/VietCT04/TicketPass/issues/67; `#68` - https://github.com/VietCT04/TicketPass/issues/68; `#69` - https://github.com/VietCT04/TicketPass/issues/69  
+Related GitHub Issues: `#65` - https://github.com/VietCT04/TicketPass/issues/65; `#67` - https://github.com/VietCT04/TicketPass/issues/67; `#68` - https://github.com/VietCT04/TicketPass/issues/68; `#69` - https://github.com/VietCT04/TicketPass/issues/69; `#70` - https://github.com/VietCT04/TicketPass/issues/70
 Related User Story: `docs/user-stories/US-0007-complete-checkout-for-reserved-ticket.md`
 
 ### Concern
@@ -17,6 +17,27 @@ An implementation could accidentally extend a hold, sell a listing after it was 
 ### Recommendation
 
 Before a production-provider user story is approved, confirm deadline support or define an approved server-side invalidation path. Issue `#68` durably deduplicates late trusted success events and records them as `REQUIRES_ACTION` without sale completion. Issue `#69` now preserves terminal local state during failure/cancellation/expiry reconciliation and blocks automatic release for unresolved receipts. Define manual review, refund, and customer communication operations before production payment collection.
+
+### Status
+
+Open
+
+## CONCERN-0022: Mock Payment Infrastructure Is Not Production Payment Processing
+
+Date: 2026-07-18
+Related GitHub Issue: `#70` - https://github.com/VietCT04/TicketPass/issues/70
+
+### Concern
+
+The only supported provider is an in-application mock used for checkout lifecycle development. It does not provide regulated escrow, production payment collection, seller payout, refunds, chargebacks, disputes, fraud controls, monitoring, or admin operations.
+
+### Risk
+
+Deploying or describing the mock path as a production payment service could expose users to incorrect payment expectations and leave financial or operational failures without handling.
+
+### Recommendation
+
+Before production collection, approve a dedicated provider-specific user story and security review covering credentials, webhook contracts, refunds, payouts, disputes, financial audit, alerting, monitoring, and operational ownership.
 
 ### Status
 

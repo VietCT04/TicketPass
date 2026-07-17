@@ -5,13 +5,15 @@ import com.ticketpass.api.payment.PaymentProviderUnavailableException;
 import com.ticketpass.api.payment.PaymentSessionRequest;
 import com.ticketpass.api.payment.PaymentSessionResult;
 import com.ticketpass.api.payment.PaymentSessionStatus;
+import com.ticketpass.api.payment.PaymentProperties;
 import java.time.Clock;
 import java.time.Instant;
+import java.net.URI;
 import java.util.UUID;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.util.UriComponentsBuilder;
 
 @Service
 @ConditionalOnProperty(name = "ticketpass.payments.provider", havingValue = "mock")
@@ -23,17 +25,17 @@ public class MockPaymentProvider implements PaymentProvider {
     private final MockProviderSessionRepository sessionRepository;
     private final MockPaymentEventRepository eventRepository;
     private final Clock clock;
-    private final String providerBaseUrl;
+    private final URI providerBaseUrl;
 
     public MockPaymentProvider(
             MockProviderSessionRepository sessionRepository,
             MockPaymentEventRepository eventRepository,
             Clock clock,
-            @Value("${ticketpass.payments.mock.provider-base-url:http://localhost:8080}") String providerBaseUrl) {
+            PaymentProperties paymentProperties) {
         this.sessionRepository = sessionRepository;
         this.eventRepository = eventRepository;
         this.clock = clock;
-        this.providerBaseUrl = stripTrailingSlash(providerBaseUrl);
+        this.providerBaseUrl = paymentProperties.mock().providerBaseUrl();
     }
 
     @Override
@@ -140,7 +142,9 @@ public class MockPaymentProvider implements PaymentProvider {
                 session.getCurrency(),
                 session.getExpiresAt(),
                 session.getStatus() == MockProviderSessionStatus.PENDING
-                        ? providerBaseUrl + "/mock-provider/checkout/" + session.getProviderSessionId()
+                        ? UriComponentsBuilder.fromUri(providerBaseUrl)
+                                .pathSegment("mock-provider", "checkout", session.getProviderSessionId())
+                                .toUriString()
                         : null);
     }
 
@@ -157,7 +161,4 @@ public class MockPaymentProvider implements PaymentProvider {
         return status != MockProviderSessionStatus.PENDING;
     }
 
-    private static String stripTrailingSlash(String url) {
-        return url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
-    }
 }

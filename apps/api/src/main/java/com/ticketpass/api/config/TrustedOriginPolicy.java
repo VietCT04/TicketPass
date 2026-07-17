@@ -44,6 +44,21 @@ public class TrustedOriginPolicy {
                 .orElse(false);
     }
 
+    public boolean hasNonLoopbackOrHttpsOrigin() {
+        return allowedOrigins.stream().anyMatch(origin -> {
+            URI uri = URI.create(origin);
+            return "https".equals(uri.getScheme()) || !isLoopbackHost(uri.getHost());
+        });
+    }
+
+    private static boolean isLoopbackHost(String host) {
+        try {
+            return java.net.InetAddress.getByName(host).isLoopbackAddress();
+        } catch (Exception exception) {
+            return false;
+        }
+    }
+
     private static String normalizeConfiguredOrigin(String configuredOrigin) {
         return normalizeRequestOrigin(configuredOrigin, false)
                 .orElseThrow(() -> new IllegalStateException(
