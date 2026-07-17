@@ -33,6 +33,7 @@ TicketPass may collect payment in this story, but it must not describe that beha
 - [ ] The buyer can use a protected `/checkout/{orderId}` route to recover the current server-authoritative order state after refresh, navigation, or return from the payment provider.
 - [ ] Frontend checkout state is not used as the source of truth and is not persisted in `localStorage` or `sessionStorage` as a replacement for server recovery.
 - [x] Checkout and order responses exclude provider secrets, raw payment credentials, seller contact details, session data, private transfer information, and sensitive ticket payload data.
+- [x] The mock checkout lifecycle uses fail-closed route authorization, validated server-only payment configuration, bounded webhook input/delivery, no-store payment responses, and safe operational logs; it remains development infrastructure rather than a production payment provider.
 - [ ] The UI clearly distinguishes reservation, pending payment, paid order, and future ticket-delivery states and never implies that payment immediately reveals or transfers the ticket.
 - [ ] Relevant API, database, security, listing-status, concern, flow, and continuity documentation is updated by the focused implementation issues.
 

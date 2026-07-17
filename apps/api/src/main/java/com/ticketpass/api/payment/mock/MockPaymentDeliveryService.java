@@ -11,9 +11,12 @@ import java.time.Duration;
 import java.time.Instant;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import org.springframework.beans.factory.annotation.Value;
+import com.ticketpass.api.payment.PaymentProperties;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Service
 class MockPaymentDeliveryService {
@@ -21,6 +24,9 @@ class MockPaymentDeliveryService {
     private static final String PENDING = "PENDING";
     private static final String DELIVERED = "DELIVERED";
     private static final String DEAD_LETTER = "DEAD_LETTER";
+    private static final Duration DELIVERY_LEASE = Duration.ofSeconds(30);
+    private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(5);
+    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
     private static final Duration[] RETRY_DELAYS = {
             Duration.ofSeconds(5), Duration.ofSeconds(15), Duration.ofSeconds(30),
             Duration.ofMinutes(1), Duration.ofMinutes(2), Duration.ofMinutes(5), Duration.ofMinutes(10)};
@@ -28,70 +34,91 @@ class MockPaymentDeliveryService {
     private final MockProviderSessionRepository sessionRepository;
     private final ObjectMapper objectMapper;
     private final Clock clock;
-    private final String webhookUrl;
+    private final URI webhookUrl;
     private final byte[] webhookSecret;
-    private final HttpClient httpClient = HttpClient.newHttpClient();
+    private final TransactionTemplate transactionTemplate;
+    private final HttpClient httpClient = HttpClient.newBuilder()
+            .connectTimeout(CONNECT_TIMEOUT)
+            .followRedirects(HttpClient.Redirect.NEVER)
+            .build();
 
     MockPaymentDeliveryService(
             MockPaymentEventRepository eventRepository,
             MockProviderSessionRepository sessionRepository,
             ObjectMapper objectMapper,
             Clock clock,
-            @Value("${ticketpass.payments.mock.webhook-url}") String webhookUrl,
-            @Value("${ticketpass.payments.mock.webhook-secret}") String webhookSecret) {
+            PaymentProperties paymentProperties,
+            PlatformTransactionManager transactionManager) {
         this.eventRepository = eventRepository;
         this.sessionRepository = sessionRepository;
         this.objectMapper = objectMapper;
         this.clock = clock;
-        this.webhookUrl = webhookUrl;
-        this.webhookSecret = webhookSecret.getBytes(StandardCharsets.UTF_8);
+        this.webhookUrl = paymentProperties.mock().webhookUrl();
+        this.webhookSecret = paymentProperties.mock().webhookSecret().getBytes(StandardCharsets.UTF_8);
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
     }
 
-    @Transactional
-    void deliver(MockPaymentEventEntity event, Instant now) {
-        if (!PENDING.equals(event.getDeliveryStatus()) || event.getNextAttemptAt().isAfter(now)) return;
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    DeliveryAttempt claim(UUID eventId, Instant now) {
+        MockPaymentEventEntity event = eventRepository.findByIdForDelivery(eventId).orElse(null);
+        if (event == null || !PENDING.equals(event.getDeliveryStatus()) || event.getNextAttemptAt().isAfter(now)) {
+            return null;
+        }
+        Instant leaseUntil = now.plus(DELIVERY_LEASE);
+        event.setAttemptCount(event.getAttemptCount() + 1);
+        event.setLastAttemptAt(now);
+        event.setNextAttemptAt(leaseUntil);
         MockProviderSessionEntity session = sessionRepository.findByProviderSessionId(event.getProviderSessionId()).orElse(null);
         if (session == null) {
-            failure(event, now);
-            eventRepository.save(event);
-            return;
+            return new DeliveryAttempt(event.getId(), leaseUntil, null, null);
         }
         try {
             byte[] body = objectMapper.writeValueAsBytes(new Payload(
                     event.getId().toString(), event.getEventType().name(), session.getProviderSessionId(),
                     session.getAmountMinor(), session.getCurrency(), event.getCreatedAt()));
             String timestamp = Long.toString(now.getEpochSecond());
-            int status = httpClient.send(HttpRequest.newBuilder(URI.create(webhookUrl))
-                    .header("Content-Type", "application/json")
-                    .header("X-Mock-Timestamp", timestamp)
-                    .header("X-Mock-Signature", "v1=" + signature(timestamp, body))
-                    .POST(HttpRequest.BodyPublishers.ofByteArray(body)).build(), HttpResponse.BodyHandlers.discarding()).statusCode();
-            if (status >= 200 && status < 300) {
-                event.setDeliveryStatus(DELIVERED);
-                event.setDeliveredAt(now);
-                event.setLastAttemptAt(now);
-                event.setAttemptCount(event.getAttemptCount() + 1);
-            } else if (status >= 500) {
-                failure(event, now);
-            } else {
-                event.setAttemptCount(event.getAttemptCount() + 1);
-                event.setLastAttemptAt(now);
-                event.setDeliveryStatus(DEAD_LETTER);
-            }
+            return new DeliveryAttempt(event.getId(), leaseUntil, body, timestamp);
         } catch (Exception exception) {
-            failure(event, now);
+            return new DeliveryAttempt(event.getId(), leaseUntil, null, null);
         }
-        eventRepository.save(event);
     }
 
-    private void failure(MockPaymentEventEntity event, Instant now) {
-        int attempts = event.getAttemptCount() + 1;
-        event.setAttemptCount(attempts);
-        event.setLastAttemptAt(now);
-        if (attempts >= 8) {
+    DeliveryResult deliver(DeliveryAttempt attempt) {
+        if (attempt.body() == null) {
+            return transactionTemplate.execute(status -> finalizeAttempt(attempt, DeliveryOutcome.RETRY, clock.instant()));
+        }
+        try {
+            int status = httpClient.send(HttpRequest.newBuilder(webhookUrl)
+                    .timeout(REQUEST_TIMEOUT)
+                    .header("Content-Type", "application/json")
+                    .header("X-Mock-Timestamp", attempt.timestamp())
+                    .header("X-Mock-Signature", "v1=" + signature(attempt.timestamp(), attempt.body()))
+                    .POST(HttpRequest.BodyPublishers.ofByteArray(attempt.body()))
+                    .build(), HttpResponse.BodyHandlers.discarding()).statusCode();
+            DeliveryOutcome outcome = status >= 200 && status < 300 ? DeliveryOutcome.DELIVERED
+                    : status >= 500 ? DeliveryOutcome.RETRY : DeliveryOutcome.DEAD_LETTER;
+            return transactionTemplate.execute(transaction -> finalizeAttempt(attempt, outcome, clock.instant()));
+        } catch (Exception exception) {
+            return transactionTemplate.execute(status -> finalizeAttempt(attempt, DeliveryOutcome.RETRY, clock.instant()));
+        }
+    }
+
+    private DeliveryResult finalizeAttempt(DeliveryAttempt attempt, DeliveryOutcome outcome, Instant now) {
+        MockPaymentEventEntity event = eventRepository.findByIdForDelivery(attempt.eventId()).orElse(null);
+        if (event == null || !PENDING.equals(event.getDeliveryStatus()) || !attempt.leaseUntil().equals(event.getNextAttemptAt())) {
+            return DeliveryResult.SKIPPED;
+        }
+        if (outcome == DeliveryOutcome.DELIVERED) {
+            event.setDeliveryStatus(DELIVERED);
+            event.setDeliveredAt(now);
+            return DeliveryResult.DELIVERED;
+        }
+        if (outcome == DeliveryOutcome.DEAD_LETTER || event.getAttemptCount() >= 8) {
             event.setDeliveryStatus(DEAD_LETTER);
+            return DeliveryResult.DEAD_LETTER;
         } else {
-            event.setNextAttemptAt(now.plus(RETRY_DELAYS[Math.min(attempts - 1, RETRY_DELAYS.length - 1)]));
+            event.setNextAttemptAt(now.plus(RETRY_DELAYS[Math.min(event.getAttemptCount() - 1, RETRY_DELAYS.length - 1)]));
+            return DeliveryResult.RETRY_SCHEDULED;
         }
     }
 
@@ -108,4 +135,10 @@ class MockPaymentDeliveryService {
     private record Payload(
             String event_id, String event_type, String provider_session_id,
             long amount_minor, String currency, Instant occurred_at) { }
+
+    record DeliveryAttempt(UUID eventId, Instant leaseUntil, byte[] body, String timestamp) { }
+
+    enum DeliveryResult { SKIPPED, DELIVERED, RETRY_SCHEDULED, DEAD_LETTER }
+
+    private enum DeliveryOutcome { DELIVERED, RETRY, DEAD_LETTER }
 }

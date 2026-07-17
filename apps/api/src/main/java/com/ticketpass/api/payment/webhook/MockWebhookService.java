@@ -14,6 +14,7 @@ import com.ticketpass.api.order.OrderStatus;
 import com.ticketpass.api.payment.PaymentSessionEntity;
 import com.ticketpass.api.payment.PaymentSessionRepository;
 import com.ticketpass.api.payment.PaymentSessionStatus;
+import com.ticketpass.api.payment.PaymentProperties;
 import com.ticketpass.api.payment.mock.MockPaymentProvider;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -23,14 +24,17 @@ import java.time.Instant;
 import java.util.UUID;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import org.springframework.beans.factory.annotation.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 class MockWebhookService {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(MockWebhookService.class);
     private static final Duration MAX_TIMESTAMP_AGE = Duration.ofMinutes(5);
+    private static final int MAX_BODY_BYTES = 16 * 1024;
     private static final int MAX_IDENTIFIER_LENGTH = 120;
     private final ObjectMapper objectMapper;
     private final PaymentWebhookReceiptRepository receiptRepository;
@@ -49,7 +53,7 @@ class MockWebhookService {
             OrderRepository orderRepository,
             PaymentSessionRepository paymentSessionRepository,
             Clock clock,
-            @Value("${ticketpass.payments.mock.webhook-secret}") String webhookSecret) {
+            PaymentProperties paymentProperties) {
         this.objectMapper = objectMapper;
         this.receiptRepository = receiptRepository;
         this.listingRepository = listingRepository;
@@ -57,7 +61,7 @@ class MockWebhookService {
         this.orderRepository = orderRepository;
         this.paymentSessionRepository = paymentSessionRepository;
         this.clock = clock;
-        this.webhookSecret = webhookSecret.getBytes(StandardCharsets.UTF_8);
+        this.webhookSecret = paymentProperties.mock().webhookSecret().getBytes(StandardCharsets.UTF_8);
     }
 
     @Transactional
@@ -68,10 +72,12 @@ class MockWebhookService {
         UUID receiptId = UUID.randomUUID();
         String storedEventType = supported(payload.eventType()) ? payload.eventType() : "UNSUPPORTED";
         if (!receiptRepository.insert(receiptId, payload, storedEventType, now)) {
+            LOGGER.info("Webhook deduplicated provider event {}", payload.eventId());
             return;
         }
         if (!supported(payload.eventType())) {
             receiptRepository.complete(receiptId, PaymentWebhookReceiptStatus.IGNORED, now);
+            LOGGER.info("Webhook receipt {} ignored", receiptId);
             return;
         }
         if (!"PAYMENT_SUCCEEDED".equals(payload.eventType())) {
@@ -92,6 +98,7 @@ class MockWebhookService {
             return;
         }
         receiptRepository.complete(receiptId, PaymentWebhookReceiptStatus.DEFERRED, now);
+        LOGGER.info("Webhook receipt {} deferred", receiptId);
     }
 
     private void processSuccess(UUID receiptId, MockWebhookPayload payload, Instant now) {
@@ -132,6 +139,7 @@ class MockWebhookService {
         order.setUpdatedAt(now);
         listing.setStatus(ListingStatus.SOLD);
         receiptRepository.complete(receiptId, PaymentWebhookReceiptStatus.PROCESSED, now);
+        LOGGER.info("Webhook receipt {} processed", receiptId);
     }
 
     private static boolean isCompletable(
@@ -173,14 +181,21 @@ class MockWebhookService {
 
     private void requiresAction(UUID receiptId, Instant now) {
         receiptRepository.complete(receiptId, PaymentWebhookReceiptStatus.REQUIRES_ACTION, now);
+        LOGGER.warn("Webhook receipt {} requires action", receiptId);
     }
 
     private void verify(byte[] body, String rawTimestamp, String rawSignature) {
         try {
+            if (body == null || body.length == 0 || body.length > MAX_BODY_BYTES) {
+                throw new IllegalArgumentException();
+            }
+            if (rawTimestamp == null || !rawTimestamp.matches("[0-9]{1,19}")
+                    || rawSignature == null || !rawSignature.matches("v1=[0-9a-f]{64}")) {
+                throw new WebhookUnauthorizedException();
+            }
             long timestamp = Long.parseLong(rawTimestamp);
             Instant signedAt = Instant.ofEpochSecond(timestamp);
-            if (Duration.between(signedAt, clock.instant()).abs().compareTo(MAX_TIMESTAMP_AGE) > 0
-                    || rawSignature == null || !rawSignature.matches("v1=[0-9a-f]{64}")) {
+            if (Duration.between(signedAt, clock.instant()).abs().compareTo(MAX_TIMESTAMP_AGE) > 0) {
                 throw new WebhookUnauthorizedException();
             }
             Mac mac = Mac.getInstance("HmacSHA256");

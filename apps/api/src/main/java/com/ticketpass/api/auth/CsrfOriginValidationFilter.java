@@ -25,6 +25,11 @@ public class CsrfOriginValidationFilter extends OncePerRequestFilter {
     }
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        return "/api/payments/webhooks/mock".equals(request.getRequestURI().substring(request.getContextPath().length()));
+    }
+
+    @Override
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,

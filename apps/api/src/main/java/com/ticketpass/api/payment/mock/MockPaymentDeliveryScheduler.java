@@ -28,9 +28,16 @@ class MockPaymentDeliveryScheduler {
         List<MockPaymentEventEntity> events = eventRepository.findDeliveryCandidates("PENDING", now, PageRequest.of(0, 100));
         for (MockPaymentEventEntity event : events) {
             try {
-                deliveryService.deliver(event, now);
+                MockPaymentDeliveryService.DeliveryAttempt attempt = deliveryService.claim(event.getId(), now);
+                if (attempt == null) continue;
+                MockPaymentDeliveryService.DeliveryResult result = deliveryService.deliver(attempt);
+                if (result == MockPaymentDeliveryService.DeliveryResult.DEAD_LETTER) {
+                    LOGGER.error("Mock payment event {} reached dead letter", event.getId());
+                } else if (result != MockPaymentDeliveryService.DeliveryResult.SKIPPED) {
+                    LOGGER.info("Mock payment event {} delivery {}", event.getId(), result);
+                }
             } catch (RuntimeException exception) {
-                LOGGER.error("Unable to deliver mock payment event {}", event.getId());
+                LOGGER.error("Mock payment event {} delivery failed with {}", event.getId(), exception.getClass().getSimpleName());
             }
         }
     }

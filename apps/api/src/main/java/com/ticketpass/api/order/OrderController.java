@@ -2,6 +2,8 @@ package com.ticketpass.api.order;
 
 import com.ticketpass.api.auth.AuthenticatedUser;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,9 +20,11 @@ public class OrderController {
     }
 
     @GetMapping("/{orderId}")
-    public SafeOrderResponse getOrder(
+    public ResponseEntity<SafeOrderResponse> getOrder(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
             @PathVariable String orderId) {
-        return orderReadService.read(currentUser.id(), orderId);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CACHE_CONTROL, "no-store")
+                .body(orderReadService.read(currentUser.id(), orderId));
     }
 }

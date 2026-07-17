@@ -1,6 +1,7 @@
 package com.ticketpass.api.auth;
 
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.DispatcherType;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.context.annotation.Bean;
@@ -36,6 +37,10 @@ public class SecurityConfig {
                             response.getWriter().write("{\"error\":\"Authentication required\"}");
                         }))
                 .authorizeHttpRequests(authorize -> authorize
+                        .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/signup").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/logout").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/payments/webhooks/mock").permitAll()
                         .requestMatchers("/api/me").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/events/autocomplete").authenticated()
@@ -45,8 +50,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/listings/*/reservations").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/reservations/*/checkout").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/orders/*").authenticated()
-                        .requestMatchers("/mock-provider/**").permitAll()
-                        .anyRequest().permitAll())
+                        .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/mock-provider/checkout/*").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/mock-provider/sessions/*/succeed").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/mock-provider/sessions/*/fail").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/mock-provider/sessions/*/cancel").permitAll()
+                        .anyRequest().denyAll())
                 .addFilterBefore(sessionAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(csrfOriginValidationFilter, SessionAuthenticationFilter.class)
                 .build();
