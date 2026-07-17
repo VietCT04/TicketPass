@@ -161,9 +161,9 @@ Issue `#67` adds `V6__create_payment_sessions.sql` with provider-neutral operati
 
 ### `mock_provider_sessions` And `mock_payment_events`
 
-The same migration persists an isolated mock-provider session record with amount, currency, inherited expiry, and provider-only state (`PENDING`, `PAID`, `FAILED`, `CANCELLED`, or `EXPIRED`). It separately persists mock provider events with one of `PAYMENT_SUCCEEDED`, `PAYMENT_FAILED`, or `PAYMENT_CANCELLED` and delivery state `PENDING` or `DELIVERED`.
+The same migration persists an isolated mock-provider session record with amount, currency, inherited expiry, and provider-only state (`PENDING`, `PAID`, `FAILED`, `CANCELLED`, or `EXPIRED`). Issue `#68` adds V7 delivery fields to the mock event outbox: bounded attempts, next/last attempt timestamps, and `PENDING`, `DELIVERED`, or `DEAD_LETTER` status. No response body, exception text, signature, secret, or payload is stored.
 
-The mock provider changes only its own session and event records. It does not directly transition TicketPass orders, reservations, or listings. Issue `#68` must add signed event delivery, receipt, replay protection, and trusted sale completion.
+`payment_webhook_receipts` is the TicketPass receiver ledger. It records only provider, provider event/session identifiers, event type, final processing status, and timestamps, with a unique `(provider, provider_event_id)` constraint for authoritative deduplication. It excludes raw webhook data, secrets, payment credentials, checkout URLs, identities, and ticket data. Verified success may atomically update the operational payment session, order, and listing; failures/cancellations remain deferred to issue `#69`.
 
 ### `audit_events`
 

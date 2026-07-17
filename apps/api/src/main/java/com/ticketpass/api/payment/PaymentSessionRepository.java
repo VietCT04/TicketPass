@@ -13,6 +13,12 @@ public interface PaymentSessionRepository extends JpaRepository<PaymentSessionEn
 
     Optional<PaymentSessionEntity> findByProviderSessionId(String providerSessionId);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select session from PaymentSessionEntity session where session.provider = :provider and session.providerSessionId = :providerSessionId")
+    Optional<PaymentSessionEntity> findByProviderAndProviderSessionIdForPayment(
+            @Param("provider") String provider,
+            @Param("providerSessionId") String providerSessionId);
+
     Optional<PaymentSessionEntity> findByOrderIdAndStatusIn(
             UUID orderId,
             Collection<PaymentSessionStatus> statuses);

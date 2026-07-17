@@ -3,7 +3,7 @@
 ## CONCERN-0021: Hosted Payment Deadline And Late Confirmation Operations
 
 Date: 2026-07-16  
-Related GitHub Issues: `#65` - https://github.com/VietCT04/TicketPass/issues/65; `#67` - https://github.com/VietCT04/TicketPass/issues/67  
+Related GitHub Issues: `#65` - https://github.com/VietCT04/TicketPass/issues/65; `#67` - https://github.com/VietCT04/TicketPass/issues/67; `#68` - https://github.com/VietCT04/TicketPass/issues/68; `#69` - https://github.com/VietCT04/TicketPass/issues/69  
 Related User Story: `docs/user-stories/US-0007-complete-checkout-for-reserved-ticket.md`
 
 ### Concern
@@ -16,7 +16,7 @@ An implementation could accidentally extend a hold, sell a listing after it was 
 
 ### Recommendation
 
-Before a production-provider user story is approved, confirm deadline support or define an approved server-side invalidation path. Issues `#68` and `#69` must durably deduplicate late trusted events, preserve terminal local state, prevent sale completion, and route the case to explicit manual handling or later refund operations.
+Before a production-provider user story is approved, confirm deadline support or define an approved server-side invalidation path. Issue `#68` now durably deduplicates late trusted success events and records them as `REQUIRES_ACTION` without sale completion. Issue `#69` must preserve terminal local state during failure/cancellation/expiry reconciliation and define the operational path for unresolved receipts.
 
 ### Status
 

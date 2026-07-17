@@ -127,6 +127,8 @@ public class MockPaymentProvider implements PaymentProvider {
         event.setEventType(eventType);
         event.setDeliveryStatus(PENDING_DELIVERY);
         event.setCreatedAt(now);
+        event.setAttemptCount(0);
+        event.setNextAttemptAt(now);
         eventRepository.save(event);
     }
 

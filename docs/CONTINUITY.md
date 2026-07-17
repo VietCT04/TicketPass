@@ -2,9 +2,23 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot API, shared package placeholder, backend email/password auth with server-side opaque sessions, logout revocation, current-user session validation, strict origin validation and credentialed CORS for unsafe cookie-authenticated API requests, a protected frontend `/sell` route, authenticated seller listing creation with a minimal `LISTING_CREATED` audit event, a backend authenticated seller event autocomplete endpoint, backend event-linked listing creation that requires an existing future event, public event browse and event-detail APIs, a frontend homepage event browse page, a frontend `/events/{eventId}` listing-comparison page with an authenticated buyer reservation action, a frontend `/sell` event selector and seller listing form, frontend signup/login/logout screens, backend buyer reservations with 10-minute server-controlled holds, request-time expiry reconciliation, and scheduled expiry cleanup, plus authenticated checkout-session preparation and a mock provider-hosted payment route. Payment events are not yet delivered and no order can become paid or listing sold through the mock flow.
+TicketPass is an early monorepo scaffold with authenticated seller listings, event browsing/detail, buyer reservations, checkout-session preparation, and a mock hosted payment provider. Mock payment events are delivered through signed HTTP webhooks and an atomic receipt ledger; verified, timely payment success completes the order and sells the reserved listing. Failure/cancellation and expiry reconciliation remain deferred.
 
 ## Latest Completed Work
+
+- Date: 2026-07-17
+- GitHub Issue: `#68` - https://github.com/VietCT04/TicketPass/issues/68
+- Summary: Implemented signed mock-provider HTTP delivery, bounded outbox retry/dead-letter handling, public raw-body webhook verification, atomic receipt deduplication, and server-validated successful payment completion from payment session through `PAID` order and `SOLD` listing. Failure/cancellation receipts are deferred, and late or inconsistent success is retained for action without changing inventory.
+- Files changed:
+  - `apps/api/src/main/java/com/ticketpass/api/payment/webhook/*`
+  - `apps/api/src/main/java/com/ticketpass/api/payment/mock/*`
+  - `apps/api/src/main/java/com/ticketpass/api/payment/PaymentSessionRepository.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/*Repository.java`
+  - `apps/api/src/main/java/com/ticketpass/api/order/OrderRepository.java`
+  - `apps/api/src/main/java/com/ticketpass/api/auth/SecurityConfig.java`
+  - `apps/api/src/main/resources/db/migration/V7__add_mock_webhook_delivery_and_receipts.sql`
+  - `apps/api/src/main/resources/application.yml`
+  - `docs/API.md`, `docs/DATABASE.md`, `docs/SECURITY.md`, `docs/flows/LISTING_STATUS_FLOW.md`, `docs/CONCERNS.md`, `docs/user-stories/US-0007-complete-checkout-for-reserved-ticket.md`, `docs/CONTINUITY.md`
 
 - Date: 2026-07-17
 - GitHub Issue: `#67` - https://github.com/VietCT04/TicketPass/issues/67
@@ -434,8 +448,8 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 ## Active Work
 
-- Current GitHub Issue: `#67` - https://github.com/VietCT04/TicketPass/issues/67
-- Current goal: Review and merge the mock hosted checkout-session pull request.
+- Current GitHub Issue: `#68` - https://github.com/VietCT04/TicketPass/issues/68
+- Current goal: Review and merge signed mock payment webhook processing.
 - Current blocker: None.
 
 ## Important User Stories
@@ -472,6 +486,6 @@ TicketPass is an early monorepo scaffold with a Next.js frontend, Spring Boot AP
 
 ## Next Recommended Steps
 
-1. Review and merge the issue `#67` mock hosted checkout-session pull request.
-2. Implement signed mock provider event delivery, replay protection, and atomic payment completion in issue `#68`.
-3. Implement request-time expiry reconciliation and controlled listing release in issue `#69`.
+1. Review and merge the issue `#68` signed mock payment webhook pull request.
+2. Implement request-time expiry reconciliation and controlled listing release in issue `#69`.
+3. Complete payment security and operational hardening in issue `#70`.

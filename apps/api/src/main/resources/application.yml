@@ -34,3 +34,5 @@ ticketpass:
     mock:
       provider-base-url: ${MOCK_PAYMENT_PROVIDER_BASE_URL:http://localhost:8080}
       webhook-secret: ${MOCK_PAYMENT_WEBHOOK_SECRET:local-development-secret}
+      webhook-url: ${MOCK_PAYMENT_WEBHOOK_URL:http://localhost:8080/api/payments/webhooks/mock}
+      delivery-interval-ms: ${MOCK_PAYMENT_DELIVERY_INTERVAL_MS:5000}

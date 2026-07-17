@@ -36,6 +36,7 @@ public class SecurityConfig {
                             response.getWriter().write("{\"error\":\"Authentication required\"}");
                         }))
                 .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers(HttpMethod.POST, "/api/payments/webhooks/mock").permitAll()
                         .requestMatchers("/api/me").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/events/autocomplete").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/events").permitAll()

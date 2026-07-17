@@ -21,6 +21,10 @@ public interface ListingRepository extends JpaRepository<ListingEntity, UUID> {
             """)
     Optional<ListingEntity> findByIdForReservation(@Param("listingId") UUID listingId);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select listing from ListingEntity listing where listing.id = :listingId")
+    Optional<ListingEntity> findByIdForPayment(@Param("listingId") UUID listingId);
+
     @Query(
             value = """
                     select new com.ticketpass.api.listing.EventListingSummaryRow(
