@@ -277,6 +277,92 @@ The `409` case covers an event that was valid when selected through autocomplete
 
 The listing API does not define dedicated request or response fields for raw QR codes, barcodes, ticket images, ticket PDFs, private transfer links, or platform credentials. Secure ticket upload, storage, and reveal belong to a separate ticket reveal flow.
 
+### View Own Listings
+
+```http
+GET /api/me/listings
+```
+
+Returns the authenticated seller's stored listing metadata and current marketplace statuses. Issue `#82` defines this contract; backend implementation belongs to issue `#83` and the protected `/my-listings` page belongs to issue `#84`.
+
+Authentication is required. Seller ownership is derived exclusively from `AuthenticatedUser.id()`; the endpoint accepts no seller or user identifier in its path, query string, or request body. As a safe `GET`, it does not require the unsafe-request origin check, but credentialed browser requests continue to use the existing cookie and CORS model.
+
+#### Query Parameters
+
+| Parameter | Required | Default | Rules |
+|---|---:|---|---|
+| `page` | No | `1` | 1-based integer; minimum `1`. |
+| `page_size` | No | `20` | Integer from `1` through `100`. |
+| `status` | No | None | One exact uppercase `ListingStatus` value: `DRAFT`, `ACTIVE`, `RESERVED`, `SOLD`, `CANCELLED`, or `EXPIRED`. |
+
+Invalid pagination values or an unsupported status return `400 Bad Request`.
+
+#### Ownership, Filtering, And Ordering
+
+The database query must apply `listing.seller_id = authenticated user ID` before counting or pagination. When `status` is present, it must apply the exact status predicate in the database rather than loading a broader listing set and filtering in application memory.
+
+Results use deterministic newest-first ordering: `created_at DESC, id DESC`. The endpoint returns the stored server-authoritative listing status only; it does not reconcile reservation, checkout, payment, or expiry state.
+
+#### Response Body
+
+```json
+{
+  "items": [
+    {
+      "id": "listing-uuid",
+      "status": "ACTIVE",
+      "event_platform": "Ticketmaster",
+      "seat_info": "Section A, Row 3",
+      "ticket_type": "Standard",
+      "quantity": 1,
+      "asking_price_minor": 1250000,
+      "currency": "VND",
+      "transfer_method": "PLATFORM_TRANSFER",
+      "is_transferable_confirmed": true,
+      "public_notes": "Optional seller-entered notes",
+      "created_at": "2026-07-17T10:00:00Z",
+      "updated_at": "2026-07-17T10:00:00Z",
+      "event": {
+        "id": "event-uuid",
+        "name": "Example Concert",
+        "starts_at": "2026-10-17T11:30:00Z",
+        "venue": "National Stadium",
+        "city": "Singapore"
+      }
+    }
+  ],
+  "page": 1,
+  "page_size": 20,
+  "total_items": 1,
+  "total_pages": 1
+}
+```
+
+Implementation must use explicit DTOs or projections and must not serialize JPA entities or relationships directly. Seller-entered metadata, including `public_notes`, remains untrusted display content.
+
+The response must not include seller identity or contact data; buyer identity or reservation ownership; reservation IDs or expiry details; order, payment-session, provider, payout, refund, or dispute data; audit rows; QR codes, barcodes, ticket PDFs, private transfer links, platform credentials, or other ticket payload data; cookies, session data, or internal database fields. A `SOLD` listing means only that the stored lifecycle reached `SOLD`; it does not imply payout, ticket transfer, reveal, refund finality, or dispute completion.
+
+#### Empty Pages And Errors
+
+No owned listings is a normal `200 OK` response:
+
+```json
+{
+  "items": [],
+  "page": 1,
+  "page_size": 20,
+  "total_items": 0,
+  "total_pages": 0
+}
+```
+
+A valid page beyond the final page also returns `200 OK` with an empty `items` array and accurate totals. The endpoint does not redirect or return `404` for an empty page.
+
+- `400 Bad Request`: malformed or out-of-range pagination, or unsupported status filter.
+- `401 Unauthorized`: authentication is required.
+
+Errors must not reveal SQL, repository details, seller identifiers, enum internals, or stack traces. Listing editing, cancellation, deletion, renewal, relisting, and all buyer, reservation, checkout, payment, payout, transfer, reveal, refund, dispute, analytics, and bulk-action behavior remain out of scope.
+
 ### Create Listing Reservation
 
 ```http

@@ -1,5 +1,27 @@
 # Concerns
 
+## CONCERN-0024: Own-Listings Query Performance And Future Mutations
+
+Date: 2026-07-18
+Related User Story: `docs/user-stories/US-0009-view-own-listings.md`
+Related GitHub Issues: `#82` - https://github.com/VietCT04/TicketPass/issues/82, `#83` - https://github.com/VietCT04/TicketPass/issues/83, `#84` - https://github.com/VietCT04/TicketPass/issues/84
+
+### Concern
+
+The MVP own-listings query uses the existing separate `seller_id` and `status` indexes. It does not add a composite index for seller, optional status, and newest-first ordering, and it remains read-only.
+
+### Risk
+
+At higher listing volumes, pagination queries may become inefficient. Adding editing, cancellation, relisting, or bulk actions without separate lifecycle, concurrency, and audit rules could conflict with active reservations, checkout, completed sales, or dispute work.
+
+### Recommendation
+
+Measure production query behavior before creating a focused performance issue for a composite index. Define each listing mutation separately with authorization, state-transition, concurrency, and audit requirements before enabling it.
+
+### Status
+
+Open
+
 ## CONCERN-0023: Missing-Event Request Review And Catalogue Completion
 
 Date: 2026-07-18

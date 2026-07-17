@@ -104,6 +104,20 @@ The full seller listing flow is documented in `docs/flows/SELLER_LISTING_FLOW.md
 
 Issue `#3` implements seller listing creation through a Spring Security-protected `POST /api/listings` endpoint that receives `AuthenticatedUser` with `@AuthenticationPrincipal`.
 
+## Seller Own-Listings Security
+
+Issue `#82` defines the future authenticated `GET /api/me/listings` contract; issue `#83` implements it and issue `#84` consumes it through the protected seller page.
+
+- Spring Security must explicitly require authentication for `GET /api/me/listings`.
+- The database query must constrain `listing.seller_id` to `AuthenticatedUser.id()` before status filtering, counting, or pagination. Clients cannot select another seller through any request value.
+- The optional status filter is one exact bounded `ListingStatus` value and must be applied in the database.
+- Responses must use explicit safe DTOs or projections, never direct entity or relationship serialization.
+- Seller-entered listing metadata remains untrusted display content and must be escaped and visually bounded by the future frontend.
+- The response must exclude seller identity/contact information, buyer and reservation ownership, reservation IDs or expiry, order/payment/provider/payout/refund/dispute data, audit records, ticket payload data, credentials, cookies, sessions, and internal fields.
+- `SOLD` is a stored listing lifecycle status only. It must not be presented as proof of payout, transfer, reveal, refund finality, or dispute completion.
+- Logs may contain only authenticated request outcome, page parameters, status filter, and controlled error category. They must exclude seller-entered text, public notes, email, cookies, tokens, ticket details, buyer/payment data, and full response bodies.
+- This safe `GET` does not use the unsafe-request origin check. Credentialed browser requests still use the configured cookie and CORS protections.
+
 ## Authentication And Ownership
 
 - Listing creation requires authentication.
