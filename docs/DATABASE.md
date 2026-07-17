@@ -70,6 +70,28 @@ Stores normalized event information shared by listings.
 | `created_at` | timestamp | Creation time. |
 | `updated_at` | timestamp | Last update time. |
 
+### `event_requests`
+
+Issue `#77` defines this future table for the missing-event request contract. Issue `#78` will add the migration and backend implementation. An event request is untrusted review metadata, not an event catalogue record.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID | Primary key. |
+| `requester_user_id` | UUID | References `users.id` with a non-cascading foreign key. Derived from the authenticated requester. |
+| `event_name` | string | Trimmed display value. |
+| `normalized_event_name` | string | Server-derived exact duplicate-detection value. |
+| `starts_at` | timestamp with timezone | Absolute future event start time parsed from a timestamp with explicit offset. |
+| `venue` | string | Trimmed display value. |
+| `normalized_venue` | string | Server-derived exact duplicate-detection value. |
+| `city` | string | Trimmed display value. |
+| `normalized_city` | string | Server-derived exact duplicate-detection value. |
+| `official_url` | string nullable | Untrusted review metadata only. |
+| `status` | enum/string | Initial implementation writes `PENDING` only. |
+| `created_at` | timestamp with timezone | Server-generated creation time. |
+| `updated_at` | timestamp with timezone | Server-generated last-update time. |
+
+The table has no foreign key to `events` because a request does not create or represent a catalogue event. It must not store ticket, listing, payment, reservation, contact, session, or credential data.
+
 ### `listings`
 
 Stores seller-created listings. Each listing represents exactly one ticket for MVP.
@@ -233,6 +255,11 @@ These values describe the expected transfer path only. Raw ticket payload storag
 - `SOLD` listings must never become purchasable again.
 - Public listing metadata must not include dedicated columns for QR codes, barcodes, ticket files, private transfer links, platform credentials, or other sensitive ticket payload data.
 - MVP does not classify free-text `listings.public_notes` for sensitive content; this limitation is tracked in `docs/CONCERNS.md`.
+- A missing-event request must reference its requester through a non-cascading foreign key and must start in `PENDING`.
+- Event-request display values retain trimming; their normalized duplicate values trim leading/trailing whitespace, collapse internal whitespace to one ASCII space, and lowercase with locale-independent rules.
+- An event-request `starts_at` must be parsed from an offset-bearing RFC 3339 timestamp and be strictly future according to one captured server `Clock` timestamp.
+- A database-backed uniqueness rule must prevent concurrent duplicate `PENDING` requests for the same requester, normalized event name, `starts_at`, normalized venue, and normalized city. `official_url` is excluded. The rule must permit requests from different users and future non-pending request states without claiming cross-user or fuzzy deduplication.
+- `event_requests.id` must never be accepted where an existing `events.id` is required, including listing creation.
 
 ## Audit Constraints
 

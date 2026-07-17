@@ -151,7 +151,7 @@ Content-Type: application/json
 
 The default development trusted origin is `http://localhost:3000`, configured through `ticketpass.security.allowed-origins`. Production must explicitly configure its real frontend origin or origins. Trusted origins are normalized by scheme, host, and effective port, then compared exactly; wildcard and partial-host matching are not supported.
 
-This applies to existing cookie-authenticated mutations, including signup or login when a session cookie is already present, logout, listing creation, and reservation creation. Requests without a session cookie, including ordinary signup and login, remain usable without origin headers. `GET`, `HEAD`, and `OPTIONS` remain unaffected.
+This applies to existing cookie-authenticated mutations, including signup or login when a session cookie is already present, logout, listing creation, missing-event request creation, and reservation creation. Requests without a session cookie, including ordinary signup and login, remain usable without origin headers. `GET`, `HEAD`, and `OPTIONS` remain unaffected.
 
 Credentialed CORS uses the same trusted-origin configuration. It permits only those origins and never uses `*` with credentials. `SameSite=Lax` remains part of the cookie configuration, but is not the sole CSRF defense.
 
@@ -510,6 +510,85 @@ Events let buyers browse upcoming event-first marketplace inventory without expo
 Issue `#25` defines this public browse contract. Backend implementation belongs to issue `#26`, and frontend implementation belongs to issue `#27`.
 
 Issue `#31` defines the authenticated seller event autocomplete contract. Issue `#33` implements the backend endpoint, and frontend autocomplete implementation belongs to issue `#35`.
+
+Issue `#77` defines the authenticated missing-event request contract. Backend implementation belongs to issue `#78`, and seller UI implementation belongs to issue `#79`.
+
+### Create Missing-Event Request
+
+```http
+POST /api/event-requests
+```
+
+Allows an authenticated seller to submit untrusted metadata for a future event that is missing from the TicketPass catalogue. The request does not create, approve, publish, or modify an `events` row, and it cannot be used to create a listing.
+
+The endpoint requires an authenticated TicketPass session and the existing trusted-origin protection for unsafe cookie-authenticated requests. The controller derives requester ownership only from `AuthenticatedUser`. Request bodies must not accept `requester_id`, `user_id`, seller identity, status, timestamps, or an event ID.
+
+#### Request Body
+
+```json
+{
+  "event_name": "Example Concert",
+  "starts_at": "2026-10-17T19:30:00+08:00",
+  "venue": "National Stadium",
+  "city": "Singapore",
+  "official_url": "https://example.com/events/example-concert"
+}
+```
+
+#### Request Fields
+
+| Field | Type | Required | Notes |
+|---|---|---:|---|
+| `event_name` | string | Yes | Nonblank after normalization; maximum 255 characters. |
+| `starts_at` | RFC 3339 timestamp | Yes | Must contain `Z` or an explicit UTC offset. Offset-free local date-times are rejected. |
+| `venue` | string | Yes | Nonblank after normalization; maximum 255 characters. |
+| `city` | string | Yes | Nonblank after normalization; maximum 120 characters. |
+| `official_url` | string | No | Absolute HTTPS URL with host, no username/password component, maximum 2048 characters. Untrusted review metadata only. |
+
+#### Validation And Duplicate Behavior
+
+- The server parses `starts_at` to an `Instant` and stores the absolute time. It must be strictly after one server timestamp captured from the injected application `Clock`.
+- The current event model does not preserve an IANA event timezone. This endpoint must not infer or invent one.
+- Preserve trimmed display values. For duplicate detection, normalize `event_name`, `venue`, and `city` by trimming leading/trailing whitespace, collapsing each internal whitespace sequence to one ASCII space, and lowercasing with locale-independent rules.
+- Required fields that become blank after normalization are invalid.
+- `official_url` is stored only as untrusted review metadata. The backend must not fetch it, follow redirects, scrape it, infer authenticity from it, or expose it as trusted public catalogue data.
+- The initial and only status defined by this contract is `PENDING`. It means awaiting future catalogue review; it does not mean verified, approved, public, or listing-eligible.
+- An obvious duplicate is scoped to the authenticated requester and exists only when a `PENDING` request has the same requester, normalized event name, `starts_at`, normalized venue, and normalized city. `official_url` is not part of the duplicate key.
+- Duplicate detection must be database-backed so concurrent submissions cannot create duplicate pending rows. Cross-user requests are never merged by this contract.
+
+#### Response Body
+
+New requests return `201 Created`; an existing obvious duplicate pending request for the same requester returns `200 OK`. Both use the same safe representation:
+
+```json
+{
+  "id": "11111111-1111-1111-1111-111111111111",
+  "status": "PENDING",
+  "event_name": "Example Concert",
+  "starts_at": "2026-10-17T11:30:00Z",
+  "venue": "National Stadium",
+  "city": "Singapore",
+  "official_url": "https://example.com/events/example-concert",
+  "created_at": "2026-07-18T11:00:00Z",
+  "updated_at": "2026-07-18T11:00:00Z"
+}
+```
+
+Responses must not include requester identity, normalized values, duplicate-key details, moderation internals, or an `event_id`.
+
+#### Error Behavior
+
+- Malformed JSON, missing fields, invalid bounds, invalid URL, invalid timestamp, or an event time that is not in the future: `400 Bad Request`.
+- Missing, malformed, unknown, expired, or revoked session: `401 Unauthorized`.
+- Request rejected by the trusted-origin protection: `403 Forbidden`.
+
+An obvious duplicate is not a conflict and returns `200 OK`. Errors must not expose database constraints, normalization values, requester information, catalogue internals, or stack traces.
+
+#### Listing Boundary And Sensitive Data
+
+An event-request ID is never an event ID. `POST /api/listings` continues accepting only an existing `events.id`; a pending request must not bypass the existing seller event-selection and listing-creation rules.
+
+Submitted text and URLs are untrusted metadata. Responses and logs must exclude requester identity, email, session or credential data, ticket data, request bodies, raw submitted text, raw official URLs, normalized values, and moderation internals. Logs may contain only safe operational identifiers, creation/recovery outcome, and controlled error category.
 
 ### Event Autocomplete
 

@@ -281,6 +281,18 @@ Seller event autocomplete responses must not include:
 
 Autocomplete must use strict query limits to reduce unnecessary backend load and enumeration risk: trimmed `q` length from `3` to `100` characters, maximum `10` results, and no pagination for MVP.
 
+## Missing-Event Request Security
+
+Issue `#77` defines `POST /api/event-requests` as an authenticated seller request for catalogue review; issue `#78` will implement it. The unsafe request remains subject to the shared exact trusted-origin protection.
+
+- Requester ownership must be derived only from `AuthenticatedUser.id()`. Bodies must not accept requester, user, seller, status, timestamp, or event-ID fields.
+- Event name, venue, city, and official URL are untrusted metadata. The backend must enforce documented bounds, offset-bearing future timestamps, and strict HTTPS URL shape before persistence.
+- The backend must not fetch, follow, scrape, trust, or publish `official_url` content. It is review metadata only.
+- Duplicate detection is private to the authenticated requester and database-backed for concurrent safety. It must not merge cross-user requests or claim fuzzy event deduplication.
+- An event request does not create, approve, or modify an event. Its ID cannot be used as `event_id` for listing creation and does not weaken seller listing eligibility checks.
+- Safe responses exclude requester identity, normalized fields, duplicate details, moderation internals, ticket data, sessions, credentials, and fabricated event identifiers.
+- Logs may contain only safe operational request IDs, creation/recovery outcome, and controlled error category. They must not contain request bodies, raw submitted text, raw official URLs, requester email, cookies, session tokens, credentials, ticket data, or moderation internals.
+
 ## Event-Linked Listing Creation Security
 
 Issue `#32` defines listing creation as an event-linked operation, and issue `#34` implements the backend enforcement. Sellers submit `event_id` for an existing TicketPass event and ticket-specific listing data; they do not submit event identity fields that would create or redefine an event record.
