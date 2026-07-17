@@ -400,6 +400,7 @@ Both `201` and successful `200` results use the following safe order representat
     "created_at": "2026-07-16T04:20:00Z",
     "updated_at": "2026-07-16T04:20:00Z",
     "paid_at": null,
+    "payment_review_required": false,
     "event": {
       "name": "Example Concert",
       "starts_at": "2026-08-15T19:30:00+07:00",
@@ -471,7 +472,7 @@ This public provider-to-provider endpoint accepts no browser authentication or C
 
 The minimal payload contains only `event_id`, `event_type`, `provider_session_id`, `amount_minor`, `currency`, and `occurred_at`. It must not contain TicketPass IDs, identities, checkout URLs, ticket data, or payment credentials. Valid requests return `200` for processing, duplicates, deferred failures/cancellations, ignored events, and safe late/inconsistent outcomes; malformed payloads return `400`; missing, malformed, stale, or invalid signatures return a controlled `401`; transient failures return `500`.
 
-The mock outbox posts these signed bytes over HTTP on a bounded retry schedule. It marks an event delivered only after `2xx`, retries failed delivery at bounded exponential delays, and dead-letters after eight attempts. TicketPass atomically deduplicates each provider event in a webhook receipt ledger. A verified successful event locks listing, reservation, order, then payment session; revalidates their relationships, amount, currency, matching expiry, and current state; then atomically moves `PENDING -> PAID`, `PAYMENT_PENDING -> PAID`, and `RESERVED -> SOLD`. Late or inconsistent success is recorded as `REQUIRES_ACTION` without changing marketplace state. Verified failure and cancellation events are recorded as `DEFERRED`; issue `#69` owns their terminal transitions and guarded inventory release.
+The mock outbox posts these signed bytes over HTTP on a bounded retry schedule. It marks an event delivered only after `2xx`, retries failed delivery at bounded exponential delays, and dead-letters after eight attempts. TicketPass atomically deduplicates each provider event in a webhook receipt ledger. A verified successful event locks listing, reservation, order, then payment session; revalidates their relationships, amount, currency, matching expiry, and current state; then atomically moves `PENDING -> PAID`, `PAYMENT_PENDING -> PAID`, and `RESERVED -> SOLD`. Late or inconsistent success is recorded as `REQUIRES_ACTION` without changing marketplace state. Verified failure and cancellation events are initially `DEFERRED` and are reconciled by issue `#69` under the same listing-first lock order.
 
 ### Read Order
 
@@ -481,7 +482,7 @@ GET /api/orders/{orderId}
 
 Returns a safe order representation only to its authenticated buyer. It supports `/checkout/{orderId}`, hard-refresh recovery, navigation back to checkout, provider return routes, and server-authoritative state refresh.
 
-Before responding, the server must reconcile an overdue `PAYMENT_PENDING` order with the injected `Clock`; scheduled cleanup not having run is not a reason to return stale pending state. The response uses the safe order representation above but never includes a stored provider checkout URL. A new or recovered payable URL belongs only to checkout-start or later approved session recovery.
+Before responding, the server processes a matching verified `DEFERRED` failure/cancellation receipt when safe, reconciles an overdue `PAYMENT_PENDING` order with the injected `Clock`, and then reloads the server-authoritative result. Scheduled cleanup not having run is not a reason to return stale pending state. An unresolved `REQUIRES_ACTION` receipt blocks automated release and makes `payment_review_required` `true`. The response uses the safe order representation above but never includes a stored provider checkout URL. A new or recovered payable URL belongs only to checkout-start or later approved session recovery.
 
 Malformed `orderId` returns `400 Bad Request`; missing, non-owned, or otherwise inaccessible orders return `404 Not Found`; missing or invalid authentication returns `401 Unauthorized`.
 
@@ -496,7 +497,7 @@ listing: RESERVED -> SOLD
 
 That confirmation must revalidate the order, reservation identity/ownership/status/expiry, listing identity/status, amount, currency, approved provider references, and trusted provider payment status. Browser redirects, query parameters, frontend state, hosted-session creation, and browser API calls can never mark an order paid or a listing sold.
 
-A trusted terminal provider failure or cancellation must eventually transition the order, expire or cancel its reservation through the approved server-side flow, and reactivate the listing only when it remains `RESERVED` by that checkout path and has not become `SOLD`, `CANCELLED`, `EXPIRED`, or another later state. A browser cancellation redirect alone is non-authoritative. Exact provider-event mapping, lock ordering, reconciliation, scheduling, and inventory-release implementation belong to issue `#69`.
+A trusted failure received before the inherited deadline atomically moves `PENDING -> FAILED`, `PAYMENT_PENDING -> PAYMENT_FAILED`, `ACTIVE -> CANCELLED`, and `RESERVED -> ACTIVE`; cancellation follows the equivalent `CANCELLED` path. At or after the inherited deadline, local expiry wins and moves the operational session, order, and reservation to `EXPIRED` before releasing a still-`RESERVED` listing. A browser cancellation redirect alone is non-authoritative. Automated release is blocked by an unresolved `REQUIRES_ACTION` receipt and never reverses `PAID`/`SOLD` state.
 
 When verified success arrives after local order or reservation expiry, the server must not mark the listing `SOLD`, overwrite the terminal order state, or alter unrelated inventory. It must durably record or deduplicate the trusted provider event and surface it for future manual handling or refund processing. Refund execution is outside this contract.
 

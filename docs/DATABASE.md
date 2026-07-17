@@ -163,7 +163,7 @@ Issue `#67` adds `V6__create_payment_sessions.sql` with provider-neutral operati
 
 The same migration persists an isolated mock-provider session record with amount, currency, inherited expiry, and provider-only state (`PENDING`, `PAID`, `FAILED`, `CANCELLED`, or `EXPIRED`). Issue `#68` adds V7 delivery fields to the mock event outbox: bounded attempts, next/last attempt timestamps, and `PENDING`, `DELIVERED`, or `DEAD_LETTER` status. No response body, exception text, signature, secret, or payload is stored.
 
-`payment_webhook_receipts` is the TicketPass receiver ledger. It records only provider, provider event/session identifiers, event type, final processing status, and timestamps, with a unique `(provider, provider_event_id)` constraint for authoritative deduplication. It excludes raw webhook data, secrets, payment credentials, checkout URLs, identities, and ticket data. Verified success may atomically update the operational payment session, order, and listing; failures/cancellations remain deferred to issue `#69`.
+`payment_webhook_receipts` is the TicketPass receiver ledger. It records only provider, provider event/session identifiers, event type, final processing status, and timestamps, with a unique `(provider, provider_event_id)` constraint for authoritative deduplication. It excludes raw webhook data, secrets, payment credentials, checkout URLs, identities, and ticket data. `V8__add_checkout_reconciliation_indexes.sql` adds bounded reconciliation indexes on `(processing_status, received_at, id)` and `(provider_session_id, processing_status)`. Verified success may atomically update the operational payment session, order, and listing. Verified failure/cancellation starts as `DEFERRED`; reconciliation either reaches the matching terminal checkout state and marks the receipt `PROCESSED`, or retains uncertainty as `REQUIRES_ACTION`.
 
 ### `audit_events`
 
@@ -221,7 +221,8 @@ These values describe the expected transfer path only. Raw ticket payload storag
 - Only `ACTIVE` listings can be reserved or purchased.
 - Reservation creation atomically writes an `ACTIVE` reservation record and transitions its listing from `ACTIVE` to `RESERVED` under a pessimistic listing lock.
 - A reservation is valid only while its status is `ACTIVE` and `expires_at` has not been reached according to server time.
-- When a reservation expires, it becomes `EXPIRED`. The listing is released from `RESERVED` to `ACTIVE` only if its current status remains `RESERVED`; a later terminal or sale-related listing status is never overwritten. Request-time and scheduled reconciliation both use the existing pessimistic listing lock and server time.
+- A reservation without an order expires through the generic reservation-expiry path. A reservation with an order is owned exclusively by checkout reconciliation, preventing generic expiry from releasing inventory while payment uncertainty remains.
+- Checkout reconciliation locks listing, reservation, order, then payment session. It may release only an `ACTIVE` reservation and `RESERVED` listing with consistent relationships, matching inherited expiry, and no `REQUIRES_ACTION` receipt for the provider session. A later terminal or sale-related listing status is never overwritten.
 - A listing seller must not be able to own a reservation for that listing.
 - A valid reservation must not be inferred from frontend state or from a prior public event-detail response.
 - Each reservation may have exactly one order. The order expiry must equal the reservation expiry and must not extend, renew, or replace it.

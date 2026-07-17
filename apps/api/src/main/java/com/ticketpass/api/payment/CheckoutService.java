@@ -1,6 +1,7 @@
 package com.ticketpass.api.payment;
 
 import com.ticketpass.api.order.OrderStatus;
+import com.ticketpass.api.order.SafeOrderResponseService;
 import java.util.UUID;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -10,16 +11,23 @@ public class CheckoutService {
 
     private final CheckoutPreparationService preparationService;
     private final PaymentProvider paymentProvider;
+    private final SafeOrderResponseService safeOrderResponseService;
 
-    CheckoutService(CheckoutPreparationService preparationService, PaymentProvider paymentProvider) {
+    CheckoutService(
+            CheckoutPreparationService preparationService,
+            PaymentProvider paymentProvider,
+            SafeOrderResponseService safeOrderResponseService) {
         this.preparationService = preparationService;
         this.paymentProvider = paymentProvider;
+        this.safeOrderResponseService = safeOrderResponseService;
     }
 
     public CheckoutResult checkout(UUID buyerId, String reservationId) {
         CheckoutPreparation preparation = prepareWithConcurrencyRecovery(buyerId, reservationId);
         if (preparation.order().getStatus() == OrderStatus.PAID) {
-            return new CheckoutResult(CheckoutResponse.from(preparation.order(), null, null), preparation.orderCreated());
+            return new CheckoutResult(
+                    new CheckoutResponse(safeOrderResponseService.forCheckout(preparation.order().getId()), null, null),
+                    preparation.orderCreated());
         }
 
         PaymentSessionResult providerResult;
@@ -39,7 +47,10 @@ public class CheckoutService {
                 ? providerResult.hostedCheckoutUrl()
                 : null;
         return new CheckoutResult(
-                CheckoutResponse.from(preparation.order(), paymentUrl, paymentUrl == null ? null : session.getExpiresAt()),
+                new CheckoutResponse(
+                        safeOrderResponseService.forCheckout(preparation.order().getId()),
+                        paymentUrl,
+                        paymentUrl == null ? null : session.getExpiresAt()),
                 preparation.orderCreated());
     }
 

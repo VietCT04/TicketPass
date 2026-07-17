@@ -27,12 +27,12 @@ TicketPass may collect payment in this story, but it must not describe that beha
 - [x] Payment confirmation revalidates the order, reservation, listing, amount, currency, provider references, and current states server-side.
 - [x] Successful payment atomically transitions the order from `PAYMENT_PENDING` to `PAID` and the listing from `RESERVED` to `SOLD`.
 - [x] Duplicate or concurrently delivered provider events cannot create duplicate financial effects or sell the same listing twice.
-- [ ] Reservation expiration never reactivates a listing after it has become `SOLD`.
-- [ ] Abandoned, cancelled, failed, and expired unpaid checkout attempts reach controlled order states without leaving eligible inventory permanently stuck in `RESERVED`.
+- [x] Reservation expiration never reactivates a listing after it has become `SOLD`.
+- [x] Abandoned, cancelled, failed, and expired unpaid checkout attempts reach controlled order states without leaving eligible inventory permanently stuck in `RESERVED`.
 - [ ] Unexpected successful provider confirmation after local expiry follows an explicitly documented safe policy rather than silently overselling inventory or ignoring paid funds.
 - [ ] The buyer can use a protected `/checkout/{orderId}` route to recover the current server-authoritative order state after refresh, navigation, or return from the payment provider.
 - [ ] Frontend checkout state is not used as the source of truth and is not persisted in `localStorage` or `sessionStorage` as a replacement for server recovery.
-- [ ] Checkout and order responses exclude provider secrets, raw payment credentials, seller contact details, session data, private transfer information, and sensitive ticket payload data.
+- [x] Checkout and order responses exclude provider secrets, raw payment credentials, seller contact details, session data, private transfer information, and sensitive ticket payload data.
 - [ ] The UI clearly distinguishes reservation, pending payment, paid order, and future ticket-delivery states and never implies that payment immediately reveals or transfers the ticket.
 - [ ] Relevant API, database, security, listing-status, concern, flow, and continuity documentation is updated by the focused implementation issues.
 

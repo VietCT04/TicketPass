@@ -1,6 +1,7 @@
 package com.ticketpass.api.listing;
 
 import com.ticketpass.api.common.ApiException;
+import com.ticketpass.api.order.OrderRepository;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -18,14 +19,17 @@ public class ListingReservationService {
 
     private final ListingRepository listingRepository;
     private final ListingReservationRepository reservationRepository;
+    private final OrderRepository orderRepository;
     private final Clock clock;
 
     public ListingReservationService(
             ListingRepository listingRepository,
             ListingReservationRepository reservationRepository,
+            OrderRepository orderRepository,
             Clock clock) {
         this.listingRepository = listingRepository;
         this.reservationRepository = reservationRepository;
+        this.orderRepository = orderRepository;
         this.clock = clock;
     }
 
@@ -41,6 +45,9 @@ public class ListingReservationService {
                 .orElse(null);
         if (activeReservation != null) {
             if (!activeReservation.getExpiresAt().isAfter(now)) {
+                if (orderRepository.existsByReservationId(activeReservation.getId())) {
+                    throw unavailable();
+                }
                 expireReservation(activeReservation, listing, now);
             } else if (activeReservation.getBuyerUserId().equals(buyerId)) {
                 return new ListingReservationResult(activeReservation, false);

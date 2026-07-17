@@ -67,12 +67,13 @@ These rules must always hold:
 - Reservation ownership must be stored in a separate reservation record linked to the listing and authenticated buyer.
 - Only one valid `ACTIVE` reservation may own a listing at a time.
 - A same-buyer retry while their reservation remains active must return that reservation without creating another record or extending its expiry.
-- A reservation at `expires_at <= now` must become `EXPIRED` and stop owning the listing. Scheduled and request-time reconciliation use server time and the same pessimistic listing lock.
+- A reservation without an order at `expires_at <= now` must become `EXPIRED` through generic reservation cleanup. A reservation with an order is terminally reconciled only by checkout processing, using server time and the listing-first lock order.
 - Expiration restores `RESERVED -> ACTIVE` only when the listing is still `RESERVED`; it must not overwrite `SOLD`, `CANCELLED`, `EXPIRED`, or another later status.
 - Checkout creates no replacement inventory deadline: `order.expires_at` must exactly equal the reservation expiry.
 - One reservation may have exactly one order; concurrent or repeated checkout starts must resolve to that same order.
 - Only trusted server-to-server payment confirmation may atomically move `RESERVED -> SOLD` with `PAYMENT_PENDING -> PAID`. Browser redirects, browser state, and hosted-session creation are not payment authority.
 - A verified successful payment received after order or reservation expiry must not sell the listing, overwrite a terminal order, or reactivate any inventory. It must be retained for operational handling.
+- A verified failure/cancellation before the checkout deadline may release only `ACTIVE` reservation plus `RESERVED` listing through the matching terminal order/session transition. At or after the deadline, local expiry takes precedence. An unresolved `REQUIRES_ACTION` receipt blocks every automated release path.
 - A seller must not reserve their own listing.
 - A `SOLD` listing must never be sold again.
 - Frontend state must never be trusted to decide whether a listing is available.

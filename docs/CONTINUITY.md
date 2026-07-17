@@ -2,9 +2,25 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with authenticated seller listings, event browsing/detail, buyer reservations, checkout-session preparation, and a mock hosted payment provider. Mock payment events are delivered through signed HTTP webhooks and an atomic receipt ledger; verified, timely payment success completes the order and sells the reserved listing. Failure/cancellation and expiry reconciliation remain deferred.
+TicketPass is an early monorepo scaffold with authenticated seller listings, event browsing/detail, buyer reservations, checkout-session preparation, and a mock hosted payment provider. Mock payment events are delivered through signed HTTP webhooks and an atomic receipt ledger; verified, timely payment success completes the order and sells the reserved listing. Checkout reconciliation now handles trusted failure, cancellation, and expiry without releasing inventory when payment requires manual action, and authenticated buyers can read their safe order state.
 
 ## Latest Completed Work
+
+- Date: 2026-07-17
+- GitHub Issue: `#69` - https://github.com/VietCT04/TicketPass/issues/69
+- Summary: Implemented bounded checkout reconciliation for deferred failure/cancellation receipts and expired unpaid orders, preserving the listing -> reservation -> order -> payment-session lock order. Generic reservation expiry now excludes reservations with orders. Added protected buyer-only `GET /api/orders/{orderId}` with request-time reconciliation and a shared safe order response used by checkout start and order reads. Unresolved `REQUIRES_ACTION` receipts block automated state changes and inventory release.
+- Files changed:
+  - `apps/api/src/main/java/com/ticketpass/api/payment/webhook/CheckoutReconciliationService.java`
+  - `apps/api/src/main/java/com/ticketpass/api/payment/webhook/CheckoutReconciliationScheduler.java`
+  - `apps/api/src/main/java/com/ticketpass/api/payment/webhook/PaymentWebhookReceiptRepository.java`
+  - `apps/api/src/main/java/com/ticketpass/api/order/OrderController.java`
+  - `apps/api/src/main/java/com/ticketpass/api/order/OrderReadService.java`
+  - `apps/api/src/main/java/com/ticketpass/api/order/SafeOrderResponse.java`
+  - `apps/api/src/main/java/com/ticketpass/api/order/SafeOrderResponseService.java`
+  - `apps/api/src/main/java/com/ticketpass/api/{auth,listing,order,payment}/*`
+  - `apps/api/src/main/resources/application.yml`
+  - `apps/api/src/main/resources/db/migration/V8__add_checkout_reconciliation_indexes.sql`
+  - `docs/API.md`, `docs/DATABASE.md`, `docs/SECURITY.md`, `docs/flows/LISTING_STATUS_FLOW.md`, `docs/CONCERNS.md`, `docs/user-stories/US-0007-complete-checkout-for-reserved-ticket.md`, `docs/CONTINUITY.md`
 
 - Date: 2026-07-17
 - GitHub Issue: `#68` - https://github.com/VietCT04/TicketPass/issues/68
@@ -448,8 +464,8 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 
 ## Active Work
 
-- Current GitHub Issue: `#68` - https://github.com/VietCT04/TicketPass/issues/68
-- Current goal: Review and merge signed mock payment webhook processing.
+- Current GitHub Issue: `#69` - https://github.com/VietCT04/TicketPass/issues/69
+- Current goal: Review and merge checkout terminal reconciliation and protected order reads.
 - Current blocker: None.
 
 ## Important User Stories
@@ -486,6 +502,6 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 
 ## Next Recommended Steps
 
-1. Review and merge the issue `#68` signed mock payment webhook pull request.
-2. Implement request-time expiry reconciliation and controlled listing release in issue `#69`.
-3. Complete payment security and operational hardening in issue `#70`.
+1. Review and merge the issue `#69` checkout reconciliation pull request.
+2. Complete payment security and operational hardening in issue `#70`.
+3. Build the protected buyer checkout and recovery UI in issue `#71`.
