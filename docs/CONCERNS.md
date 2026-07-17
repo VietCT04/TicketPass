@@ -30,7 +30,7 @@ Related GitHub Issues: `#77` - https://github.com/VietCT04/TicketPass/issues/77,
 
 ### Concern
 
-The missing-event request contract defines only seller-owned `PENDING` requests. It intentionally does not define admin roles, review decisions, catalogue insertion, seller notification, cross-user request deduplication, or IANA event-timezone storage.
+Issue `#78` implements only seller-owned `PENDING` request submission. It intentionally does not define admin roles, review decisions, catalogue insertion, seller notification, cross-user request deduplication, or IANA event-timezone storage.
 
 ### Risk
 

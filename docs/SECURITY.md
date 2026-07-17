@@ -297,12 +297,12 @@ Autocomplete must use strict query limits to reduce unnecessary backend load and
 
 ## Missing-Event Request Security
 
-Issue `#77` defines `POST /api/event-requests` as an authenticated seller request for catalogue review; issue `#78` will implement it. The unsafe request remains subject to the shared exact trusted-origin protection.
+Issue `#78` implements `POST /api/event-requests` as an authenticated seller request for catalogue review. The unsafe request remains subject to the shared exact trusted-origin protection and is explicitly authenticated before the deny-by-default rule.
 
-- Requester ownership must be derived only from `AuthenticatedUser.id()`. Bodies must not accept requester, user, seller, status, timestamp, or event-ID fields.
+- Requester ownership is derived only from `AuthenticatedUser.id()`. Bodies accept only the documented event metadata and must not accept requester, user, seller, status, timestamp, or event-ID fields.
 - Event name, venue, city, and official URL are untrusted metadata. The backend must enforce documented bounds, offset-bearing future timestamps, and strict HTTPS URL shape before persistence.
 - The backend must not fetch, follow, scrape, trust, or publish `official_url` content. It is review metadata only.
-- Duplicate detection is private to the authenticated requester and database-backed for concurrent safety. It must not merge cross-user requests or claim fuzzy event deduplication.
+- Duplicate detection is private to the authenticated requester and database-backed through a requester-scoped partial unique index for concurrent safety. It does not merge cross-user requests or claim fuzzy event deduplication.
 - An event request does not create, approve, or modify an event. Its ID cannot be used as `event_id` for listing creation and does not weaken seller listing eligibility checks.
 - Safe responses exclude requester identity, normalized fields, duplicate details, moderation internals, ticket data, sessions, credentials, and fabricated event identifiers.
 - Logs may contain only safe operational request IDs, creation/recovery outcome, and controlled error category. They must not contain request bodies, raw submitted text, raw official URLs, requester email, cookies, session tokens, credentials, ticket data, or moderation internals.

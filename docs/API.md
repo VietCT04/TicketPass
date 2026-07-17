@@ -597,7 +597,7 @@ Issue `#25` defines this public browse contract. Backend implementation belongs 
 
 Issue `#31` defines the authenticated seller event autocomplete contract. Issue `#33` implements the backend endpoint, and frontend autocomplete implementation belongs to issue `#35`.
 
-Issue `#77` defines the authenticated missing-event request contract. Backend implementation belongs to issue `#78`, and seller UI implementation belongs to issue `#79`.
+Issue `#77` defines the authenticated missing-event request contract. Issue `#78` implements the backend endpoint and persistence, and seller UI implementation belongs to issue `#79`.
 
 ### Create Missing-Event Request
 
@@ -607,7 +607,7 @@ POST /api/event-requests
 
 Allows an authenticated seller to submit untrusted metadata for a future event that is missing from the TicketPass catalogue. The request does not create, approve, publish, or modify an `events` row, and it cannot be used to create a listing.
 
-The endpoint requires an authenticated TicketPass session and the existing trusted-origin protection for unsafe cookie-authenticated requests. The controller derives requester ownership only from `AuthenticatedUser`. Request bodies must not accept `requester_id`, `user_id`, seller identity, status, timestamps, or an event ID.
+The implemented endpoint requires an authenticated TicketPass session and the existing trusted-origin protection for unsafe cookie-authenticated requests. The controller derives requester ownership only from `AuthenticatedUser`. Request bodies accept only the documented request fields; they must not include `requester_id`, `user_id`, seller identity, status, timestamps, or an event ID.
 
 #### Request Body
 
@@ -661,6 +661,8 @@ New requests return `201 Created`; an existing obvious duplicate pending request
 ```
 
 Responses must not include requester identity, normalized values, duplicate-key details, moderation internals, or an `event_id`.
+
+Both successful responses include `Cache-Control: no-store`.
 
 #### Error Behavior
 

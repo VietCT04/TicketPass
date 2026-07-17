@@ -2,9 +2,22 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with authenticated seller listings, event browsing/detail, buyer reservations, protected browser checkout recovery, a documented future missing-event request contract, and a defined seller own-listings contract backed by a mock hosted payment provider. Mock payment events are delivered through signed HTTP webhooks and an atomic receipt ledger; verified, timely payment success completes the order and sells the reserved listing. Checkout reconciliation handles trusted failure, cancellation, and expiry without releasing inventory when payment requires manual action, and authenticated buyers can reload their safe server-authoritative order state. The mock lifecycle is fail-closed at the route boundary, startup-validated, and bounded for webhook input and network delivery. Issue `#83` implements the own-listings API, while issue `#84` adds its protected seller page.
+TicketPass is an early monorepo scaffold with authenticated seller listings, event browsing/detail, buyer reservations, protected browser checkout recovery, authenticated missing-event request persistence, and a defined seller own-listings contract backed by a mock hosted payment provider. Mock payment events are delivered through signed HTTP webhooks and an atomic receipt ledger; verified, timely payment success completes the order and sells the reserved listing. Checkout reconciliation handles trusted failure, cancellation, and expiry without releasing inventory when payment requires manual action, and authenticated buyers can reload their safe server-authoritative order state. The mock lifecycle is fail-closed at the route boundary, startup-validated, and bounded for webhook input and network delivery. Issue `#79` adds the seller missing-event request UI; issue `#83` implements the own-listings API, while issue `#84` adds its protected seller page.
 
 ## Latest Completed Work
+
+- Date: 2026-07-18
+- GitHub Issue: `#78` - https://github.com/VietCT04/TicketPass/issues/78
+- Summary: Implemented authenticated `POST /api/event-requests` with server-derived requester ownership and time, strict offset-bearing future-time and HTTPS URL validation, Unicode-aware text normalization, requester-scoped database-backed pending duplicate recovery, safe no-store responses, and a strict boundary from the event catalogue and listing creation. Seller UI remains `#79`; catalogue review and event insertion remain future work.
+- Files changed:
+  - `apps/api/src/main/java/com/ticketpass/api/eventrequest/*`
+  - `apps/api/src/main/java/com/ticketpass/api/auth/SecurityConfig.java`
+  - `apps/api/src/main/resources/db/migration/V9__create_event_requests.sql`
+  - `docs/API.md`
+  - `docs/DATABASE.md`
+  - `docs/SECURITY.md`
+  - `docs/CONCERNS.md`
+  - `docs/CONTINUITY.md`
 
 - Date: 2026-07-18
 - GitHub Issue: `#82` - https://github.com/VietCT04/TicketPass/issues/82
@@ -503,8 +516,8 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 
 ## Active Work
 
-- Current GitHub Issue: `#82` - https://github.com/VietCT04/TicketPass/issues/82
-- Current goal: Review and merge the seller own-listings contract documentation.
+- Current GitHub Issue: `#78` - https://github.com/VietCT04/TicketPass/issues/78
+- Current goal: Review and merge the missing-event request backend implementation.
 - Current blocker: None.
 
 ## Important User Stories
@@ -544,6 +557,6 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 
 ## Next Recommended Steps
 
-1. Review and merge the issue `#82` seller own-listings contract pull request.
-2. Implement the authenticated database-backed own-listings API in issue `#83`.
-3. Build the protected read-only `/my-listings` page in issue `#84`.
+1. Review and merge the issue `#78` missing-event request backend pull request.
+2. Build the seller missing-event request UI in issue `#79`.
+3. Implement the authenticated database-backed own-listings API in issue `#83`.
