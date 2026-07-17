@@ -72,7 +72,7 @@ Stores normalized event information shared by listings.
 
 ### `event_requests`
 
-Issue `#77` defines this future table for the missing-event request contract. Issue `#78` will add the migration and backend implementation. An event request is untrusted review metadata, not an event catalogue record.
+Issue `#78` implements this table through Flyway migration `V9__create_event_requests.sql`. An event request is untrusted review metadata, not an event catalogue record.
 
 | Column | Type | Notes |
 |---|---|---|
@@ -91,6 +91,8 @@ Issue `#77` defines this future table for the missing-event request contract. Is
 | `updated_at` | timestamp with timezone | Server-generated last-update time. |
 
 The table has no foreign key to `events` because a request does not create or represent a catalogue event. It must not store ticket, listing, payment, reservation, contact, session, or credential data.
+
+The requester-scoped partial unique index `uq_event_requests_pending_duplicate` prevents concurrent duplicate `PENDING` requests with the same normalized event name, start time, venue, and city. It excludes `official_url`, permits requests from different users, and does not provide cross-user or fuzzy deduplication.
 
 ### `listings`
 
