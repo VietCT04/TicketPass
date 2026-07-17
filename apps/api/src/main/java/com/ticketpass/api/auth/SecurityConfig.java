@@ -42,6 +42,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/events/*").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/listings").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/listings/*/reservations").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/reservations/*/checkout").authenticated()
+                        .requestMatchers("/mock-provider/**").permitAll()
                         .anyRequest().permitAll())
                 .addFilterBefore(sessionAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(csrfOriginValidationFilter, SessionAuthenticationFilter.class)

@@ -28,3 +28,9 @@ ticketpass:
       - http://localhost:3000
   reservations:
     expiration-interval-ms: 60000
+  payments:
+    provider: mock
+    frontend-base-url: ${TICKETPASS_FRONTEND_BASE_URL:http://localhost:3000}
+    mock:
+      provider-base-url: ${MOCK_PAYMENT_PROVIDER_BASE_URL:http://localhost:8080}
+      webhook-secret: ${MOCK_PAYMENT_WEBHOOK_SECRET:local-development-secret}

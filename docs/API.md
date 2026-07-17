@@ -352,7 +352,7 @@ This endpoint does not define checkout, payment, escrow, `RESERVED -> SOLD`, tic
 
 ## Orders And Checkout
 
-Issue `#65` defines the provider-neutral checkout and order contract for `US-0007`. Database persistence belongs to issue `#66`, hosted payment-session integration belongs to issue `#67`, verified payment completion belongs to issue `#68`, and expiry or failure reconciliation belongs to issue `#69`.
+Issue `#65` defines the provider-neutral checkout and order contract for `US-0007`. Issue `#66` provides core order persistence. Issue `#67` implements authenticated create-or-return checkout with a provider-neutral boundary and an in-application mock hosted provider. A production provider is intentionally deferred to a later user story; issue `#68` handles signed event delivery and trusted payment completion, while issue `#69` handles order reconciliation and inventory release.
 
 ### Start Checkout
 
@@ -377,11 +377,11 @@ An event-detail response, browser countdown, frontend state, or earlier reservat
 
 - Return `201 Created` when a new order is created for the reservation.
 - Return `200 OK` when the reservation already has its one order and that order may be returned.
-- A `PAYMENT_PENDING` order returns the same order and may include a currently valid hosted session when later issue `#67` creates or recovers one.
+- A `PAYMENT_PENDING` order returns the same order and its one active mock hosted session, when available.
 - A `PAID` order returns the same safe order representation without a payment URL.
 - A `PAYMENT_FAILED`, `CANCELLED`, or `EXPIRED` order returns `409 Conflict` with `Checkout is no longer available`.
 
-Exactly one order may exist for each reservation. Issue `#66` must enforce this with a unique `reservation_id`, transaction-safe concurrent creation, and behavior that resolves repeated or concurrent checkout-start attempts to that same order. One order may have at most one usable hosted payment session at a time. A replacement session is permitted only after the prior session is confirmed unusable, cancelled, or expired, and must remain associated with the same order.
+Exactly one order may exist for each reservation. Issue `#67` locks listing, reservation, order, then payment session; it uses the unique `orders.reservation_id` and partial usable-session index as final concurrency guards, reloading the existing order after an insert race. One order has at most one usable `CREATING` or `PENDING` payment session. A replacement session is permitted only after the prior session is terminal and remains associated with the same order.
 
 #### Checkout Response
 
@@ -423,7 +423,7 @@ The response must exclude buyer identity and email, seller identity or contact d
 
 #### Expiry And Statuses
 
-`order.expires_at` is exactly `reservation.expires_at`. Checkout never creates a second inventory deadline and never extends, renews, or replaces the reservation deadline. A hosted payment session must become unusable no later than `order.expires_at`; issue `#67` must provide an approved server-side invalidation mechanism if the selected provider cannot enforce that deadline.
+`order.expires_at` is exactly `reservation.expires_at`. Checkout never creates a second inventory deadline and never extends, renews, or replaces the reservation deadline. The mock provider session uses that same deadline and rejects action at or after expiry using server time.
 
 The MVP order statuses are `PAYMENT_PENDING`, `PAID`, `PAYMENT_FAILED`, `CANCELLED`, and `EXPIRED`. The only allowed transitions are:
 
@@ -438,13 +438,28 @@ PAYMENT_PENDING -> EXPIRED
 
 #### Error And Privacy Behavior
 
-- Malformed `reservationId` or `orderId`: `400 Bad Request`.
+- Malformed, missing, or non-owned checkout `reservationId`: `404 Not Found`. The deferred order-read endpoint will define its own malformed `orderId` behavior.
 - Missing, malformed, unknown, expired, or revoked session: `401 Unauthorized`.
 - Missing reservation or a reservation owned by another buyer: `404 Not Found`.
 - Expired reservation, seller self-checkout, inconsistent reservation or listing state, terminal order, or otherwise unavailable checkout: `409 Conflict` with `Checkout is no longer available`.
 - Temporary hosted-payment-provider unavailability during later session creation: `503 Service Unavailable` with a controlled response.
 
 Errors must not reveal seller identity, reservation ownership, provider references or configuration, webhook state, or internal financial details. The same `404` behavior for absent and non-owned reservations prevents ownership enumeration.
+
+### Mock Hosted Provider
+
+Issue `#67` exposes a local provider-style checkout route for development only:
+
+```http
+GET /mock-provider/checkout/{providerSessionId}
+POST /mock-provider/sessions/{providerSessionId}/succeed
+POST /mock-provider/sessions/{providerSessionId}/fail
+POST /mock-provider/sessions/{providerSessionId}/cancel
+```
+
+These routes are public provider-facing routes and do not require a TicketPass login. The page displays only amount, currency, server-provided expiry, and provider session state. It accepts a success, decline, or cancellation action only while the mock session is `PENDING` and unexpired. A valid action changes only mock provider state, writes one durable pending provider event, and redirects to the configured frontend `/checkout/{orderId}` route with `provider_return=success`, `failed`, or `cancelled`.
+
+The return query parameter is a presentation hint only. It cannot transition the TicketPass order, reservation, or listing. At or after expiry the mock provider marks the session unavailable and rejects payment actions. Signed event delivery, webhook receipt, replay protection, and all TicketPass payment completion remain issue `#68` work.
 
 ### Read Order
 
@@ -473,7 +488,7 @@ A trusted terminal provider failure or cancellation must eventually transition t
 
 When verified success arrives after local order or reservation expiry, the server must not mark the listing `SOLD`, overwrite the terminal order state, or alter unrelated inventory. It must durably record or deduplicate the trusted provider event and surface it for future manual handling or refund processing. Refund execution is outside this contract.
 
-Provider-specific objects and payloads must not become part of the TicketPass order API or core domain model. Issue `#67` will select the initial hosted provider and define its integration, idempotency key, session references, return URLs, expiry support, configuration, and provider-specific error mapping. This contract adds no generic payment audit events; provider replay/deduplication records are operational payment records, while broader payment audit coverage is deferred to issue `#70`.
+Provider-specific objects and payloads must not become part of the TicketPass order API or core domain model. Issue `#67` uses a provider-neutral `PaymentProvider` interface and a configured mock implementation only. The mock’s hosted route is `/mock-provider/checkout/{providerSessionId}`; its public actions create durable provider events but do not transition TicketPass orders or listings. `payment_url` is built only from approved application configuration. Production-provider selection and SDK integration are deferred to a later user story. This contract adds no generic payment audit events; provider replay/deduplication records are operational payment records, while broader payment audit coverage is deferred to issue `#70`.
 
 ## Events
 

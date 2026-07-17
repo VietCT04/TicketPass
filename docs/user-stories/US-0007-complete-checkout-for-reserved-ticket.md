@@ -18,9 +18,9 @@ TicketPass may collect payment in this story, but it must not describe that beha
 - [ ] A seller cannot check out their own listing.
 - [ ] The backend derives the buyer, seller, reservation, listing, asking price, and currency; the browser cannot choose or override those values.
 - [ ] Checkout creates or returns exactly one order for the reservation and repeated attempts do not create duplicate orders or uncontrolled duplicate payment sessions.
-- [ ] The order stores server-derived snapshots for buyer, seller, listing, reservation, amount, currency, provider references, status, expiry, and timestamps.
+- [ ] The order stores server-derived snapshots for buyer, seller, listing, reservation, amount, currency, status, expiry, and timestamps; operational payment-session records store provider references separately.
 - [ ] Initial order statuses are `PAYMENT_PENDING`, `PAID`, `PAYMENT_FAILED`, `CANCELLED`, and `EXPIRED`.
-- [ ] TicketPass keeps its core order and lifecycle rules provider-neutral; a concrete hosted payment provider is selected only in the approved provider-integration issue proposal.
+- [ ] TicketPass keeps its core order and lifecycle rules provider-neutral; issue `#67` uses an in-application mock hosted provider, while production-provider selection is deferred to a later user story.
 - [ ] The hosted payment session expires no later than the reservation `expires_at` and checkout never extends or renews the reservation.
 - [ ] A browser success redirect, cancellation redirect, query parameter, or client-side state cannot mark an order paid.
 - [ ] Only a verified provider webhook or equivalent trusted server-to-server confirmation may complete payment.
@@ -74,7 +74,7 @@ TicketPass may collect payment in this story, but it must not describe that beha
 
 1. Approve and complete the provider-neutral checkout, order, API, state, expiry, and payment-confirmation contract in `#65`.
 2. Implement durable one-order-per-reservation persistence in `#66`.
-3. Select the initial hosted payment provider and implement authenticated idempotent checkout-session creation in `#67`.
+3. Implement authenticated idempotent checkout-session creation with the approved mock hosted provider in `#67`; defer production-provider selection to a later user story.
 4. Implement verified, replay-safe provider webhook handling and atomic `PAID` plus `SOLD` completion in `#68`.
 5. Implement checkout expiration, cancellation, failure, reservation coordination, and late-confirmation handling in `#69`.
 6. Complete the focused checkout security and operational review in `#70` before exposing the browser checkout flow.
