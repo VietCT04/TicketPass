@@ -2,9 +2,19 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with authenticated seller listings, event browsing/detail, buyer reservations, and protected browser checkout recovery backed by a mock hosted payment provider. Mock payment events are delivered through signed HTTP webhooks and an atomic receipt ledger; verified, timely payment success completes the order and sells the reserved listing. Checkout reconciliation handles trusted failure, cancellation, and expiry without releasing inventory when payment requires manual action, and authenticated buyers can reload their safe server-authoritative order state. The mock lifecycle is fail-closed at the route boundary, startup-validated, and bounded for webhook input and network delivery.
+TicketPass is an early monorepo scaffold with authenticated seller listings, event browsing/detail, buyer reservations, protected browser checkout recovery, and a documented future missing-event request contract backed by a mock hosted payment provider. Mock payment events are delivered through signed HTTP webhooks and an atomic receipt ledger; verified, timely payment success completes the order and sells the reserved listing. Checkout reconciliation handles trusted failure, cancellation, and expiry without releasing inventory when payment requires manual action, and authenticated buyers can reload their safe server-authoritative order state. The mock lifecycle is fail-closed at the route boundary, startup-validated, and bounded for webhook input and network delivery.
 
 ## Latest Completed Work
+
+- Date: 2026-07-18
+- GitHub Issue: `#77` - https://github.com/VietCT04/TicketPass/issues/77
+- Summary: Defined the documentation-only authenticated missing-event request contract for `POST /api/event-requests`. The future endpoint uses server-derived requester ownership, offset-bearing future timestamps, bounded and normalized request metadata, requester-scoped database-backed pending duplicate recovery, safe responses, and a strict boundary preventing pending requests from creating events or bypassing listing creation. Backend implementation remains `#78`; seller UI remains `#79`.
+- Files changed:
+  - `docs/API.md`
+  - `docs/DATABASE.md`
+  - `docs/SECURITY.md`
+  - `docs/CONCERNS.md`
+  - `docs/CONTINUITY.md`
 
 - Date: 2026-07-18
 - GitHub Issue: `#71` - https://github.com/VietCT04/TicketPass/issues/71
@@ -484,8 +494,8 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 
 ## Active Work
 
-- Current GitHub Issue: `#71` - https://github.com/VietCT04/TicketPass/issues/71
-- Current goal: Review and merge the protected buyer checkout and recovery UI.
+- Current GitHub Issue: `#77` - https://github.com/VietCT04/TicketPass/issues/77
+- Current goal: Review and merge the missing-event request contract documentation.
 - Current blocker: None.
 
 ## Important User Stories
@@ -497,6 +507,7 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 - `docs/user-stories/US-0005-view-available-listings-for-event.md`: Buyer can open an event and compare its currently browse-eligible ticket listings without exposing seller identity or sensitive ticket payload data.
 - `docs/user-stories/US-0006-reserve-available-ticket-listing.md`: Authenticated buyer can place a server-controlled 10-minute hold on one available listing before checkout, with atomic duplicate-sale prevention and automatic expiration.
 - `docs/user-stories/US-0007-complete-checkout-for-reserved-ticket.md`: Authenticated buyer can complete payment for an active reservation through provider-hosted checkout, while only trusted server-to-server confirmation may complete the sale.
+- `docs/user-stories/US-0008-request-missing-event.md`: Authenticated sellers can request a missing future event for future catalogue review without creating or modifying an event or bypassing listing rules.
 
 ## Known Concerns
 
@@ -511,7 +522,7 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 - Existing duplicate events may appear as separate autocomplete results until deduplication rules are implemented.
 - Event cancellation and rescheduling rules are not defined for browse or seller selection.
 - Event image source and moderation rules are not defined; the issue `#27` frontend uses a neutral local placeholder only.
-- Sellers cannot list tickets for missing events until a later event request/reporting user story is defined.
+- Missing-event requests remain `PENDING` until a future authorized catalogue-review workflow defines review, event insertion, notification, cross-user deduplication, and event-local timezone preservation; see `CONCERN-0023`.
 - Event autocomplete query performance may require indexes or a dedicated search strategy after production-volume review.
 - Event local timezone preservation and display rules are unresolved.
 - Listing availability can change between event-detail page load and a future reservation attempt; `GET /api/events/{eventId}` is only a marketplace snapshot.
@@ -522,6 +533,6 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 
 ## Next Recommended Steps
 
-1. Review and merge the issue `#71` protected buyer checkout and recovery pull request.
-2. Define a current-reservation recovery experience for holds that have not started checkout.
-3. Define a production-provider user story before any production payment collection.
+1. Review and merge the issue `#77` missing-event request contract pull request.
+2. Implement authenticated missing-event request persistence and duplicate recovery in issue `#78`.
+3. Add the seller autocomplete fallback and pending confirmation in issue `#79`.

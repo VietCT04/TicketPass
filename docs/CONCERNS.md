@@ -1,5 +1,27 @@
 # Concerns
 
+## CONCERN-0023: Missing-Event Request Review And Catalogue Completion
+
+Date: 2026-07-18
+Related User Story: `docs/user-stories/US-0008-request-missing-event.md`
+Related GitHub Issues: `#77` - https://github.com/VietCT04/TicketPass/issues/77, `#78` - https://github.com/VietCT04/TicketPass/issues/78, `#79` - https://github.com/VietCT04/TicketPass/issues/79
+
+### Concern
+
+The missing-event request contract defines only seller-owned `PENDING` requests. It intentionally does not define admin roles, review decisions, catalogue insertion, seller notification, cross-user request deduplication, or IANA event-timezone storage.
+
+### Risk
+
+Pending requests cannot become listing-eligible without a controlled future moderation and catalogue workflow. Exact requester-scoped normalization can leave equivalent requests from different users, while broader matching could incorrectly merge distinct performances or expose ownership. Storing only an absolute instant may render a future event in a timezone different from its venue-local time.
+
+### Recommendation
+
+Before enabling catalogue review, define administrator authorization, auditable review decisions, event creation or linking rules, seller notification, cross-user privacy policy, and event-local timezone preservation. Keep user-provided text and URLs untrusted throughout that work.
+
+### Status
+
+Open
+
 ## CONCERN-0021: Hosted Payment Deadline And Late Confirmation Operations
 
 Date: 2026-07-16  
