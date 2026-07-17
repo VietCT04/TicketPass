@@ -16,7 +16,7 @@ An implementation could accidentally extend a hold, sell a listing after it was 
 
 ### Recommendation
 
-Before a production-provider user story is approved, confirm deadline support or define an approved server-side invalidation path. Issue `#68` now durably deduplicates late trusted success events and records them as `REQUIRES_ACTION` without sale completion. Issue `#69` must preserve terminal local state during failure/cancellation/expiry reconciliation and define the operational path for unresolved receipts.
+Before a production-provider user story is approved, confirm deadline support or define an approved server-side invalidation path. Issue `#68` durably deduplicates late trusted success events and records them as `REQUIRES_ACTION` without sale completion. Issue `#69` now preserves terminal local state during failure/cancellation/expiry reconciliation and blocks automatic release for unresolved receipts. Define manual review, refund, and customer communication operations before production payment collection.
 
 ### Status
 

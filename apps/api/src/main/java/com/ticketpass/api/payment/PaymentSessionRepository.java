@@ -23,6 +23,8 @@ public interface PaymentSessionRepository extends JpaRepository<PaymentSessionEn
             UUID orderId,
             Collection<PaymentSessionStatus> statuses);
 
+    Optional<PaymentSessionEntity> findFirstByOrderIdOrderByCreatedAtAsc(UUID orderId);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
             select session from PaymentSessionEntity session
@@ -31,4 +33,12 @@ public interface PaymentSessionRepository extends JpaRepository<PaymentSessionEn
     Optional<PaymentSessionEntity> findByOrderIdAndStatusInForCheckout(
             @Param("orderId") UUID orderId,
             @Param("statuses") Collection<PaymentSessionStatus> statuses);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            select session from PaymentSessionEntity session
+            where session.order.id = :orderId
+            order by session.createdAt asc, session.id asc
+            """)
+    Optional<PaymentSessionEntity> findFirstByOrderIdForReconciliation(@Param("orderId") UUID orderId);
 }

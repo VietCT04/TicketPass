@@ -30,6 +30,11 @@ public interface ListingReservationRepository extends JpaRepository<ListingReser
             join reservation.listing listing
             where reservation.status = :status
                 and reservation.expiresAt <= :now
+                and not exists (
+                    select checkoutOrder
+                    from OrderEntity checkoutOrder
+                    where checkoutOrder.reservation.id = reservation.id
+                )
             order by reservation.expiresAt asc, reservation.id asc
             """)
     List<ListingReservationExpirationCandidate> findExpirationCandidates(
