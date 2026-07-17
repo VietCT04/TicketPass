@@ -70,13 +70,16 @@ Signed-out access to `/sell` redirects with `router.replace(...)` to:
 /login?next=/sell
 ```
 
-Login and signup completion may redirect only to approved return destinations. For MVP, the only approved `next` destination is:
+Login and signup completion may redirect only to approved return destinations. For MVP, allowed `next` values are:
 
 ```text
 /sell
+/events/{valid UUID}
+/events/{valid UUID}?page={positive integer}
+/checkout/{valid UUID}
 ```
 
-Missing, malformed, external, protocol-based, or unsupported `next` values must fall back to `/`. Login/signup links may preserve only this safe `next=/sell` destination.
+The checkout form accepts no query string on its return path. Missing, malformed, external, protocol-based, or unsupported `next` values must fall back to `/`. Login/signup links may preserve only these safe targets.
 
 Unexpected session-check failures must show a generic retryable error state, not backend response bodies or technical session details.
 
@@ -231,10 +234,13 @@ The frontend validates enough of a `200` or `201` response to avoid rendering a 
 
 ## Buyer Checkout And Order Security
 
-Issue `#65` defines the checkout security contract for `US-0007`. Issues `#66` and `#67` implement persistence and mock hosted checkout. Issue `#68` implements signed mock webhook delivery, database-backed replay protection, and verified sale completion. Issue `#69` implements guarded unpaid-terminal reconciliation and buyer-only order reads. Issue `#70` hardens the current mock lifecycle; browser checkout recovery UI remains deferred.
+Issue `#65` defines the checkout security contract for `US-0007`. Issues `#66` and `#67` implement persistence and mock hosted checkout. Issue `#68` implements signed mock webhook delivery, database-backed replay protection, and verified sale completion. Issue `#69` implements guarded unpaid-terminal reconciliation and buyer-only order reads. Issue `#70` hardens the current mock lifecycle, and issue `#71` implements the protected browser checkout and recovery UI.
 
 - `SecurityConfig` is fail-closed: only the documented auth, public event, mock hosted checkout/action, mock webhook, and actuator health routes are public; all other routes require an explicit security decision and otherwise receive `denyAll`.
 - `POST /api/reservations/{reservationId}/checkout` and `GET /api/orders/{orderId}` require authenticated server-side session validation and are explicitly protected by `SecurityConfig`. Buyer ownership is derived from `AuthenticatedUser`, never from browser input. Order reads return the same controlled `404` for absent and non-owned orders. Both responses send `Cache-Control: no-store`.
+- The browser permits checkout login return only to the exact `/checkout/{canonical UUID}` route. It rejects arbitrary checkout paths, query strings, fragments, protocol-based values, and external targets. Provider-return parameters are removed before login and never preserved in `next`.
+- Checkout-start and order-read client calls use cookie credentials and `cache: no-store`, but browser state is never proof of ownership, order status, payment, or expiry. The frontend validates the safe response shape before rendering or following a hosted URL; it accepts a payment URL only for `PAYMENT_PENDING`, only with its matching server deadline, and never stores, logs, displays, or routes that URL.
+- `provider_return=success`, `failed`, and `cancelled` are presentation hints only. A hint cannot mark an order paid, enable ticket access, alter inventory, or override the protected order read. Any polling after a hint is visible-page-only and bounded to 15 attempts; ordinary pending checkout routes do not poll.
 - Checkout start has no body. The server derives and revalidates the buyer, seller, reservation, listing, amount, currency, order status, and expiry with the injected `Clock`.
 - The server returns `404` for both absent and non-owned reservations or orders, preventing another buyer from discovering their existence. Self-checkout and unavailable checkout use the general `409 Checkout is no longer available` response.
 - A public event page, reservation response, browser countdown, frontend state, provider return URL, query parameter, or hosted-session creation is never authority to start checkout, release inventory, mark an order paid, or sell a listing.

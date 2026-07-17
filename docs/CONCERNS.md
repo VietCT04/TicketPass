@@ -47,7 +47,7 @@ Open
 
 Date: 2026-07-16
 Related User Story: `docs/user-stories/US-0006-reserve-available-ticket-listing.md`
-Related GitHub Issue: `#57` - https://github.com/VietCT04/TicketPass/issues/57
+Related GitHub Issues: `#57` - https://github.com/VietCT04/TicketPass/issues/57; `#71` - https://github.com/VietCT04/TicketPass/issues/71
 
 ### Concern
 
@@ -59,7 +59,7 @@ The buyer may not immediately see a hold that still prevents other buyers from r
 
 ### Recommendation
 
-Define a current-reservation or checkout recovery experience in a future user story. Keep all recovery data server-derived and do not use browser storage as a substitute for authoritative reservation state.
+Issue `#71` now provides server-backed order recovery after an order has been started. A current-reservation read or account recovery experience is still needed for holds that have not yet started checkout. Keep all recovery data server-derived and do not use browser storage as a substitute for authoritative reservation state.
 
 ### Status
 

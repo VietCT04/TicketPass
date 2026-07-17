@@ -41,6 +41,8 @@ The selected card then displays `Held for you`, the full reservation ID, the exa
 
 The hold panel states that checkout, payment, ownership transfer, ticket transfer, and reveal have not occurred. It never displays seller contact, buyer identity, ticket payload data, or private transfer information.
 
+After a valid active hold, the card also shows `Continue to checkout`. This remains a separate explicit buyer action; creating or recovering a reservation never starts payment automatically. The action uses the authenticated no-body checkout-start request, validates the returned safe order, and either follows a validated ephemeral hosted-payment URL or opens the protected `/checkout/{orderId}` recovery route. It does not store a payment URL, order, or reservation in browser storage. The protected checkout behavior is documented in `docs/flows/BUYER_CHECKOUT_FLOW.md`.
+
 ## Error And Refresh Handling
 
 - `401`: redirect through the safe login-return flow.

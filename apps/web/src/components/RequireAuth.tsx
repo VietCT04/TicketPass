@@ -8,7 +8,7 @@ import { buildAuthHref } from "@/lib/redirects";
 
 type RequireAuthProps = {
   children: ReactNode;
-  returnTo: "/sell";
+  returnTo: string;
 };
 
 export function RequireAuth({ children, returnTo }: RequireAuthProps) {
