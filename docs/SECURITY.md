@@ -106,9 +106,9 @@ Issue `#3` implements seller listing creation through a Spring Security-protecte
 
 ## Seller Own-Listings Security
 
-Issue `#82` defines the future authenticated `GET /api/me/listings` contract; issue `#83` implements it and issue `#84` consumes it through the protected seller page.
+Issue `#82` defines the authenticated `GET /api/me/listings` contract; issue `#83` implements it and issue `#84` consumes it through the protected seller page.
 
-- Spring Security must explicitly require authentication for `GET /api/me/listings`.
+- Spring Security explicitly requires authentication for `GET /api/me/listings`.
 - The database query must constrain `listing.seller_id` to `AuthenticatedUser.id()` before status filtering, counting, or pagination. Clients cannot select another seller through any request value.
 - The optional status filter is one exact bounded `ListingStatus` value and must be applied in the database.
 - Responses must use explicit safe DTOs or projections, never direct entity or relationship serialization.

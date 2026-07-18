@@ -43,6 +43,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/logout").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/payments/webhooks/mock").permitAll()
                         .requestMatchers("/api/me").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/me/listings").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/events/autocomplete").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/events").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/events/*").permitAll()

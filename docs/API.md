@@ -283,9 +283,11 @@ The listing API does not define dedicated request or response fields for raw QR 
 GET /api/me/listings
 ```
 
-Returns the authenticated seller's stored listing metadata and current marketplace statuses. Issue `#82` defines this contract; backend implementation belongs to issue `#83` and the protected `/my-listings` page belongs to issue `#84`.
+Returns the authenticated seller's stored listing metadata and current marketplace statuses. Issue `#82` defines this contract, issue `#83` implements the backend, and the protected `/my-listings` page belongs to issue `#84`.
 
 Authentication is required. Seller ownership is derived exclusively from `AuthenticatedUser.id()`; the endpoint accepts no seller or user identifier in its path, query string, or request body. As a safe `GET`, it does not require the unsafe-request origin check, but credentialed browser requests continue to use the existing cookie and CORS model.
+
+Successful responses send `Cache-Control: no-store`.
 
 #### Query Parameters
 
