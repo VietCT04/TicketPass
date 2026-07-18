@@ -2,9 +2,21 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with authenticated seller listings, event browsing/detail, buyer reservations, protected browser checkout recovery, authenticated missing-event request persistence, and a defined seller own-listings contract backed by a mock hosted payment provider. Mock payment events are delivered through signed HTTP webhooks and an atomic receipt ledger; verified, timely payment success completes the order and sells the reserved listing. Checkout reconciliation handles trusted failure, cancellation, and expiry without releasing inventory when payment requires manual action, and authenticated buyers can reload their safe server-authoritative order state. The mock lifecycle is fail-closed at the route boundary, startup-validated, and bounded for webhook input and network delivery. Issue `#79` adds the seller missing-event request UI; issue `#83` implements the own-listings API, while issue `#84` adds its protected seller page.
+TicketPass is an early monorepo scaffold with authenticated seller listings, event browsing/detail, buyer reservations, protected browser checkout recovery, authenticated missing-event requests from the `/sell` fallback, and a defined seller own-listings contract backed by a mock hosted payment provider. Mock payment events are delivered through signed HTTP webhooks and an atomic receipt ledger; verified, timely payment success completes the order and sells the reserved listing. Checkout reconciliation handles trusted failure, cancellation, and expiry without releasing inventory when payment requires manual action, and authenticated buyers can reload their safe server-authoritative order state. The mock lifecycle is fail-closed at the route boundary, startup-validated, and bounded for webhook input and network delivery. Issue `#83` implements the own-listings API, while issue `#84` adds its protected seller page.
 
 ## Latest Completed Work
+
+- Date: 2026-07-19
+- GitHub Issue: `#79` - https://github.com/VietCT04/TicketPass/issues/79
+- Summary: Added the authenticated `/sell` missing-event fallback. An empty autocomplete result opens an inline, non-nested controlled request panel that validates bounded metadata and an explicit UTC offset, submits `POST /api/event-requests` with credentials, preserves fields on controlled failures, and shows a safe pending confirmation. A request never becomes an event selection or listing, and listing submission remains disabled without a real selected event.
+- Files changed:
+  - `apps/web/src/components/EventAutocompleteSelector.tsx`
+  - `apps/web/src/components/MissingEventRequestPanel.tsx`
+  - `apps/web/src/components/SellerListingForm.tsx`
+  - `apps/web/src/lib/event-requests.ts`
+  - `docs/flows/SELLER_LISTING_FLOW.md`
+  - `docs/SECURITY.md`
+  - `docs/CONTINUITY.md`
 
 - Date: 2026-07-18
 - GitHub Issue: `#78` - https://github.com/VietCT04/TicketPass/issues/78
@@ -516,8 +528,8 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 
 ## Active Work
 
-- Current GitHub Issue: `#78` - https://github.com/VietCT04/TicketPass/issues/78
-- Current goal: Review and merge the missing-event request backend implementation.
+- Current GitHub Issue: `#79` - https://github.com/VietCT04/TicketPass/issues/79
+- Current goal: Review and merge the seller missing-event request UI implementation.
 - Current blocker: None.
 
 ## Important User Stories
@@ -557,6 +569,6 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 
 ## Next Recommended Steps
 
-1. Review and merge the issue `#78` missing-event request backend pull request.
-2. Build the seller missing-event request UI in issue `#79`.
-3. Implement the authenticated database-backed own-listings API in issue `#83`.
+1. Review and merge the issue `#79` seller missing-event request UI pull request.
+2. Implement the authenticated database-backed own-listings API in issue `#83`.
+3. Add the protected seller own-listings page in issue `#84`.

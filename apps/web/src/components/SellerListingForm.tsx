@@ -6,6 +6,7 @@ import {
   EventAutocompleteSelector,
   formatEventDate
 } from "@/components/EventAutocompleteSelector";
+import { MissingEventRequestPanel } from "@/components/MissingEventRequestPanel";
 import { EventSummary } from "@/lib/events";
 import { createListing, ListingAuthError, ListingResponse } from "@/lib/listings";
 
@@ -34,6 +35,7 @@ export function SellerListingForm({
   const [isAuthError, setIsAuthError] = useState(false);
   const [createdListing, setCreatedListing] = useState<ListingResponse | null>(null);
   const [selectorKey, setSelectorKey] = useState(0);
+  const [missingEventQuery, setMissingEventQuery] = useState<string | null>(null);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -167,8 +169,24 @@ export function SellerListingForm({
           key={selectorKey}
           selectedEvent={selectedEvent}
           onSelect={onSelectedEventChange}
+          onRequestMissingEvent={(query) => {
+            onSelectedEventChange(null);
+            setMissingEventQuery(query);
+          }}
         />
       </section>
+
+      {missingEventQuery !== null ? (
+        <MissingEventRequestPanel
+          initialEventName={missingEventQuery}
+          onClose={() => setMissingEventQuery(null)}
+          onReturnToSearch={() => {
+            onSelectedEventChange(null);
+            setMissingEventQuery(null);
+            setSelectorKey((current) => current + 1);
+          }}
+        />
+      ) : null}
 
       {selectedEvent ? (
         <section className="rounded-lg border border-emerald-200 bg-emerald-50 p-5">
@@ -290,7 +308,7 @@ export function SellerListingForm({
 
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || !selectedEvent}
             className="rounded-md bg-slate-950 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
           >
             {isSubmitting ? "Creating listing..." : "Create listing"}

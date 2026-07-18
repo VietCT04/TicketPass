@@ -49,25 +49,27 @@ Out of scope:
 1. Seller opens the `/sell` create listing flow.
 2. Frontend requires the seller to search for and select an existing event through the authenticated event autocomplete flow.
 3. The event selector searches `GET /api/events/autocomplete` only after at least three trimmed characters and uses a short debounce.
-4. The selected event supplies `event_id` for listing creation. Free-text input does not count as a valid event selection.
-5. Frontend collects listing metadata:
+4. If autocomplete returns no results, the seller may open the inline missing-event request panel. It collects only event name, local date/time, an editable bounded UTC offset, venue, city, and an optional official HTTPS URL, then submits `POST /api/event-requests` with credentials and no-store caching.
+5. A missing-event request is `PENDING` catalogue-review metadata only. Success shows safe request details and must state that no event or listing was created. It must keep `selectedEvent = null`, never fabricate an `event_id`, and never submit the listing automatically.
+6. The selected existing event supplies `event_id` for listing creation. Free-text input and an event-request ID do not count as a valid event selection. The create-listing action remains disabled until a real event is selected.
+7. Frontend collects listing metadata:
    - Event platform or ticket provider.
    - Seat information.
    - Ticket type.
    - Asking price as a positive whole-VND amount.
    - Public notes.
-6. Frontend submits `transfer_method = PLATFORM_TRANSFER` for MVP and does not offer PDF upload, QR upload, or manual transfer choices.
-7. Seller confirms the ticket is transferable.
-8. Frontend submits `POST /api/listings` with `event_id` and listing-specific fields.
-9. Spring Security validates the session before controller execution.
-10. Backend receives the immutable `AuthenticatedUser` principal and derives `seller_id` from `AuthenticatedUser.id()`.
-11. Backend validates all required fields server-side, including selected event existence and eligibility.
-12. Backend associates the listing to the selected event without creating, renaming, or modifying the event record.
-13. Backend creates one listing with `quantity = 1`, listing-level `event_platform`, and `currency = VND`.
-14. Backend records a `LISTING_CREATED` audit event for the authenticated seller and created listing in the same transaction.
-15. Backend returns public listing metadata only.
+8. Frontend submits `transfer_method = PLATFORM_TRANSFER` for MVP and does not offer PDF upload, QR upload, or manual transfer choices.
+9. Seller confirms the ticket is transferable.
+10. Frontend submits `POST /api/listings` with `event_id` and listing-specific fields.
+11. Spring Security validates the session before controller execution.
+12. Backend receives the immutable `AuthenticatedUser` principal and derives `seller_id` from `AuthenticatedUser.id()`.
+13. Backend validates all required fields server-side, including selected event existence and eligibility.
+14. Backend associates the listing to the selected event without creating, renaming, or modifying the event record.
+15. Backend creates one listing with `quantity = 1`, listing-level `event_platform`, and `currency = VND`.
+16. Backend records a `LISTING_CREATED` audit event for the authenticated seller and created listing in the same transaction.
+17. Backend returns public listing metadata only.
 
-Issue `#35` adds the frontend `/sell` event selector and selected-event summary. Issue `#6` extends the same page with ticket-specific fields, listing submission, same-page success confirmation, and a create-another-listing action.
+Issue `#35` adds the frontend `/sell` event selector and selected-event summary. Issue `#6` extends the same page with ticket-specific fields, listing submission, same-page success confirmation, and a create-another-listing action. Issue `#79` adds the missing-event request fallback without changing listing eligibility.
 
 ## Public Listing Metadata
 
@@ -138,7 +140,7 @@ Audit records must not include public notes, seat information, ticket type, aski
 - Backend validation and authorization are mandatory.
 - Seller transferability confirmation is not proof that the ticket is actually transferable.
 - `event_platform` is captured at the listing/ticket level because transferability rules vary by platform.
-- Sellers cannot list tickets for events missing from TicketPass in the MVP flow.
+- Sellers cannot list tickets for events missing from TicketPass. They may submit a pending catalogue request, but it does not create an event or unblock listing creation.
 - The MVP frontend seller form submits only `PLATFORM_TRANSFER`; PDF upload, QR upload, and manual transfer choices remain unavailable until controlled upload and reveal rules exist.
 - Secure ticket upload, storage, and reveal must remain separate from public listing creation.
 
