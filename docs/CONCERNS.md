@@ -1,5 +1,27 @@
 # Concerns
 
+## CONCERN-0025: Buyer Order-Progress Snapshot Freshness
+
+Date: 2026-07-19
+Related User Story: `docs/user-stories/US-0010-view-own-orders.md`
+Related GitHub Issues: `#87` - https://github.com/VietCT04/TicketPass/issues/87, `#88` - https://github.com/VietCT04/TicketPass/issues/88, `#98` - https://github.com/VietCT04/TicketPass/issues/98
+
+### Concern
+
+The future `GET /api/me/orders` endpoint is intentionally a read-only paginated snapshot. It does not reconcile every returned order against payment, transfer, or settlement deadlines.
+
+### Risk
+
+A persisted status can be briefly stale after a deadline until the scheduled reconciliation path or an authoritative single-order refresh processes it. Per-row reconciliation would instead create unbounded database and provider work for an account-history page and could make pagination inconsistent.
+
+### Recommendation
+
+Keep bulk lifecycle reconciliation scheduled and bounded. Return `status_refresh_required` only when the server can identify a passed persisted deadline, and require the browser to use the protected single-order read for authoritative refresh. Add focused freshness, pagination, and multi-instance reconciliation coverage during the later verification phase.
+
+### Status
+
+Open
+
 ## CONCERN-0024: Own-Listings Query Performance And Future Mutations
 
 Date: 2026-07-18

@@ -2,9 +2,18 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with authenticated seller listings, event browsing/detail, buyer reservations, protected browser checkout recovery, authenticated missing-event requests from the `/sell` fallback, and authenticated seller own-listings API backed by a mock hosted payment provider. Mock payment events are delivered through signed HTTP webhooks and an atomic receipt ledger; verified, timely payment success completes the order and sells the reserved listing. Checkout reconciliation handles trusted failure, cancellation, and expiry without releasing inventory when payment requires manual action, and authenticated buyers can reload their safe server-authoritative order state. The mock lifecycle is fail-closed at the route boundary, startup-validated, and bounded for webhook input and network delivery. Issue `#84` adds the protected seller own-listings page.
+TicketPass is an early monorepo scaffold with authenticated seller listings, event browsing/detail, buyer reservations, protected browser checkout recovery, authenticated missing-event requests from the `/sell` fallback, and authenticated seller own-listings API backed by a mock hosted payment provider. Mock payment events are delivered through signed HTTP webhooks and an atomic receipt ledger; verified, timely payment success completes the order and sells the reserved listing. Checkout reconciliation handles trusted failure, cancellation, and expiry without releasing inventory when payment requires manual action, and authenticated buyers can reload their safe server-authoritative order state. The buyer order-progress contract now defines a read-only, server-owned account-history view with separate payment, transfer, and settlement dimensions; its persistence and backend implementation remain future issues. The mock lifecycle is fail-closed at the route boundary, startup-validated, and bounded for webhook input and network delivery. Issue `#84` adds the protected seller own-listings page.
 
 ## Latest Completed Work
+
+- Date: 2026-07-19
+- GitHub Issue: `#87` - https://github.com/VietCT04/TicketPass/issues/87
+- Summary: Defined the authenticated, read-only buyer order-progress contract for `GET /api/me/orders`, including database-side ownership/filtering/pagination, deterministic ordering, separate payment/transfer/settlement progress, bounded server-derived buyer actions, snapshot freshness behavior, safe response fields, and no-store privacy controls. No endpoint, persistence, or frontend implementation was added.
+- Files changed:
+  - `docs/API.md`
+  - `docs/SECURITY.md`
+  - `docs/CONCERNS.md`
+  - `docs/CONTINUITY.md`
 
 - Date: 2026-07-19
 - GitHub Issue: `#83` - https://github.com/VietCT04/TicketPass/issues/83
@@ -544,8 +553,8 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 
 ## Active Work
 
-- Current GitHub Issue: `#83` - https://github.com/VietCT04/TicketPass/issues/83
-- Current goal: Review and merge the seller own-listings backend implementation.
+- Current GitHub Issue: `#87` - https://github.com/VietCT04/TicketPass/issues/87
+- Current goal: Review and merge the buyer order-progress contract documentation.
 - Current blocker: None.
 
 ## Important User Stories
@@ -559,6 +568,7 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 - `docs/user-stories/US-0007-complete-checkout-for-reserved-ticket.md`: Authenticated buyer can complete payment for an active reservation through provider-hosted checkout, while only trusted server-to-server confirmation may complete the sale.
 - `docs/user-stories/US-0008-request-missing-event.md`: Authenticated sellers can request a missing future event for future catalogue review without creating or modifying an event or bypassing listing rules.
 - `docs/user-stories/US-0009-view-own-listings.md`: Authenticated sellers can view only their own listings and stored marketplace statuses through a read-only protected API and page.
+- `docs/user-stories/US-0010-view-own-orders.md`: Authenticated buyers can view their own order progress with payment, ticket-transfer, and settlement state kept separate.
 
 ## Known Concerns
 
@@ -582,9 +592,10 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 - Browser reservation state is intentionally in-memory only; see `CONCERN-0020`.
 - Hosted payment deadline support and late successful payment handling remain unresolved; see `CONCERN-0021`.
 - Audit retention, deletion, export, and compliance rules are not defined.
+- Buyer order-progress lists are intentionally read-only snapshots; deadline freshness must remain owned by bounded reconciliation and the authoritative single-order read; see `CONCERN-0025`.
 
 ## Next Recommended Steps
 
-1. Review and merge the issue `#83` seller own-listings backend pull request.
-2. Add the protected seller own-listings page in issue `#84`.
-3. Define the next seller listing-management slice only after its lifecycle and audit rules are approved.
+1. Review and merge the issue `#87` buyer order-progress contract pull request.
+2. Complete the dependent post-payment lifecycle contracts and persistence before implementing issue `#88`.
+3. Add the protected seller own-listings page in issue `#84`.

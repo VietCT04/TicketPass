@@ -270,6 +270,15 @@ Issue `#65` defines the checkout security contract for `US-0007`. Issues `#66` a
 - Provider replay/deduplication records and provider references are restricted operational payment records. They are not automatically added to generic `audit_events`; current lifecycle records provide the mock operational record, while broader immutable financial audit design remains deferred.
 - The implemented core `orders` row stores only reservation, listing, buyer and seller UUID snapshots, amount, currency, status, expiry, and timestamps. `payment_sessions` stores only operational provider session metadata; both exclude provider secrets, raw provider payloads, seller contact information, public notes, private transfer data, QR codes, barcodes, ticket files, credentials, and other sensitive ticket payloads.
 
+## Buyer Order-Progress Security
+
+Issue `#87` defines the future authenticated `GET /api/me/orders` contract; backend implementation remains issue `#88`. `SecurityConfig` must explicitly require authentication for this route. Buyer ownership must be derived only from `AuthenticatedUser`, applied in the database before status filtering and pagination, and never accepted from query parameters, request bodies, browser state, or storage.
+
+- The response keeps `payment_status`, `transfer_status`, and `settlement_status` separate. `PAID` proves payment only; a seller transfer confirmation is not buyer receipt and cannot release funds. Browser labels and `buyer_action` are presentation guidance, never authorization for a payment, fulfilment, settlement, refund, or dispute mutation.
+- The endpoint accepts only bounded 1-based pagination and exact approved lifecycle filters. Invalid bounds or unknown status values return controlled `400`; unauthenticated access returns `401`. Empty pages return a safe `200` response with accurate totals.
+- List reads are read-only snapshots. They must not perform row-by-row reconciliation, provider calls, locks, writes, release funds, refresh inventory, or create audit records. If a passed server deadline may make persisted state stale, `status_refresh_required` can only direct the browser to the protected single-order read; client clocks and cached state cannot decide status.
+- Successful responses send `Cache-Control: no-store` and exclude seller identity/contact data, listing and reservation identifiers, hosted payment URLs, provider/session/webhook records, credentials, public notes, QR codes, barcodes, ticket files, and private transfer information. Event and ticket summaries include only the documented safe fields.
+
 ## Seller Event Autocomplete Security
 
 The authenticated `GET /api/events/autocomplete` endpoint exposes seller-safe existing event summaries only.
