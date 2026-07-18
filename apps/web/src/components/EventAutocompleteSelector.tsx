@@ -19,13 +19,15 @@ import {
 type EventAutocompleteSelectorProps = {
   selectedEvent: EventSummary | null;
   onSelect: (event: EventSummary | null) => void;
+  onRequestMissingEvent: (query: string) => void;
 };
 
 type SearchStatus = "guidance" | "loading" | "success" | "empty" | "error" | "auth";
 
 export function EventAutocompleteSelector({
   selectedEvent,
-  onSelect
+  onSelect,
+  onRequestMissingEvent
 }: EventAutocompleteSelectorProps) {
   const inputId = useId();
   const listboxId = useId();
@@ -215,10 +217,19 @@ export function EventAutocompleteSelector({
             ) : null}
 
             {status === "empty" ? (
-              <StatusMessage>
-                No matching event was found. Tickets can only be listed for existing TicketPass
-                events during MVP.
-              </StatusMessage>
+              <div className="px-3 py-3 text-sm text-slate-700">
+                <p>No matching event was found.</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsOpen(false);
+                    onRequestMissingEvent(trimmedQuery);
+                  }}
+                  className="mt-2 font-medium text-slate-950 underline underline-offset-4"
+                >
+                  Can&apos;t find your event? Request it for review
+                </button>
+              </div>
             ) : null}
 
             {status === "error" ? (

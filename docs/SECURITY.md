@@ -307,6 +307,8 @@ Issue `#78` implements `POST /api/event-requests` as an authenticated seller req
 - Safe responses exclude requester identity, normalized fields, duplicate details, moderation internals, ticket data, sessions, credentials, and fabricated event identifiers.
 - Logs may contain only safe operational request IDs, creation/recovery outcome, and controlled error category. They must not contain request bodies, raw submitted text, raw official URLs, requester email, cookies, session tokens, credentials, ticket data, or moderation internals.
 
+Issue `#79` adds the authenticated seller UI for this endpoint within `/sell`. Request state stays only in React memory, and the client sends only the five documented metadata fields with included credentials and no-store caching. It bounds client-side input and renders only strict, safe response fields. It must never render an official URL as a link, expose raw error bodies, persist request details, or treat a pending request as an event selection or listing authorization.
+
 ## Event-Linked Listing Creation Security
 
 Issue `#32` defines listing creation as an event-linked operation, and issue `#34` implements the backend enforcement. Sellers submit `event_id` for an existing TicketPass event and ticket-specific listing data; they do not submit event identity fields that would create or redefine an event record.
