@@ -13,6 +13,83 @@ import org.springframework.data.repository.query.Param;
 
 public interface ListingRepository extends JpaRepository<ListingEntity, UUID> {
 
+    @Query(
+            value = """
+                    select new com.ticketpass.api.listing.SellerOwnListingRow(
+                        listing.id,
+                        listing.status,
+                        listing.eventPlatform,
+                        listing.seatInfo,
+                        listing.ticketType,
+                        listing.quantity,
+                        listing.askingPriceMinor,
+                        listing.currency,
+                        listing.transferMethod,
+                        listing.transferableConfirmed,
+                        listing.publicNotes,
+                        listing.createdAt,
+                        listing.updatedAt,
+                        event.id,
+                        event.name,
+                        event.startsAt,
+                        event.venue,
+                        event.city
+                    )
+                    from ListingEntity listing
+                    join listing.event event
+                    where listing.seller.id = :sellerId
+                    order by listing.createdAt desc, listing.id desc
+                    """,
+            countQuery = """
+                    select count(listing.id)
+                    from ListingEntity listing
+                    join listing.event event
+                    where listing.seller.id = :sellerId
+                    """)
+    Page<SellerOwnListingRow> findSellerListings(
+            @Param("sellerId") UUID sellerId,
+            Pageable pageable);
+
+    @Query(
+            value = """
+                    select new com.ticketpass.api.listing.SellerOwnListingRow(
+                        listing.id,
+                        listing.status,
+                        listing.eventPlatform,
+                        listing.seatInfo,
+                        listing.ticketType,
+                        listing.quantity,
+                        listing.askingPriceMinor,
+                        listing.currency,
+                        listing.transferMethod,
+                        listing.transferableConfirmed,
+                        listing.publicNotes,
+                        listing.createdAt,
+                        listing.updatedAt,
+                        event.id,
+                        event.name,
+                        event.startsAt,
+                        event.venue,
+                        event.city
+                    )
+                    from ListingEntity listing
+                    join listing.event event
+                    where listing.seller.id = :sellerId
+                        and listing.status = :status
+                    order by listing.createdAt desc, listing.id desc
+                    """,
+            countQuery = """
+                    select count(listing.id)
+                    from ListingEntity listing
+                    join listing.event event
+                    where listing.seller.id = :sellerId
+                        and listing.status = :status
+                    """)
+    Page<SellerOwnListingRow> findSellerListingsByStatus(
+            @Param("sellerId") UUID sellerId,
+            @Param("status") ListingStatus status,
+            Pageable pageable);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
             select listing

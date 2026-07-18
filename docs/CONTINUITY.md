@@ -2,9 +2,25 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with authenticated seller listings, event browsing/detail, buyer reservations, protected browser checkout recovery, authenticated missing-event requests from the `/sell` fallback, and a defined seller own-listings contract backed by a mock hosted payment provider. Mock payment events are delivered through signed HTTP webhooks and an atomic receipt ledger; verified, timely payment success completes the order and sells the reserved listing. Checkout reconciliation handles trusted failure, cancellation, and expiry without releasing inventory when payment requires manual action, and authenticated buyers can reload their safe server-authoritative order state. The mock lifecycle is fail-closed at the route boundary, startup-validated, and bounded for webhook input and network delivery. Issue `#83` implements the own-listings API, while issue `#84` adds its protected seller page.
+TicketPass is an early monorepo scaffold with authenticated seller listings, event browsing/detail, buyer reservations, protected browser checkout recovery, authenticated missing-event requests from the `/sell` fallback, and authenticated seller own-listings API backed by a mock hosted payment provider. Mock payment events are delivered through signed HTTP webhooks and an atomic receipt ledger; verified, timely payment success completes the order and sells the reserved listing. Checkout reconciliation handles trusted failure, cancellation, and expiry without releasing inventory when payment requires manual action, and authenticated buyers can reload their safe server-authoritative order state. The mock lifecycle is fail-closed at the route boundary, startup-validated, and bounded for webhook input and network delivery. Issue `#84` adds the protected seller own-listings page.
 
 ## Latest Completed Work
+
+- Date: 2026-07-19
+- GitHub Issue: `#83` - https://github.com/VietCT04/TicketPass/issues/83
+- Summary: Implemented authenticated read-only `GET /api/me/listings`. The endpoint derives seller ownership from the session principal, uses database-side owner and optional exact status filtering before pagination, joins only listing event metadata, returns explicit safe DTOs in deterministic newest-first order, sends `Cache-Control: no-store`, and performs no marketplace reconciliation, locking, writes, or audit creation.
+- Files changed:
+  - `apps/api/src/main/java/com/ticketpass/api/auth/SecurityConfig.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/ListingRepository.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/SellerOwnListingController.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/SellerOwnListingQueryParser.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/SellerOwnListingResponse.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/SellerOwnListingPageResponse.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/SellerOwnListingRow.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/SellerOwnListingService.java`
+  - `docs/API.md`
+  - `docs/SECURITY.md`
+  - `docs/CONTINUITY.md`
 
 - Date: 2026-07-19
 - GitHub Issue: `#79` - https://github.com/VietCT04/TicketPass/issues/79
@@ -528,8 +544,8 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 
 ## Active Work
 
-- Current GitHub Issue: `#79` - https://github.com/VietCT04/TicketPass/issues/79
-- Current goal: Review and merge the seller missing-event request UI implementation.
+- Current GitHub Issue: `#83` - https://github.com/VietCT04/TicketPass/issues/83
+- Current goal: Review and merge the seller own-listings backend implementation.
 - Current blocker: None.
 
 ## Important User Stories
@@ -569,6 +585,6 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 
 ## Next Recommended Steps
 
-1. Review and merge the issue `#79` seller missing-event request UI pull request.
-2. Implement the authenticated database-backed own-listings API in issue `#83`.
-3. Add the protected seller own-listings page in issue `#84`.
+1. Review and merge the issue `#83` seller own-listings backend pull request.
+2. Add the protected seller own-listings page in issue `#84`.
+3. Define the next seller listing-management slice only after its lifecycle and audit rules are approved.
