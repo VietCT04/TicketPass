@@ -634,13 +634,13 @@ Malformed `orderId` returns `400 Bad Request`; missing, non-owned, or otherwise 
 
 ### Seller Transfer Confirmation
 
-Issue `#92` defines this post-payment lifecycle contract. Persistence and the endpoint implementation remain issue `#93`; the seller browser flow remains issue `#94`.
+Issue `#92` defines this post-payment lifecycle contract. Issue `#93` implements the persistence and backend endpoint; the seller browser flow remains issue `#94`.
 
 ```http
 POST /api/seller/orders/{orderId}/transfer-confirmation
 ```
 
-The future endpoint has no request body. It derives the authenticated seller solely from `AuthenticatedUser`; clients cannot submit a seller or buyer ID, transfer status, timestamp, or settlement state. It requires authentication and sends `Cache-Control: no-store` on a successful response.
+The endpoint has no request body. It derives the authenticated seller solely from `AuthenticatedUser`; clients cannot submit a seller or buyer ID, transfer status, timestamp, or settlement state. It requires authentication and sends `Cache-Control: no-store` on a successful response.
 
 A verified payment success must atomically retain the existing payment transition and create the one-to-one fulfilment state:
 
@@ -654,11 +654,11 @@ transfer_deadline_at         paid_at + 15 minutes
 
 The server captures one trusted `Instant` for `paid_at`, fulfilment creation, and deadline calculation. Browser time, countdowns, provider redirects, provider-event `occurred_at`, and seller requests cannot choose or extend the deadline.
 
-Under the established lock order `listing -> reservation -> order -> fulfilment`, the implementation must revalidate seller ownership, `PAID` payment status, `SOLD` listing status, fulfilment ownership, an eligible transfer status, `FUNDS_HELD` settlement status, and a server time strictly before `transfer_deadline_at`. A first eligible confirmation transitions `AWAITING_SELLER_TRANSFER -> SELLER_CONFIRMED_TRANSFER`, sets immutable `seller_confirmed_at` and `updated_at` to the captured server time, and leaves settlement `FUNDS_HELD`. A repeated confirmation by the same seller returns `200 OK` with the existing immutable timestamp and makes no write. A later buyer-confirmed state may also be returned idempotently without reversing it.
+Under the established lock order `listing -> reservation -> order -> fulfilment`, the implementation revalidates seller ownership, `PAID` payment status, `SOLD` listing status, fulfilment ownership, deadline consistency, and coherent timestamps and statuses. A first eligible confirmation transitions `AWAITING_SELLER_TRANSFER -> SELLER_CONFIRMED_TRANSFER`, sets immutable `seller_confirmed_at` and `updated_at` to the captured server time, and leaves settlement `FUNDS_HELD`. A coherent repeated seller confirmation returns `200 OK` with the existing immutable timestamp and makes no write, including after the deadline. A later coherent buyer-confirmed or released state may also be returned idempotently without reversal.
 
-At `now >= transfer_deadline_at`, seller confirmation is ineligible. Request-time handling must apply or trigger the separately approved timeout transition before returning a controlled conflict; timeout resolution is deferred to issues `#98` and `#99`. Timed-out, review-required, unpaid, failed, cancelled, expired, missing, and inconsistent orders must never be reactivated.
+At `now >= transfer_deadline_at`, an awaiting seller confirmation is ineligible and returns a controlled conflict without writing a timeout state. Timeout transition and request-time reconciliation remain deferred to issues `#98` and `#99`. Timed-out, review-required, unpaid, failed, cancelled, expired, missing, and inconsistent orders must never be reactivated.
 
-The future seller-safe response contains only `order_id`, payment/transfer/settlement statuses, `paid_at`, `transfer_deadline_at`, `seller_confirmed_at`, and approved event and ticket summaries. It excludes buyer identity or contact data, provider IDs, checkout URLs, webhook records, settlement-provider details, public notes, ticket files, QR codes, barcodes, credentials, and private transfer links. Seller confirmation is only a claim that transfer was performed: it does not prove buyer receipt, authorize payout, or release held settlement.
+The seller-safe response contains only `order_id`, payment/transfer/settlement statuses, `paid_at`, `transfer_deadline_at`, `seller_confirmed_at`, and approved event and ticket summaries. It excludes buyer identity or contact data, provider IDs, checkout URLs, webhook records, settlement-provider details, public notes, ticket files, QR codes, barcodes, credentials, and private transfer links. Seller confirmation is only a claim that transfer was performed: it does not prove buyer receipt, authorize payout, or release held settlement.
 
 Malformed order IDs return `400 Bad Request`; missing authentication returns `401 Unauthorized`; missing and non-owned orders return the same `404 Not Found`; and unpaid, expired, timed-out, review-required, or otherwise ineligible states return controlled `409 Conflict` responses without payment, provider, review, buyer, or database details.
 

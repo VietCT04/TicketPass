@@ -55,7 +55,7 @@ After trusted payment completion, TicketPass gives the seller a server-controlle
 
 ## Approved Lifecycle Contract
 
-Issue `#92` keeps payment, transfer, and settlement as separate dimensions through a future one-to-one fulfilment record. Trusted payment success creates `AWAITING_SELLER_TRANSFER` and `FUNDS_HELD` with an immutable server-derived deadline exactly 15 minutes after `paid_at`. The seller confirmation endpoint is bodyless, seller-authorized, and idempotent; it records only the seller's claim and cannot confirm buyer receipt or release settlement. Backend persistence and the endpoint remain issue `#93`.
+Issue `#92` keeps payment, transfer, and settlement as separate dimensions through a one-to-one fulfilment record. Issue `#93` implements trusted payment initialization to `AWAITING_SELLER_TRANSFER` and `FUNDS_HELD` with an immutable server-derived deadline exactly 15 minutes after `paid_at`. Its bodyless, seller-authorized endpoint is idempotent; it records only the seller's claim and cannot confirm buyer receipt or release settlement.
 
 ## Delivery Order
 

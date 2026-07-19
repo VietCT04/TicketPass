@@ -182,7 +182,7 @@ The only permitted transitions are from `PAYMENT_PENDING` to one terminal status
 
 ### `order_fulfillments`
 
-Issue `#92` defines a separate one-to-one post-payment fulfilment record; issue `#93` will add the coordinated Flyway migration and persistence. The payment `orders.status`, ticket-transfer status, and settlement status are separate state dimensions. Before payment, the absence of a fulfilment row represents `NOT_STARTED` transfer and `NOT_FUNDED` settlement; these are response representations, not persisted fulfilment values.
+Issue `#92` defines a separate one-to-one post-payment fulfilment record; issue `#93` implements it through `V10__create_order_fulfillments.sql`. The payment `orders.status`, ticket-transfer status, and settlement status are separate state dimensions. Before payment, the absence of a fulfilment row represents `NOT_STARTED` transfer and `NOT_FUNDED` settlement; these are response representations, not persisted fulfilment values.
 
 | Column | Type | Notes |
 |---|---|---|
@@ -198,7 +198,7 @@ Issue `#92` defines a separate one-to-one post-payment fulfilment record; issue 
 
 The approved transfer values are `AWAITING_SELLER_TRANSFER`, `SELLER_CONFIRMED_TRANSFER`, `BUYER_CONFIRMED_RECEIPT`, `TRANSFER_TIMED_OUT`, and `REQUIRES_REVIEW`. The approved settlement values are `FUNDS_HELD`, `RELEASED_TO_SELLER`, `REFUND_REQUIRED`, and `REVIEW_REQUIRED`. Issue `#93` initially writes only `AWAITING_SELLER_TRANSFER`, `SELLER_CONFIRMED_TRANSFER`, and `FUNDS_HELD`; later transitions remain separately controlled by issues `#95` through `#99`.
 
-The future migration must add an index on `(transfer_status, transfer_deadline_at, order_id)` for bounded timeout scans. It must not duplicate buyer, seller, listing, amount, or currency fields because their order relationships remain authoritative. Trusted payment completion creates the row atomically using the same captured server instant as `orders.paid_at`. Existing `PAID` orders are backfilled from trusted non-null `orders.paid_at`; a missing value must fail the migration instead of inventing a deadline. Later timeout reconciliation may process a backfilled deadline that has already passed.
+The migration constrains bounded persisted statuses, `updated_at >= created_at`, and `transfer_deadline_at = created_at + 15 minutes`; it also constrains the two states written by issue `#93` so awaiting transfer is held and unconfirmed, while seller-confirmed transfer is held and timestamped before its deadline. It adds an index on `(transfer_status, transfer_deadline_at, order_id)` for bounded timeout scans. The table does not duplicate buyer, seller, listing, reservation, amount, or currency fields because their order relationships remain authoritative. Trusted payment completion creates the row atomically using the same captured server instant as `orders.paid_at`. Existing `PAID` orders are backfilled from trusted non-null `orders.paid_at`; a missing value fails the migration instead of inventing a deadline. Later timeout reconciliation may process a backfilled deadline that has already passed.
 
 ### `payment_sessions`
 

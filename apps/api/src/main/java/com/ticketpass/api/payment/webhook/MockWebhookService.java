@@ -9,8 +9,12 @@ import com.ticketpass.api.listing.ListingReservationRepository;
 import com.ticketpass.api.listing.ListingReservationStatus;
 import com.ticketpass.api.listing.ListingStatus;
 import com.ticketpass.api.order.OrderEntity;
+import com.ticketpass.api.order.OrderFulfillmentEntity;
+import com.ticketpass.api.order.OrderFulfillmentRepository;
 import com.ticketpass.api.order.OrderRepository;
 import com.ticketpass.api.order.OrderStatus;
+import com.ticketpass.api.order.SettlementStatus;
+import com.ticketpass.api.order.TransferStatus;
 import com.ticketpass.api.payment.PaymentSessionEntity;
 import com.ticketpass.api.payment.PaymentSessionRepository;
 import com.ticketpass.api.payment.PaymentSessionStatus;
@@ -41,6 +45,7 @@ class MockWebhookService {
     private final ListingRepository listingRepository;
     private final ListingReservationRepository reservationRepository;
     private final OrderRepository orderRepository;
+    private final OrderFulfillmentRepository fulfillmentRepository;
     private final PaymentSessionRepository paymentSessionRepository;
     private final Clock clock;
     private final byte[] webhookSecret;
@@ -51,6 +56,7 @@ class MockWebhookService {
             ListingRepository listingRepository,
             ListingReservationRepository reservationRepository,
             OrderRepository orderRepository,
+            OrderFulfillmentRepository fulfillmentRepository,
             PaymentSessionRepository paymentSessionRepository,
             Clock clock,
             PaymentProperties paymentProperties) {
@@ -59,6 +65,7 @@ class MockWebhookService {
         this.listingRepository = listingRepository;
         this.reservationRepository = reservationRepository;
         this.orderRepository = orderRepository;
+        this.fulfillmentRepository = fulfillmentRepository;
         this.paymentSessionRepository = paymentSessionRepository;
         this.clock = clock;
         this.webhookSecret = paymentProperties.mock().webhookSecret().getBytes(StandardCharsets.UTF_8);
@@ -124,11 +131,12 @@ class MockWebhookService {
             requiresAction(receiptId, now);
             return;
         }
-        if (isSemanticDuplicate(payload, listing, reservation, order, session)) {
+        OrderFulfillmentEntity fulfillment = fulfillmentRepository.findByOrderId(order.getId()).orElse(null);
+        if (isSemanticDuplicate(payload, listing, reservation, order, session, fulfillment)) {
             receiptRepository.complete(receiptId, PaymentWebhookReceiptStatus.PROCESSED, now);
             return;
         }
-        if (!isCompletable(payload, listing, reservation, order, session, now)) {
+        if (!isCompletable(payload, listing, reservation, order, session, fulfillment, now)) {
             requiresAction(receiptId, now);
             return;
         }
@@ -138,13 +146,15 @@ class MockWebhookService {
         order.setPaidAt(now);
         order.setUpdatedAt(now);
         listing.setStatus(ListingStatus.SOLD);
+        listing.setUpdatedAt(now);
+        fulfillmentRepository.save(createFulfillment(order, now));
         receiptRepository.complete(receiptId, PaymentWebhookReceiptStatus.PROCESSED, now);
         LOGGER.info("Webhook receipt {} processed", receiptId);
     }
 
     private static boolean isCompletable(
             MockWebhookPayload payload, ListingEntity listing, ListingReservationEntity reservation,
-            OrderEntity order, PaymentSessionEntity session, Instant now) {
+            OrderEntity order, PaymentSessionEntity session, OrderFulfillmentEntity fulfillment, Instant now) {
         return session.getOrder().getId().equals(order.getId())
                 && order.getReservation().getId().equals(reservation.getId())
                 && order.getListing().getId().equals(listing.getId())
@@ -157,6 +167,7 @@ class MockWebhookService {
                 && order.getExpiresAt().equals(reservation.getExpiresAt())
                 && order.getStatus() == OrderStatus.PAYMENT_PENDING
                 && session.getStatus() == PaymentSessionStatus.PENDING
+                && fulfillment == null
                 && reservation.getStatus() == ListingReservationStatus.ACTIVE
                 && order.getExpiresAt().isAfter(now)
                 && reservation.getExpiresAt().isAfter(now)
@@ -167,7 +178,7 @@ class MockWebhookService {
 
     private static boolean isSemanticDuplicate(
             MockWebhookPayload payload, ListingEntity listing, ListingReservationEntity reservation,
-            OrderEntity order, PaymentSessionEntity session) {
+            OrderEntity order, PaymentSessionEntity session, OrderFulfillmentEntity fulfillment) {
         return session.getOrder().getId().equals(order.getId())
                 && order.getReservation().getId().equals(reservation.getId())
                 && order.getListing().getId().equals(listing.getId())
@@ -176,7 +187,45 @@ class MockWebhookService {
                 && payload.currency().equals(order.getCurrency())
                 && session.getStatus() == PaymentSessionStatus.PAID
                 && order.getStatus() == OrderStatus.PAID
-                && listing.getStatus() == ListingStatus.SOLD;
+                && listing.getStatus() == ListingStatus.SOLD
+                && fulfillment != null
+                && isCoherentFulfillment(order, fulfillment);
+    }
+
+    private static OrderFulfillmentEntity createFulfillment(OrderEntity order, Instant now) {
+        OrderFulfillmentEntity fulfillment = new OrderFulfillmentEntity();
+        fulfillment.setOrder(order);
+        fulfillment.setTransferStatus(TransferStatus.AWAITING_SELLER_TRANSFER);
+        fulfillment.setSettlementStatus(SettlementStatus.FUNDS_HELD);
+        fulfillment.setTransferDeadlineAt(now.plus(Duration.ofMinutes(15)));
+        fulfillment.setCreatedAt(now);
+        fulfillment.setUpdatedAt(now);
+        return fulfillment;
+    }
+
+    private static boolean isCoherentFulfillment(OrderEntity order, OrderFulfillmentEntity fulfillment) {
+        Instant paidAt = order.getPaidAt();
+        if (paidAt == null
+                || !paidAt.equals(fulfillment.getCreatedAt())
+                || !paidAt.plus(Duration.ofMinutes(15)).equals(fulfillment.getTransferDeadlineAt())
+                || fulfillment.getUpdatedAt().isBefore(fulfillment.getCreatedAt())) {
+            return false;
+        }
+        if (fulfillment.getTransferStatus() == TransferStatus.AWAITING_SELLER_TRANSFER) {
+            return fulfillment.getSettlementStatus() == SettlementStatus.FUNDS_HELD
+                    && fulfillment.getSellerConfirmedAt() == null;
+        }
+        if (fulfillment.getTransferStatus() == TransferStatus.SELLER_CONFIRMED_TRANSFER) {
+            return fulfillment.getSettlementStatus() == SettlementStatus.FUNDS_HELD
+                    && fulfillment.getSellerConfirmedAt() != null
+                    && fulfillment.getSellerConfirmedAt().isBefore(fulfillment.getTransferDeadlineAt());
+        }
+        if (fulfillment.getTransferStatus() == TransferStatus.BUYER_CONFIRMED_RECEIPT
+                && fulfillment.getBuyerConfirmedAt() == null) {
+            return false;
+        }
+        return fulfillment.getSettlementStatus() != SettlementStatus.RELEASED_TO_SELLER
+                || fulfillment.getSettlementReleasedAt() != null;
     }
 
     private void requiresAction(UUID receiptId, Instant now) {
