@@ -54,14 +54,14 @@ A version-controlled container baseline will make onboarding, integration demons
 ## Focused Issues
 
 - `#104` — Define reproducible container-stack contract.
-- `#105` — Containerize TicketPass API.
+- `#105` — Containerize TicketPass API. Implemented: multi-stage Java 21 image, non-root read-only runtime payload, external container profile, non-sensitive health check, graceful shutdown, and disabled-by-default mock payment.
 - `#106` — Containerize TicketPass web application.
 - `#107` — Add full-stack Compose and deployment runbook.
 
 ## Delivery Order
 
 1. Define and approve the container, configuration, networking, health, and security contract in `#104`.
-2. Build the API image and externalize its runtime configuration in `#105`.
+2. Build the API image and externalize its runtime configuration in `#105`. Completed.
 3. Build the web image and document its build-time API-origin requirement in `#106`.
 4. Wire PostgreSQL, API, and web together and document operations in `#107`.
 5. Create separate future stories for CI/CD, image publishing, cloud infrastructure, observability, backup/restore, and production high availability.

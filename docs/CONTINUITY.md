@@ -2,9 +2,25 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with authenticated seller listings, event browsing/detail, buyer reservations, protected browser checkout recovery, authenticated missing-event requests from the `/sell` fallback, a protected read-only seller own-listings page, and an authenticated display-name-only profile API backed by server-authoritative state. Mock payment events are delivered through signed HTTP webhooks and an atomic receipt ledger; verified, timely payment success completes the order, sells the reserved listing, and atomically creates held post-payment fulfilment with a 15-minute seller-transfer deadline. Authenticated sellers can make a safe, idempotent transfer confirmation before that deadline; buyer receipt, settlement release, and timeout reconciliation remain separately deferred. Checkout reconciliation handles trusted failure, cancellation, and expiry without releasing inventory when payment requires manual action, and authenticated buyers can reload their safe server-authoritative order state. The approved seller listing-cancellation contract now limits seller action to atomic, auditable `ACTIVE -> CANCELLED`; backend and browser work remain issues `#114` and `#115`. The public event-search contract now defines optional server-authoritative text, city, and time-window filters for the existing browse endpoint; its backend and frontend work remain issues `#110` and `#111`. The buyer order-progress contract defines a read-only, server-owned account-history view with separate payment, transfer, and settlement dimensions. The mock lifecycle is fail-closed at the route boundary, startup-validated, and bounded for webhook input and network delivery. The container-stack contract is documented; API and web image work are next in parallel, followed by health-aware Compose wiring and an operations runbook. The protected account form remains issue `#143`.
+TicketPass is an early monorepo scaffold with authenticated seller listings, event browsing/detail, buyer reservations, protected browser checkout recovery, authenticated missing-event requests from the `/sell` fallback, a protected read-only seller own-listings page, and an authenticated display-name-only profile API backed by server-authoritative state. Mock payment events are delivered through signed HTTP webhooks and an atomic receipt ledger; verified, timely payment success completes the order, sells the reserved listing, and atomically creates held post-payment fulfilment with a 15-minute seller-transfer deadline. Authenticated sellers can make a safe, idempotent transfer confirmation before that deadline; buyer receipt, settlement release, and timeout reconciliation remain separately deferred. Checkout reconciliation handles trusted failure, cancellation, and expiry without releasing inventory when payment requires manual action, and authenticated buyers can reload their safe server-authoritative order state. The approved seller listing-cancellation contract now limits seller action to atomic, auditable `ACTIVE -> CANCELLED`; backend and browser work remain issues `#114` and `#115`. The public event-search contract now defines optional server-authoritative text, city, and time-window filters for the existing browse endpoint; its backend and frontend work remain issues `#110` and `#111`. The buyer order-progress contract defines a read-only, server-owned account-history view with separate payment, transfer, and settlement dimensions. The mock lifecycle is fail-closed at the route boundary, startup-validated, and bounded for webhook input and network delivery. The API now has a Java 21 multi-stage container image and fail-closed external container profile; the web image and health-aware full-stack Compose wiring remain issues `#106` and `#107`. The protected account form remains issue `#143`.
 
 ## Latest Completed Work
+
+- Date: 2026-07-19
+- GitHub Issue: `#105` - https://github.com/VietCT04/TicketPass/issues/105
+- Summary: Added the API-only multi-stage Java 21 container image, non-root read-only runtime payload, OCI identity labels, non-sensitive Actuator health check, graceful shutdown, and a fail-closed external `container` profile. Required database, origin, cookie-security, and frontend-origin configuration has no image default. Mock payment is disabled by default in container mode; disabled mock checkout returns provider unavailable, while enabled mock payment retains its existing secret, URL, loopback, and cookie-security validation. Web packaging and full-stack Compose remain separate issues.
+- Files changed:
+  - `apps/api/Dockerfile`
+  - `apps/api/.dockerignore`
+  - `apps/api/src/main/resources/application-container.yml`
+  - `apps/api/src/main/java/com/ticketpass/api/payment/PaymentConfigurationValidator.java`
+  - `apps/api/src/main/java/com/ticketpass/api/payment/mock/MockPaymentProvider.java`
+  - `apps/api/src/main/java/com/ticketpass/api/payment/mock/MockPaymentDeliveryScheduler.java`
+  - `README.md`
+  - `docs/DEPLOYMENT.md`
+  - `docs/SECURITY.md`
+  - `docs/CONTINUITY.md`
+  - `docs/user-stories/US-0014-reproducible-container-stack.md`
 
 - Date: 2026-07-19
 - GitHub Issue: `#142` - https://github.com/VietCT04/TicketPass/issues/142
@@ -659,8 +675,8 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 
 ## Active Work
 
-- Current GitHub Issue: `#142` - https://github.com/VietCT04/TicketPass/issues/142
-- Current goal: Review and merge the authenticated profile-update backend.
+- Current GitHub Issue: None.
+- Current goal: Review and merge the completed API container image.
 - Current blocker: None.
 
 ## Important User Stories
@@ -677,6 +693,7 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 - `docs/user-stories/US-0010-view-own-orders.md`: Authenticated buyers can view their own order progress with payment, ticket-transfer, and settlement state kept separate.
 - `docs/user-stories/US-0011-seller-transfers-paid-ticket.md`: Sellers can confirm a paid ticket transfer within a server-controlled deadline without releasing held settlement.
 - `docs/user-stories/US-0023-update-account-profile.md`: Authenticated users can update only their display name through a private server-authoritative account flow without changing credentials, authorization, or sessions.
+- `docs/user-stories/US-0014-reproducible-container-stack.md`: The API image is implemented; the web image and full-stack Compose runbook remain separate work.
 
 ## Known Concerns
 
@@ -703,11 +720,11 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 - Audit retention, deletion, export, and compliance rules are not defined.
 - Buyer order-progress lists are intentionally read-only snapshots; deadline freshness must remain owned by bounded reconciliation and the authoritative single-order read; see `CONCERN-0025`.
 - Elapsed transfer deadlines require the controlled timeout work in issue `#99`; see `CONCERN-0027`.
-- Container image portability, image maintenance, single-host resilience, and Flyway replica coordination need follow-up; see `CONCERN-0028` through `CONCERN-0031`.
+- Container image portability, image maintenance, single-host resilience, and Flyway replica coordination need follow-up; see `CONCERN-0028` through `CONCERN-0031`. No new concern was identified by issue `#105`.
 - Display-name moderation, impersonation, reserved-name, and stronger Unicode policy are deferred; see `CONCERN-0032`.
 
 ## Next Recommended Steps
 
-1. Build the protected account profile form in issue `#143`.
-2. Build the protected seller transfer-confirmation flow in issue `#94`.
-3. Implement the protected seller listing-cancellation backend in issue `#114`, followed by the seller control in issue `#115`.
+1. Containerize the web application in issue `#106`.
+2. Add health-aware full-stack Compose wiring and the operations runbook in issue `#107`.
+3. Build the protected account profile form in issue `#143`.

@@ -1,0 +1,40 @@
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+  lifecycle:
+    timeout-per-shutdown-phase: ${SPRING_LIFECYCLE_TIMEOUT_PER_SHUTDOWN_PHASE:30s}
+
+server:
+  port: ${SERVER_PORT:8080}
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+ticketpass:
+  security:
+    allowed-origins:
+      - ${TICKETPASS_SECURITY_ALLOWED_ORIGINS_0}
+  auth:
+    cookie-secure: ${TICKETPASS_AUTH_COOKIE_SECURE}
+    cookie-domain: ${TICKETPASS_AUTH_COOKIE_DOMAIN:}
+  payments:
+    provider: mock
+    frontend-base-url: ${TICKETPASS_FRONTEND_BASE_URL}
+    reconciliation-interval-ms: ${PAYMENT_RECONCILIATION_INTERVAL_MS:5000}
+    reconciliation-batch-size: ${PAYMENT_RECONCILIATION_BATCH_SIZE:100}
+    mock:
+      enabled: ${MOCK_PAYMENT_ENABLED:false}
+      provider-base-url: ${MOCK_PAYMENT_PROVIDER_BASE_URL:http://127.0.0.1:8080}
+      webhook-url: ${MOCK_PAYMENT_WEBHOOK_URL:http://127.0.0.1:8080/api/payments/webhooks/mock}
+      webhook-secret: ${MOCK_PAYMENT_WEBHOOK_SECRET:}
+      allow-non-loopback: ${MOCK_PAYMENT_ALLOW_NON_LOOPBACK:false}
+      delivery-interval-ms: ${MOCK_PAYMENT_DELIVERY_INTERVAL_MS:5000}

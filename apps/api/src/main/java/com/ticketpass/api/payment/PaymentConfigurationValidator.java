@@ -30,10 +30,16 @@ class PaymentConfigurationValidator implements SmartInitializingSingleton {
         if (!"mock".equals(properties.provider())) {
             throw new IllegalStateException("ticketpass.payments.provider must be mock");
         }
-        if (properties.mock() == null || !properties.mock().enabled()) {
-            throw new IllegalStateException("ticketpass.payments.mock.enabled must be true for the mock provider");
+        if (properties.mock() == null) {
+            throw new IllegalStateException("ticketpass.payments.mock must be configured");
         }
         validateBaseUrl(properties.frontendBaseUrl(), "ticketpass.payments.frontend-base-url");
+        if (trustedOriginPolicy.hasNonLoopbackOrHttpsOrigin() && !cookieSecure) {
+            throw new IllegalStateException("ticketpass.auth.cookie-secure must be true for HTTPS or non-loopback trusted origins");
+        }
+        if (!properties.mock().enabled()) {
+            return;
+        }
         validateBaseUrl(properties.mock().providerBaseUrl(), "ticketpass.payments.mock.provider-base-url");
         validateWebhookUrl(properties.mock().webhookUrl());
         validateSecret(properties.mock().webhookSecret());
@@ -43,9 +49,6 @@ class PaymentConfigurationValidator implements SmartInitializingSingleton {
                         || !isLoopback(properties.mock().providerBaseUrl())
                         || !isLoopback(properties.mock().webhookUrl()))) {
             throw new IllegalStateException("mock payment URLs must be loopback unless ticketpass.payments.mock.allow-non-loopback is true");
-        }
-        if (trustedOriginPolicy.hasNonLoopbackOrHttpsOrigin() && !cookieSecure) {
-            throw new IllegalStateException("ticketpass.auth.cookie-secure must be true for HTTPS or non-loopback trusted origins");
         }
     }
 

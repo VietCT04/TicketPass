@@ -295,8 +295,15 @@ The web application runs at `http://localhost:3000` and reads its API base URL f
 The application architecture and lifecycle contracts are designed for production conditions, but the current checked-in runtime is still a local development baseline:
 
 - Docker Compose currently starts PostgreSQL only;
-- API and web container images are tracked as focused follow-up work;
+- the API has a Java 21 multi-stage container image with a fail-closed external runtime configuration profile;
+- the web image and full-stack Compose wiring remain focused follow-up work;
 - the included hosted payment provider is a local mock adapter, not a production payment integration;
 - cloud infrastructure, managed secrets, TLS, monitoring, backups, and high availability are separate deployment workstreams.
 
-The approved full-stack container and deployment contract is documented in [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+Build the API image from its deliberately narrow context with an immutable deployment-oriented tag:
+
+```bash
+docker build -f apps/api/Dockerfile -t ticketpass-api:<git-sha> apps/api
+```
+
+The image activates the `container` profile. It requires external database, trusted-origin, cookie-security, and frontend-origin values; mock payment is disabled unless explicitly enabled for the future local Compose stack. The full contract and runtime-variable reference are in [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
