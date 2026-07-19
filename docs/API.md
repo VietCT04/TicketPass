@@ -574,6 +574,92 @@ Before responding, the server processes a matching verified `DEFERRED` failure/c
 
 Malformed `orderId` returns `400 Bad Request`; missing, non-owned, or otherwise inaccessible orders return `404 Not Found`; missing or invalid authentication returns `401 Unauthorized`.
 
+### Browse Buyer Order Progress
+
+```http
+GET /api/me/orders
+```
+
+Issue `#87` defines this authenticated, read-only account-history contract. Backend implementation is deferred to issue `#88`, after the approved post-payment lifecycle persistence work. The server derives buyer ownership solely from `AuthenticatedUser`; clients must not supply a buyer ID or any ownership, payment, transfer, or settlement state.
+
+The endpoint accepts these query parameters:
+
+| Parameter | Required | Rules |
+|---|---:|---|
+| `page` | No | 1-based; default `1`; minimum `1`. |
+| `page_size` | No | Default `20`; minimum `1`; maximum `50`. |
+| `payment_status` | No | Exact approved payment lifecycle value. |
+| `transfer_status` | No | Exact approved transfer lifecycle value. |
+| `settlement_status` | No | Exact approved settlement lifecycle value. |
+
+The server applies buyer ownership and every supplied exact filter in the database before pagination. Results are ordered by `created_at DESC, id DESC`. Empty results, including pages beyond the final page, return `200 OK` with an empty `items` collection and accurate totals. Invalid pagination or a status value outside its approved lifecycle returns controlled `400 Bad Request`; missing or invalid authentication returns `401 Unauthorized`.
+
+Each order exposes three distinct status dimensions. They must never be collapsed into one client-derived order status:
+
+```text
+payment_status
+transfer_status
+settlement_status
+```
+
+Before post-payment fulfilment exists, the future response representation uses `NOT_STARTED` for transfer and `NOT_FUNDED` for settlement. The approved post-payment values are:
+
+```text
+transfer_status: AWAITING_SELLER_TRANSFER, SELLER_CONFIRMED_TRANSFER,
+                 BUYER_CONFIRMED_RECEIPT, TRANSFER_TIMED_OUT, REQUIRES_REVIEW
+settlement_status: FUNDS_HELD, RELEASED_TO_SELLER, REFUND_REQUIRED, REVIEW_REQUIRED
+```
+
+`PAID` means only that trusted payment confirmation succeeded. Seller transfer confirmation is only the seller's claim that transfer was performed; it neither proves buyer receipt nor releases funds. Only the approved buyer confirmation flow may authorize release on the happy path. Timeout and review states block release.
+
+The safe paginated response shape is:
+
+```json
+{
+  "items": [
+    {
+      "id": "11111111-1111-1111-1111-111111111111",
+      "payment_status": "PAID",
+      "transfer_status": "AWAITING_SELLER_TRANSFER",
+      "settlement_status": "FUNDS_HELD",
+      "amount_minor": 1250000,
+      "currency": "VND",
+      "expires_at": "2026-07-20T10:00:00Z",
+      "paid_at": "2026-07-20T09:01:00Z",
+      "transfer_deadline_at": "2026-07-20T09:16:00Z",
+      "seller_confirmed_transfer_at": null,
+      "buyer_confirmed_receipt_at": null,
+      "settlement_released_at": null,
+      "payment_review_required": false,
+      "fulfilment_review_required": false,
+      "status_refresh_required": false,
+      "buyer_action": "WAIT_FOR_SELLER_TRANSFER",
+      "event": {
+        "name": "Example Concert",
+        "starts_at": "2026-10-17T11:30:00Z",
+        "venue": "National Stadium",
+        "city": "Singapore"
+      },
+      "ticket": {
+        "ticket_type": "General Admission",
+        "seat_info": "Section A, Row 2, Seat 4",
+        "transfer_method": "PLATFORM_TRANSFER"
+      }
+    }
+  ],
+  "page": 1,
+  "page_size": 20,
+  "total_items": 1,
+  "total_pages": 1
+}
+```
+
+`buyer_action` is bounded, server-derived presentation guidance only: `NONE`, `CONTINUE_PAYMENT`, `WAIT_FOR_SELLER_TRANSFER`, `CONFIRM_TICKET_RECEIPT`, `OPEN_ORDER_FOR_REFRESH`, or `REVIEW_REQUIRED`. It does not authorize a mutation. Checkout and later fulfilment endpoints remain the mutation authorities.
+
+The list read is a persisted snapshot. It must not reconcile every row, call a payment provider, or perform bulk timeout processing. Scheduled reconciliation owns bulk expiry and timeout handling; `GET /api/orders/{orderId}` remains the request-time authoritative route for one selected order. `status_refresh_required` is `true` only when persisted state may be stale against a passed server deadline; the browser must open or refresh that single-order route instead of inventing a local status.
+
+Successful responses send `Cache-Control: no-store`. Responses must exclude seller identity and contact data, listing or reservation identifiers, hosted payment URLs, payment-provider records and webhook receipts, credentials, public notes, QR codes, barcodes, ticket files, and all private ticket-transfer data.
+
 ### Payment Completion Authority
 
 Only a verified provider webhook or equivalent trusted server-to-server confirmation may atomically perform:
