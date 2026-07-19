@@ -11,7 +11,7 @@ Let an authenticated user correct only their display name while keeping identity
 
 ## Contract Status
 
-Issue `#141` defines this contract only. The protected backend mutation is deferred to `#142`, and the account UI is deferred to `#143`.
+Issues `#141` and `#142` define and implement this contract. The protected backend mutation is available; the account UI remains deferred to `#143`.
 
 ## Server Flow
 

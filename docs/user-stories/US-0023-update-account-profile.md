@@ -44,7 +44,7 @@ TicketPass already stores and returns a display name during signup, login, and c
 ## Delivery Order
 
 1. Complete `#141` to approve the API, ownership, validation, locking, idempotency, privacy, and documentation contract.
-2. Complete `#142` to implement the protected backend mutation.
+2. Issue `#142` implements the protected backend mutation.
 3. Complete `#143` to add the protected account form after the endpoint exists.
 
 ## Risks

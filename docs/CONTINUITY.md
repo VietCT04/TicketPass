@@ -2,9 +2,28 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with authenticated seller listings, event browsing/detail, buyer reservations, protected browser checkout recovery, authenticated missing-event requests from the `/sell` fallback, and a protected read-only seller own-listings page backed by the server-authoritative API. Mock payment events are delivered through signed HTTP webhooks and an atomic receipt ledger; verified, timely payment success completes the order, sells the reserved listing, and atomically creates held post-payment fulfilment with a 15-minute seller-transfer deadline. Authenticated sellers can make a safe, idempotent transfer confirmation before that deadline; buyer receipt, settlement release, and timeout reconciliation remain separately deferred. Checkout reconciliation handles trusted failure, cancellation, and expiry without releasing inventory when payment requires manual action, and authenticated buyers can reload their safe server-authoritative order state. The approved seller listing-cancellation contract now limits seller action to atomic, auditable `ACTIVE -> CANCELLED`; backend and browser work remain issues `#114` and `#115`. The public event-search contract now defines optional server-authoritative text, city, and time-window filters for the existing browse endpoint; its backend and frontend work remain issues `#110` and `#111`. The buyer order-progress contract defines a read-only, server-owned account-history view with separate payment, transfer, and settlement dimensions. The mock lifecycle is fail-closed at the route boundary, startup-validated, and bounded for webhook input and network delivery. The container-stack contract is documented; API and web image work are next in parallel, followed by health-aware Compose wiring and an operations runbook. The authenticated profile contract now defines a private, display-name-only update; backend and frontend implementation remain separate issues `#142` and `#143`.
+TicketPass is an early monorepo scaffold with authenticated seller listings, event browsing/detail, buyer reservations, protected browser checkout recovery, authenticated missing-event requests from the `/sell` fallback, a protected read-only seller own-listings page, and an authenticated display-name-only profile API backed by server-authoritative state. Mock payment events are delivered through signed HTTP webhooks and an atomic receipt ledger; verified, timely payment success completes the order, sells the reserved listing, and atomically creates held post-payment fulfilment with a 15-minute seller-transfer deadline. Authenticated sellers can make a safe, idempotent transfer confirmation before that deadline; buyer receipt, settlement release, and timeout reconciliation remain separately deferred. Checkout reconciliation handles trusted failure, cancellation, and expiry without releasing inventory when payment requires manual action, and authenticated buyers can reload their safe server-authoritative order state. The approved seller listing-cancellation contract now limits seller action to atomic, auditable `ACTIVE -> CANCELLED`; backend and browser work remain issues `#114` and `#115`. The public event-search contract now defines optional server-authoritative text, city, and time-window filters for the existing browse endpoint; its backend and frontend work remain issues `#110` and `#111`. The buyer order-progress contract defines a read-only, server-owned account-history view with separate payment, transfer, and settlement dimensions. The mock lifecycle is fail-closed at the route boundary, startup-validated, and bounded for webhook input and network delivery. The container-stack contract is documented; API and web image work are next in parallel, followed by health-aware Compose wiring and an operations runbook. The protected account form remains issue `#143`.
 
 ## Latest Completed Work
+
+- Date: 2026-07-19
+- GitHub Issue: `#142` - https://github.com/VietCT04/TicketPass/issues/142
+- Summary: Implemented authenticated `PUT /api/me/profile`. The endpoint accepts only `display_name`, derives ownership from the session principal, shares signup-compatible normalization, locks and reloads the user row, preserves normalized no-op idempotency, and uses the injected clock for effective `display_name` and `updated_at` changes. It returns the existing safe no-store user response and leaves sessions, cookies, credentials, authorization, marketplace records, and audit data unchanged. The protected browser form remains issue `#143`.
+- Files changed:
+  - `apps/api/src/main/java/com/ticketpass/api/auth/AuthService.java`
+  - `apps/api/src/main/java/com/ticketpass/api/auth/DisplayNameNormalizer.java`
+  - `apps/api/src/main/java/com/ticketpass/api/auth/ProfileController.java`
+  - `apps/api/src/main/java/com/ticketpass/api/auth/ProfileService.java`
+  - `apps/api/src/main/java/com/ticketpass/api/auth/SecurityConfig.java`
+  - `apps/api/src/main/java/com/ticketpass/api/auth/UpdateProfileRequest.java`
+  - `apps/api/src/main/java/com/ticketpass/api/user/UserEntity.java`
+  - `apps/api/src/main/java/com/ticketpass/api/user/UserRepository.java`
+  - `docs/API.md`
+  - `docs/DATABASE.md`
+  - `docs/SECURITY.md`
+  - `docs/flows/ACCOUNT_PROFILE_FLOW.md`
+  - `docs/user-stories/US-0023-update-account-profile.md`
+  - `docs/CONTINUITY.md`
 
 - Date: 2026-07-19
 - GitHub Issue: `#113` - https://github.com/VietCT04/TicketPass/issues/113
@@ -640,8 +659,8 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 
 ## Active Work
 
-- Current GitHub Issue: `#113` - https://github.com/VietCT04/TicketPass/issues/113
-- Current goal: Review and merge the seller listing-cancellation contract.
+- Current GitHub Issue: `#142` - https://github.com/VietCT04/TicketPass/issues/142
+- Current goal: Review and merge the authenticated profile-update backend.
 - Current blocker: None.
 
 ## Important User Stories
@@ -689,6 +708,6 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 
 ## Next Recommended Steps
 
-1. Build the protected seller transfer-confirmation flow in issue `#94`.
-2. Implement the protected seller listing-cancellation backend in issue `#114`, followed by the seller control in issue `#115`.
-3. Implement buyer receipt confirmation and settlement release through issues `#95` to `#97`.
+1. Build the protected account profile form in issue `#143`.
+2. Build the protected seller transfer-confirmation flow in issue `#94`.
+3. Implement the protected seller listing-cancellation backend in issue `#114`, followed by the seller control in issue `#115`.

@@ -69,7 +69,7 @@ Credentialed CORS uses the same normalized trusted-origin source as the CSRF ori
 
 ## Account Profile Update Security
 
-Issue `#141` defines the display-name-only profile-update contract; issue `#142` will implement the backend and issue `#143` will implement the protected browser form.
+Issues `#141` and `#142` define and implement the display-name-only profile-update contract; issue `#143` will implement the protected browser form.
 
 - `PUT /api/me/profile` must explicitly require authentication before the final deny rule. The controller receives `AuthenticatedUser`; it must never accept a client-supplied user or ownership identifier.
 - The endpoint accepts exactly one field, `display_name`. Email, password, roles, permissions, account status, sessions, cookies, timestamps, and any other server-controlled fields are rejected through controlled validation; they must never be mutable through this route.

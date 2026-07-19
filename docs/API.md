@@ -120,7 +120,7 @@ Returns `401` when the session is missing, malformed, unknown, expired, or revok
 
 ### Update Profile
 
-Issue `#141` defines this contract. Backend implementation remains issue `#142`; until then, `PUT /api/me/profile` is not available.
+Issue `#141` defines this contract and issue `#142` implements the backend. The protected browser form remains issue `#143`.
 
 ```http
 PUT /api/me/profile
