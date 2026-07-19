@@ -1,5 +1,27 @@
 # Concerns
 
+## CONCERN-0035: Settlement Provider And Operational Recovery Are Undefined
+
+Date: 2026-07-19
+Related User Story: `docs/user-stories/US-0012-buyer-confirms-ticket-receipt.md`
+Related GitHub Issues: `#95` - https://github.com/VietCT04/TicketPass/issues/95, `#96` - https://github.com/VietCT04/TicketPass/issues/96, `#98` - https://github.com/VietCT04/TicketPass/issues/98, `#99` - https://github.com/VietCT04/TicketPass/issues/99
+
+### Concern
+
+The approved receipt-confirmation contract creates a durable, idempotent settlement-release boundary but intentionally does not select a production settlement provider, define seller onboarding, define retry ownership or operational alerting, or define refund, dispute, timeout, and review resolution after a release operation becomes uncertain or requires review.
+
+### Risk
+
+An implementation could represent a development adapter as real financial infrastructure, retry unsafely without an owner, or handle a provider timeout, permanent failure, or contradictory outcome as a release or refund without authoritative evidence. This could cause duplicate release, stranded held funds, or an unresolvable buyer and seller outcome.
+
+### Recommendation
+
+Keep issue `#96` limited to the approved stable-key, durable-operation, lease, lookup, and fail-safe local lifecycle. Before production settlement, approve provider-specific credentials, payout onboarding, financial reconciliation, monitoring, alerting, manual review, refund, dispute, and chargeback workflows. Issues `#98` and `#99` must define how timeout and review states inspect existing release operations before any automated disposition.
+
+### Status
+
+Open
+
 ## CONCERN-0034: Admin Bootstrap And Exact Event Identity Limits
 
 Date: 2026-07-19

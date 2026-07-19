@@ -56,7 +56,7 @@ After the seller confirms transfer, the authenticated buyer must verify that the
 ## Delivery Order
 
 1. Complete and approve the seller transfer lifecycle in `#92`.
-2. Define the buyer-confirmation, settlement-status, idempotency, provider-boundary, and privacy contract in `#95`.
+2. Issue `#95` defines the buyer-confirmation, settlement-status, idempotency, provider-boundary, and privacy contract.
 3. Implement buyer confirmation and recoverable settlement release in `#96` after seller transfer persistence exists in `#93`.
 4. Build the protected buyer receipt-confirmation action in `#97` after the order-progress page in `#89` exists.
 5. Integrate timeout and review restrictions from `#98`–`#100`.
