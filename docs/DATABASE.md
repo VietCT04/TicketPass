@@ -55,7 +55,7 @@ Issue `#3` implements the initial seller listing persistence contract with Flywa
 
 The user-facing seller listing flow is documented in `docs/flows/SELLER_LISTING_FLOW.md`.
 
-Issue `#5` adds the first audit table and records seller listing creation with Flyway migration `apps/api/src/main/resources/db/migration/V3__create_audit_events.sql`.
+Issue `#5` adds the first audit table and records seller listing creation with Flyway migration `apps/api/src/main/resources/db/migration/V3__create_audit_events.sql`. Issue `#113` defines a second future audit action, `LISTING_CANCELLED`, without requiring a schema change; backend implementation remains issue `#114`.
 
 ## Tables
 
@@ -71,7 +71,7 @@ Stores normalized event information shared by listings.
 | `city` | string | Event city. |
 | `starts_at` | timestamp with timezone | Event start date and time. |
 | `created_at` | timestamp | Creation time. |
-| `updated_at` | timestamp | Last update time. |
+| `updated_at` | timestamp | Last update time. For the future seller cancellation contract, the first `ACTIVE -> CANCELLED` transition time. |
 
 ### `event_requests`
 
@@ -216,13 +216,13 @@ The same migration persists an isolated mock-provider session record with amount
 
 Stores immutable audit records for security-sensitive business actions.
 
-Issue `#5` emits only `LISTING_CREATED` records when an authenticated seller creates a listing.
+Issue `#5` emits `LISTING_CREATED` records when an authenticated seller creates a listing. Issue `#113` defines a future `LISTING_CANCELLED` record for the first seller-owned `ACTIVE -> CANCELLED` transition; issue `#114` will implement it.
 
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID/string id | Primary key. |
 | `actor_user_id` | UUID/string id | Authenticated user who performed the action. References `users.id` and must not cascade delete. |
-| `action` | string | Bounded action value. Issue `#5` supports `LISTING_CREATED` only. |
+| `action` | string | Bounded application action value. Existing migration has no database action check constraint; `LISTING_CREATED` and future `LISTING_CANCELLED` are application-defined values. |
 | `entity_type` | string | Bounded entity type value. Issue `#5` supports `LISTING` only. |
 | `entity_id` | UUID/string id | Identifier of the affected entity. Generic value; no foreign key is declared to `listings`. |
 | `created_at` | timestamp with timezone | Server-generated audit timestamp. |
@@ -237,7 +237,7 @@ Detailed transition rules and duplicate-sale invariants are documented in `docs/
 | `ACTIVE` | Listing is visible and available for purchase. |
 | `RESERVED` | Listing is temporarily held for a purchase attempt. |
 | `SOLD` | Listing has completed sale flow and must not be sold again. |
-| `CANCELLED` | Seller or admin cancelled the listing. |
+| `CANCELLED` | Terminal unavailable listing. Issue `#113` defines seller-owned `ACTIVE -> CANCELLED`; separate future rules are required for draft or admin cancellation. |
 | `EXPIRED` | Listing is unavailable because the event or listing window expired. |
 
 Status transition implementation belongs to backend/database work after issue `#4`.
@@ -266,6 +266,7 @@ These values describe the expected transfer path only. Raw ticket payload storag
 - For VND, `asking_price_minor` represents whole dong, not cents.
 - `is_transferable_confirmed` must be `true` before a listing can become `ACTIVE`.
 - Only `ACTIVE` listings can be reserved or purchased.
+- Issue `#113` defines seller cancellation only as a listing-first locked `ACTIVE -> CANCELLED` transition. It never modifies historical reservations, orders, payments, provider records, or ticket payload data; an owning seller retry against `CANCELLED` is a no-write idempotent read of the existing terminal state.
 - Reservation creation atomically writes an `ACTIVE` reservation record and transitions its listing from `ACTIVE` to `RESERVED` under a pessimistic listing lock.
 - A reservation is valid only while its status is `ACTIVE` and `expires_at` has not been reached according to server time.
 - A reservation without an order expires through the generic reservation-expiry path. A reservation with an order is owned exclusively by checkout reconciliation, preventing generic expiry from releasing inventory while payment uncertainty remains.
@@ -289,8 +290,9 @@ These values describe the expected transfer path only. Raw ticket payload storag
 ## Audit Constraints
 
 - Listing creation and its `LISTING_CREATED` audit record must be written in the same transaction.
-- A listing creation failure must not leave an audit record without the listing.
-- An audit insertion failure must roll back listing creation.
+- The future seller `ACTIVE -> CANCELLED` transition and its first `LISTING_CANCELLED` audit record must be written in the same transaction with the same captured application-clock timestamp.
+- A listing creation or cancellation failure must not leave an audit record without its listing transition.
+- An audit insertion failure must roll back the associated listing mutation.
 - `audit_events.created_at` must be generated server-side with the injected application clock.
 - Application code may insert audit records, but existing audit records must not be updated or deleted as part of normal product workflows.
 - Audit records must not contain request bodies, seller contact data, public notes, seat information, ticket type, asking price, QR codes, barcodes, ticket files, private transfer links, platform credentials, passwords, session tokens, cookies, or email addresses.

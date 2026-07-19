@@ -421,7 +421,61 @@ A valid page beyond the final page also returns `200 OK` with an empty `items` a
 - `400 Bad Request`: malformed or out-of-range pagination, or unsupported status filter.
 - `401 Unauthorized`: authentication is required.
 
-Errors must not reveal SQL, repository details, seller identifiers, enum internals, or stack traces. Listing editing, cancellation, deletion, renewal, relisting, and all buyer, reservation, checkout, payment, payout, transfer, reveal, refund, dispute, analytics, and bulk-action behavior remain out of scope.
+Errors must not reveal SQL, repository details, seller identifiers, enum internals, or stack traces. Listing editing, deletion, renewal, relisting, and all buyer, reservation, checkout, payment, payout, transfer, reveal, refund, dispute, analytics, and bulk-action behavior remain out of scope.
+
+### Cancel Own Listing
+
+Issue `#113` defines this documentation-only contract. Backend implementation remains issue `#114`; the seller control remains issue `#115`.
+
+```http
+POST /api/listings/{listingId}/cancel
+```
+
+Cancels an authenticated seller's own unsold listing. The request has no body and must not accept seller, ownership, status, reservation, order, payment, or ticket fields. Seller identity is derived only from `AuthenticatedUser.id()`.
+
+Only the terminal transition `ACTIVE -> CANCELLED` is eligible. The endpoint never deletes a listing or modifies reservation, order, payment, provider, or ticket-payload records. A seller may cancel an `ACTIVE` listing even when historical expired reservations or terminal unpaid orders exist, because those retained records are not changed.
+
+#### Response Body
+
+The first successful transition and an owning seller's idempotent retry against an already `CANCELLED` listing both return `200 OK` with `Cache-Control: no-store`:
+
+```json
+{
+  "id": "33333333-3333-3333-3333-333333333333",
+  "status": "CANCELLED",
+  "updated_at": "2026-07-19T10:00:00Z"
+}
+```
+
+The response must not include seller identity, buyer or reservation information, order, payment, provider, payout, refund, dispute, audit, public-note, or ticket-payload data.
+
+#### Authorization, Eligibility, And Idempotency
+
+The service parses the listing UUID, captures one timestamp from the injected application clock, and pessimistically locks the listing row before checking ownership or status. A missing listing and a listing owned by another seller both return the same controlled `404 Not Found` response.
+
+| Current status | Result |
+|---|---|
+| `ACTIVE` | Transition to `CANCELLED`, set `updated_at` to the captured timestamp, and return `200 OK`. |
+| `CANCELLED` | Owning seller receives the unchanged safe response with `200 OK`; do not update `updated_at` or create another audit record. |
+| `RESERVED`, `SOLD`, `EXPIRED`, or `DRAFT` | Return `409 Conflict` without mutation. |
+
+The `409` response uses the generic message `Listing cannot be cancelled in its current state`. It must not disclose buyer identity, reservation expiry, order state, payment state, or the cause of the conflict.
+
+Cancellation and reservation creation use the same listing-first pessimistic lock. Exactly one concurrent transition can win: cancellation first makes later reservation eligibility fail; reservation first makes cancellation return `409`. Cancellation must not query or lock a reservation before the listing, reconcile a stale reservation, or introduce another lock order.
+
+#### Audit And Errors
+
+On the first successful transition only, the same transaction writes an immutable `LISTING_CANCELLED` audit event with the authenticated seller ID, entity type `LISTING`, listing ID, and the same captured timestamp used for `listings.updated_at`. Audit persistence is mandatory: an audit failure rolls back cancellation. Audit rows must not contain metadata, seller notes, buyer identity, reservation/order/payment data, request bodies, IP addresses, credentials, or ticket payload data.
+
+| Status | Meaning |
+|---:|---|
+| `400` | Malformed listing UUID. |
+| `401` | Authentication is required. |
+| `404` | Listing is missing or is not owned by the authenticated seller. |
+| `409` | Owned listing is ineligible for cancellation. |
+| `5xx` | Controlled unexpected persistence failure without SQL, entity, lock, audit, credential, session, or stack-trace disclosure. |
+
+This unsafe cookie-authenticated request remains subject to the existing exact trusted-origin protection.
 
 ### Create Listing Reservation
 
