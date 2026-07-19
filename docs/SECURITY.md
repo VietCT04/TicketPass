@@ -4,6 +4,17 @@
 
 TicketPass uses email/password authentication with server-side opaque sessions for MVP.
 
+## Container Deployment Configuration
+
+Issue `#104` defines the documentation-only configuration contract for future container work. Issues `#105` through `#107` must externalize these values rather than adding them to images, Compose files, or committed environment files.
+
+- Database access uses `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, and `SPRING_DATASOURCE_PASSWORD`. On the internal Compose network, the JDBC host is the PostgreSQL service name, not `localhost`.
+- Browser security uses `TICKETPASS_SECURITY_ALLOWED_ORIGINS_0`, `TICKETPASS_AUTH_COOKIE_SECURE`, optional `TICKETPASS_AUTH_COOKIE_DOMAIN`, and `TICKETPASS_FRONTEND_BASE_URL`. The frontend origin must exactly match CORS and trusted-origin validation.
+- `NEXT_PUBLIC_API_BASE_URL` is browser-visible build-time configuration, not a secret. It must be explicitly supplied with a browser-reachable API URL and requires a web-image rebuild when it changes.
+- Mock payment is local-stack-only. `MOCK_PAYMENT_ENABLED`, `MOCK_PAYMENT_WEBHOOK_SECRET`, `MOCK_PAYMENT_PROVIDER_BASE_URL`, `MOCK_PAYMENT_WEBHOOK_URL`, and `MOCK_PAYMENT_ALLOW_NON_LOOPBACK` must come from external configuration. The webhook secret belongs only in an untracked environment file; missing required secrets fail startup while mock payment is enabled.
+- Non-local deployment requires HTTPS, `TICKETPASS_AUTH_COOKIE_SECURE=true`, exact configured origins, externally supplied credentials, and `MOCK_PAYMENT_ENABLED=false` until a production payment provider exists.
+- Build contexts and images must exclude `.env*`, credentials, private keys, database dumps, ticket files, payment secrets, caches, logs, and build tooling not required at runtime. Do not print secret values at container startup or in operating instructions.
+
 ## Password Handling
 
 - Passwords must be hashed with BCrypt before storage.
