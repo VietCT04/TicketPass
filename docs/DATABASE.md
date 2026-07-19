@@ -12,6 +12,8 @@ Issue `#10` implements this contract with Flyway migration `apps/api/src/main/re
 
 Stores TicketPass user accounts.
 
+Issue `#141` defines a future display-name-only profile replacement. Issue `#142` will implement it without a migration: `display_name` is already `VARCHAR(120) NOT NULL`, and `updated_at` already exists. A normalized no-op must not change `updated_at`; an effective update changes only `display_name` and `updated_at`. No username, alias, profile, moderation, field-history, or per-field timestamp table is introduced.
+
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID/string id | Primary key. |
@@ -43,6 +45,7 @@ Stores server-side opaque login sessions.
 - Expired or revoked sessions must not authenticate requests.
 - Logout sets `auth_sessions.revoked_at` instead of deleting the session row.
 - Business records must reference authenticated `users.id` values derived server-side.
+- The profile-update service must reload and pessimistically lock the authenticated `users` row before mutation so concurrent account changes can serialize without lost updates.
 
 ## Seller Listing Contract
 

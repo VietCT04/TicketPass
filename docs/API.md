@@ -118,6 +118,64 @@ Returns the authenticated user for the current session.
 
 Returns `401` when the session is missing, malformed, unknown, expired, or revoked.
 
+### Update Profile
+
+Issue `#141` defines this contract. Backend implementation remains issue `#142`; until then, `PUT /api/me/profile` is not available.
+
+```http
+PUT /api/me/profile
+```
+
+Replaces the authenticated user's currently supported mutable profile resource. Authentication is required. The server derives the user ID only from the immutable `AuthenticatedUser` principal and reloads the current user row under a pessimistic write lock before making a decision. Clients cannot submit or change email, password, roles, permissions, user ID, account status, session state, timestamps, or any other server-controlled value.
+
+The request accepts exactly `display_name`; unknown fields are rejected.
+
+#### Request Body
+
+```json
+{
+  "display_name": "Avery Nguyen"
+}
+```
+
+#### Request Fields
+
+| Field | Type | Required | Notes |
+|---|---|---:|---|
+| `display_name` | string | Yes | Required, maximum 120 raw-input characters, trimmed before comparison and persistence, and nonblank after trimming. Internal whitespace is preserved. |
+
+Display names are not lowercased, case-folded, Unicode-normalized, made unique, or checked against reserved names in MVP. They remain untrusted text and clients must render them as text rather than HTML.
+
+The service captures one injected-clock timestamp while processing the request. When the normalized submitted name equals the stored name, it returns `200 OK` without changing `users.updated_at`, flushing an update, writing an audit event, or touching cookies or sessions. An effective update changes only `users.display_name` and `users.updated_at`; all existing sessions remain valid.
+
+#### Response Body
+
+Both an effective update and a normalized no-op return `200 OK` using the same safe authenticated-user representation as signup, login, and `GET /api/me`:
+
+```json
+{
+  "user": {
+    "id": "usr_123",
+    "email": "user@example.com",
+    "display_name": "Avery Nguyen",
+    "created_at": "2026-07-10T10:00:00Z"
+  }
+}
+```
+
+Successful responses send `Cache-Control: no-store`. They never include password hashes, roles, permissions, session IDs, token hashes, cookie values, audit data, internal timestamps, or marketplace-private information.
+
+#### Errors
+
+| Status | Meaning |
+|---:|---|
+| `400` | Malformed JSON, unknown field, missing or non-string `display_name`, blank value, or value longer than 120 raw-input characters. |
+| `401` | Session is missing or invalid, or its authenticated user row no longer exists. |
+| `403` | Existing unsafe cookie-authenticated request-origin protection rejected the request. |
+| `5xx` | Controlled unexpected persistence failure without entity, SQL, stack-trace, credential, session, role, or account-metadata disclosure. |
+
+This `PUT` is subject to the existing cookie-authenticated unsafe-request origin protection.
+
 ### Session Cookie
 
 - Cookie name is `ticketpass_session`.
