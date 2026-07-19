@@ -204,14 +204,39 @@ Issue `#92` defines a separate one-to-one post-payment fulfilment record; issue 
 | `settlement_status` | enum/string | Bounded settlement lifecycle value. |
 | `transfer_deadline_at` | timestamp with timezone | Trusted `paid_at + 15 minutes`; immutable after creation. |
 | `seller_confirmed_at` | timestamp with timezone nullable | Immutable first seller-transfer confirmation time. |
-| `buyer_confirmed_at` | timestamp with timezone nullable | Reserved for later buyer receipt confirmation. |
-| `settlement_released_at` | timestamp with timezone nullable | Reserved for later approved settlement release. |
+| `buyer_confirmed_at` | timestamp with timezone nullable | Immutable server time for the first valid buyer receipt confirmation. |
+| `settlement_released_at` | timestamp with timezone nullable | Immutable server-observed time for confirmed settlement release. |
 | `created_at` | timestamp with timezone | Server-generated creation time. |
 | `updated_at` | timestamp with timezone | Server-generated last-update time. |
 
-The approved transfer values are `AWAITING_SELLER_TRANSFER`, `SELLER_CONFIRMED_TRANSFER`, `BUYER_CONFIRMED_RECEIPT`, `TRANSFER_TIMED_OUT`, and `REQUIRES_REVIEW`. The approved settlement values are `FUNDS_HELD`, `RELEASED_TO_SELLER`, `REFUND_REQUIRED`, and `REVIEW_REQUIRED`. Issue `#93` initially writes only `AWAITING_SELLER_TRANSFER`, `SELLER_CONFIRMED_TRANSFER`, and `FUNDS_HELD`; later transitions remain separately controlled by issues `#95` through `#99`.
+The approved transfer values are `AWAITING_SELLER_TRANSFER`, `SELLER_CONFIRMED_TRANSFER`, `BUYER_CONFIRMED_RECEIPT`, `TRANSFER_TIMED_OUT`, and `REQUIRES_REVIEW`. The approved settlement values are `FUNDS_HELD`, `RELEASED_TO_SELLER`, `REFUND_REQUIRED`, and `REVIEW_REQUIRED`. Issue `#93` writes only `AWAITING_SELLER_TRANSFER`, `SELLER_CONFIRMED_TRANSFER`, and `FUNDS_HELD`. Issue `#95` defines the later buyer-confirmed and release contract; implementation remains issue `#96`.
 
 The migration constrains bounded persisted statuses, `updated_at >= created_at`, and `transfer_deadline_at = created_at + 15 minutes`; it also constrains the two states written by issue `#93` so awaiting transfer is held and unconfirmed, while seller-confirmed transfer is held and timestamped before its deadline. It adds an index on `(transfer_status, transfer_deadline_at, order_id)` for bounded timeout scans. The table does not duplicate buyer, seller, listing, reservation, amount, or currency fields because their order relationships remain authoritative. Trusted payment completion creates the row atomically using the same captured server instant as `orders.paid_at`. Existing `PAID` orders are backfilled from trusted non-null `orders.paid_at`; a missing value fails the migration instead of inventing a deadline. Later timeout reconciliation may process a backfilled deadline that has already passed.
+
+For the buyer-confirmation happy path, one transaction will revalidate the authoritative listing, reservation, order, and fulfilment rows, then transition `SELLER_CONFIRMED_TRANSFER -> BUYER_CONFIRMED_RECEIPT`. It sets `buyer_confirmed_at` and `updated_at` to one captured server time while retaining `FUNDS_HELD`. A repeated coherent request preserves both values. Provider-confirmed release is the only path that may then move `FUNDS_HELD -> RELEASED_TO_SELLER` and set `settlement_released_at`; it must not be inferred from the buyer action itself.
+
+### `settlement_release_operations`
+
+Issue `#95` defines one future private release operation per order; issue `#96` will add its migration and persistence. It makes external settlement execution durable without duplicating marketplace facts already held by `orders` and `order_fulfillments`.
+
+| Column | Type | Notes |
+|---|---|---|
+| `order_id` | UUID/string id | Primary key and non-cascading foreign key to `orders.id`; one operation per order. |
+| `provider` | string | Bounded provider-neutral settlement adapter identifier. |
+| `idempotency_key` | string | Unique stable key, derived once from the order and reused across all retries. |
+| `status` | enum/string | `PENDING`, `PROCESSING`, `RETRYABLE_FAILURE`, `SUCCEEDED`, or `REQUIRES_REVIEW`. |
+| `provider_operation_id` | string nullable | Opaque provider reference, never exposed in marketplace responses. |
+| `attempt_count` | integer | Bounded execution-attempt count. |
+| `next_attempt_at` | timestamp with timezone nullable | Earliest future retry time. |
+| `processing_lease_until` | timestamp with timezone nullable | Bounded lease for crash recovery and multi-instance exclusion. |
+| `last_error_code` | string nullable | Bounded internal outcome category, never raw provider data. |
+| `created_at` | timestamp with timezone | Server-generated creation time. |
+| `updated_at` | timestamp with timezone | Server-generated update time. |
+| `completed_at` | timestamp with timezone nullable | Immutable server-observed completion time after confirmed release. |
+
+The stable key may use `settlement-release:<order-id>`. It cannot change for HTTP retries, worker retries, restarts, or uncertain provider responses. A unique constraint on the key and the one-to-one order relation prevent duplicate operations. The operation contains no buyer or seller IDs, amount, currency, listing, reservation, ticket data, or provider payload; the locked paid order remains authoritative for all release inputs.
+
+External provider calls occur outside marketplace locks. A short transaction records buyer confirmation and creates or recovers the operation; a bounded claim commits `PROCESSING`; the provider is called with the stable key; then a later transaction locks and reloads the marketplace and operation rows before applying a confirmed result. Unknown or timeout results keep settlement held and recover through provider lookup or retry. A stale claim becomes recoverable after its lease. Confirmed success applies exactly once and sets both `settlement_released_at` and `completed_at` from one captured server time. Contradictory or permanent outcomes move the operation to `REQUIRES_REVIEW` without claiming release or refund.
 
 ### `payment_sessions`
 
@@ -229,18 +254,20 @@ The same migration persists an isolated mock-provider session record with amount
 
 Stores immutable audit records for security-sensitive business actions.
 
-Issue `#5` emits `LISTING_CREATED` records when an authenticated seller creates a listing. Issue `#113` defines a future `LISTING_CANCELLED` record for the first seller-owned `ACTIVE -> CANCELLED` transition; issue `#114` will implement it. Issue `#145` defines future `EVENT_CREATED`, `EVENT_REQUEST_APPROVED`, and `EVENT_REQUEST_REJECTED` records for administrative review; implementation remains follow-up work.
+Issue `#5` emits `LISTING_CREATED` records when an authenticated seller creates a listing. Issue `#113` defines a future `LISTING_CANCELLED` record for the first seller-owned `ACTIVE -> CANCELLED` transition; issue `#114` will implement it. Issue `#95` defines future `BUYER_RECEIPT_CONFIRMED` and `SETTLEMENT_RELEASED` records for effective buyer-confirmation and release transitions; issue `#96` will implement them. Issue `#145` defines future `EVENT_CREATED`, `EVENT_REQUEST_APPROVED`, and `EVENT_REQUEST_REJECTED` records for administrative review; implementation remains follow-up work.
 
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID/string id | Primary key. |
 | `actor_user_id` | UUID/string id | Authenticated user who performed the action. References `users.id` and must not cascade delete. |
-| `action` | string | Bounded application action value. Existing migration has no database action check constraint; `LISTING_CREATED`, future `LISTING_CANCELLED`, `EVENT_CREATED`, `EVENT_REQUEST_APPROVED`, and `EVENT_REQUEST_REJECTED` are application-defined values. |
+| `action` | string | Bounded application action value. Existing migration has no database action check constraint; `LISTING_CREATED`, future `LISTING_CANCELLED`, `BUYER_RECEIPT_CONFIRMED`, `SETTLEMENT_RELEASED`, `EVENT_CREATED`, `EVENT_REQUEST_APPROVED`, and `EVENT_REQUEST_REJECTED` are application-defined values. |
 | `entity_type` | string | Bounded entity type value. Issue `#5` supports `LISTING`; event review adds `EVENT` and `EVENT_REQUEST`. |
 | `entity_id` | UUID/string id | Identifier of the affected entity. Generic value; no foreign key is declared to `listings`. |
 | `created_at` | timestamp with timezone | Server-generated audit timestamp. |
 
 Administrative event-review audit rows contain only actor ID, action, entity type, entity ID, and the captured server timestamp. Submitted metadata, URLs, reviewer text, seller-facing messages, normalized values, and request bodies must never be stored in `audit_events`.
+
+Buyer-confirmation audit rows use the authenticated buyer as actor and the order as entity. `BUYER_RECEIPT_CONFIRMED` is written only for the first effective local transition; `SETTLEMENT_RELEASED` is written only for the first provider-confirmed release. HTTP retries, worker retries, provider lookup, and polling write no additional audit event. These rows contain no amount, provider data, ticket data, user-entered text, or error detail.
 
 ## Listing Statuses
 

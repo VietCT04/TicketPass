@@ -716,6 +716,77 @@ The seller-safe response contains only `order_id`, payment/transfer/settlement s
 
 Malformed order IDs return `400 Bad Request`; missing authentication returns `401 Unauthorized`; missing and non-owned orders return the same `404 Not Found`; and unpaid, expired, timed-out, review-required, or otherwise ineligible states return controlled `409 Conflict` responses without payment, provider, review, buyer, or database details.
 
+### Buyer Receipt Confirmation And Settlement Release
+
+Issue `#95` defines this contract. Backend persistence and endpoint implementation remain issue `#96`; protected browser work remains issue `#97`.
+
+```http
+POST /api/orders/{orderId}/receipt-confirmation
+```
+
+The endpoint accepts no request body and requires authentication. It derives buyer ownership only from `AuthenticatedUser`. Clients cannot supply buyer or seller IDs, amount, currency, payment, transfer, settlement, timestamp, provider, or other server-controlled values. A successful response sends `Cache-Control: no-store`. The browser action must state that confirming receipt authorizes settlement release and cannot be undone through the normal fulfilment flow.
+
+A first confirmation is eligible only when all authoritative conditions hold:
+
+```text
+order.status                 = PAID
+listing.status               = SOLD
+transfer_status              = SELLER_CONFIRMED_TRANSFER
+settlement_status            = FUNDS_HELD
+seller_confirmed_at          is not null
+buyer_confirmed_at           is null
+```
+
+The server must also require buyer ownership and reject any timeout, review, refund, dispute, or conflicting release state. Once a seller validly confirmed before the seller deadline, this contract adds no buyer deadline. Browser time never decides eligibility. Timed-out, review-required, unpaid, failed, cancelled, expired, refunded, or inconsistent orders return controlled conflict responses.
+
+Under one transaction, the implementation reloads and revalidates every authoritative row using the established lock order:
+
+```text
+listing -> reservation -> order -> fulfilment -> release operation
+```
+
+The first valid request transitions `SELLER_CONFIRMED_TRANSFER -> BUYER_CONFIRMED_RECEIPT`, captures one server time for `buyer_confirmed_at` and `updated_at`, and leaves settlement `FUNDS_HELD`. It commits that local transition before attempting external settlement. Buyer confirmation does not imply external release has completed. `buyer_confirmed_at` is immutable; repeated coherent requests recover the existing workflow without another confirmation or timestamp.
+
+#### Durable Settlement Operation
+
+Issue `#96` will add a private `settlement_release_operations` record for each order. Its stable unique idempotency key, such as `settlement-release:<order-id>`, is reused across HTTP retries, worker retries, restarts, and uncertain provider responses. The operation stores only provider execution state; amount and currency are always derived from the locked paid order.
+
+The provider-neutral settlement boundary is limited to:
+
+```text
+release(orderId, amountMinor, currency, idempotencyKey)
+lookup(idempotencyKey or providerOperationId)
+```
+
+It is separate from checkout-session APIs. A development-only adapter must return the same provider operation for the same stable key. It validates application control flow only and is not production settlement infrastructure; it remains disabled outside explicit local configuration.
+
+External calls must run outside marketplace locks. Transaction A records or recovers buyer confirmation and the operation. A bounded claim commits `PROCESSING`; the provider call follows; then Transaction B locks and reloads the marketplace rows and operation before applying the result. Provider-confirmed success performs exactly once:
+
+```text
+settlement_status       FUNDS_HELD -> RELEASED_TO_SELLER
+settlement_released_at  -> server-observed completion time
+operation.status        -> SUCCEEDED
+operation.completed_at  -> same completion time
+```
+
+Timeout or unknown provider responses do not prove failure. Settlement remains `FUNDS_HELD`, and the operation is recovered through lookup or retry with the same key. Pending or unknown outcomes remain recoverable; retryable failures use a bounded retry; contradictory or permanent outcomes enter review-required state without claiming release or refund. A crashed claim becomes recoverable after its lease. The system must not automatically refund after a release failure; later refund or dispute work must inspect the operation first.
+
+#### Idempotency, Response, And Errors
+
+`200 OK` returns when release is confirmed or a later request finds the completed workflow. `202 Accepted` returns when buyer confirmation and durable release acceptance succeeded but provider completion remains pending, including a retry while pending. A controlled `5xx` is reserved for local failure before durable acceptance.
+
+The buyer-safe response includes only `order_id`, payment/transfer/settlement statuses, `paid_at`, `transfer_deadline_at`, `seller_confirmed_at`, `buyer_confirmed_at`, `settlement_released_at`, `buyer_action`, `status_refresh_required`, safe event/ticket summaries, `amount_minor`, and `currency`. While release is pending, it represents `BUYER_CONFIRMED_RECEIPT`, `FUNDS_HELD`, `buyer_action = NONE`, and `status_refresh_required = true`.
+
+Responses exclude seller identity/contact data, provider IDs, internal operation state, retries or errors, payment-session records, webhook data, private transfer data, ticket files, QR codes, barcodes, credentials, and internal review details.
+
+- `400 Bad Request`: malformed order ID or unexpected body.
+- `401 Unauthorized`: authentication required.
+- `404 Not Found`: missing or non-owned order, using the same response for both.
+- `409 Conflict`: seller transfer incomplete, timeout/review active, settlement ineligible, or conflicting terminal state.
+- `5xx`: controlled local failure before durable acceptance.
+
+Provider unavailability after stored buyer confirmation normally returns recoverable `202 Accepted`, never a false failure or false release. The implementation writes `BUYER_RECEIPT_CONFIRMED` only for the first effective buyer transition and `SETTLEMENT_RELEASED` only for first confirmed release. Logs may include only the order ID and bounded status categories; they exclude identities, amounts, bodies, provider payloads, cookies, sessions, ticket data, and raw errors.
+
 ### Browse Buyer Order Progress
 
 ```http
