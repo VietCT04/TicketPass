@@ -1,5 +1,93 @@
 # Concerns
 
+## CONCERN-0028: Build-Time Web API Origin Limits Image Portability
+
+Date: 2026-07-19
+Related User Story: `docs/user-stories/US-0014-reproducible-container-stack.md`
+Related GitHub Issue: `#104` - https://github.com/VietCT04/TicketPass/issues/104
+
+### Concern
+
+`NEXT_PUBLIC_API_BASE_URL` is embedded in the browser bundle at web-image build time.
+
+### Risk
+
+The same image cannot move between environments with different public API origins without a rebuild. Supplying the internal Compose address to the browser would also make browser requests fail.
+
+### Recommendation
+
+Build each deployment image with its explicit externally reachable API origin. Evaluate runtime-neutral API discovery only as a separately reviewed change.
+
+### Status
+
+Open
+
+## CONCERN-0029: Container Base-Image Maintenance Needs An Update Process
+
+Date: 2026-07-19
+Related User Story: `docs/user-stories/US-0014-reproducible-container-stack.md`
+Related GitHub Issues: `#104` - https://github.com/VietCT04/TicketPass/issues/104, `#105` - https://github.com/VietCT04/TicketPass/issues/105, `#106` - https://github.com/VietCT04/TicketPass/issues/106
+
+### Concern
+
+Explicit Java, Maven, and Node image versions improve reproducibility, while permanent digest pins can prevent security updates without an ownership and update process.
+
+### Risk
+
+Container images may retain known vulnerabilities or receive unreviewed base-image changes.
+
+### Recommendation
+
+Before production deployment, establish image ownership, review cadence, vulnerability handling, and a documented policy for version and digest updates.
+
+### Status
+
+Open
+
+## CONCERN-0030: Single-Host Compose Does Not Provide Resilience
+
+Date: 2026-07-19
+Related User Story: `docs/user-stories/US-0014-reproducible-container-stack.md`
+Related GitHub Issues: `#104` - https://github.com/VietCT04/TicketPass/issues/104, `#107` - https://github.com/VietCT04/TicketPass/issues/107
+
+### Concern
+
+The first container stack is intentionally one host with one API instance, one web instance, and one PostgreSQL instance.
+
+### Risk
+
+Host, database, or application failure causes service interruption, and the baseline does not include backups, monitoring, disaster recovery, or high availability.
+
+### Recommendation
+
+Use the stack only for local integration, demonstrations, and explicitly accepted single-host deployment work. Design resilience, backup/restore, observability, and high availability separately before relying on it for critical production operations.
+
+### Status
+
+Open
+
+## CONCERN-0031: Flyway Replica Coordination Is Undefined
+
+Date: 2026-07-19
+Related User Story: `docs/user-stories/US-0014-reproducible-container-stack.md`
+Related GitHub Issues: `#104` - https://github.com/VietCT04/TicketPass/issues/104, `#107` - https://github.com/VietCT04/TicketPass/issues/107
+
+### Concern
+
+The approved container baseline runs a single API instance and relies on Flyway during API startup. Multi-replica migration coordination and rollback are not defined.
+
+### Risk
+
+Scaling the API without a migration strategy could cause startup contention, incomplete rollout behavior, or unsafe manual recovery.
+
+### Recommendation
+
+Keep the initial stack single-instance. Define replica-safe migration ownership, rollout sequencing, rollback boundaries, and recovery procedures before introducing multiple API replicas.
+
+### Status
+
+Open
+
 ## CONCERN-0027: Paid-Order Fulfilment Backfill And Deadline Reconciliation
 
 Date: 2026-07-19

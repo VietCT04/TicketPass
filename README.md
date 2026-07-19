@@ -32,6 +32,10 @@ Database defaults:
 - User: `ticketpass`
 - Password: `ticketpass`
 
+## Container Stack Contract
+
+The current Compose setup starts PostgreSQL only. The approved future full-stack container contract is documented in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md); Docker images and API/web Compose wiring are separate follow-up issues and are not implemented yet.
+
 ## Run Backend
 
 ```bash
