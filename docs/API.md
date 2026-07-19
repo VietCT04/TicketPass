@@ -889,18 +889,53 @@ Returns event summaries for events with at least one browse-eligible listing.
 
 This endpoint is public, but all event availability, visibility, aggregate calculation, pagination, and ordering must be enforced server-side.
 
-Issue `#26` implements this endpoint using a database-side grouped query over events and browse-eligible listings.
+Issue `#26` implements the original paginated endpoint using a database-side grouped query over events and browse-eligible listings. Issue `#109` defines the optional search and filter contract below; backend implementation belongs to issue `#110` and frontend controls belong to issue `#111`.
 
 #### Query Parameters
 
 | Field | Type | Required | Default | Notes |
 |---|---|---:|---:|---|
 | `page` | integer | No | `1` | 1-based page number. Minimum `1`. |
-| `page_size` | integer | No | `20` | Minimum `1`. Maximum `50`. |
+| `page_size` | integer | No | `20` | Minimum `1`. Maximum `100`. |
+| `q` | string | No | None | Event text query. After normalization, must contain `2` to `100` characters. |
+| `city` | string | No | None | Exact city filter. After normalization, must contain `1` to `120` characters. |
+| `starts_from` | RFC 3339 timestamp | No | None | Inclusive lower event-time bound. Must include `Z` or an explicit numeric offset. |
+| `starts_before` | RFC 3339 timestamp | No | None | Exclusive upper event-time bound. Must include `Z` or an explicit numeric offset. |
 
-Invalid pagination values return `400 Bad Request`.
+Invalid pagination or filter values return `400 Bad Request`.
 
 Non-integer pagination values return `400 Bad Request` with a controlled API error message.
+
+#### Search And Filter Normalization
+
+For `q` and `city`, the server must trim leading and trailing Unicode whitespace, then collapse each internal Unicode whitespace run to one space before validation and matching. An empty normalized value is treated as omitted.
+
+`q` is optional, but when present after normalization it must be `2` through `100` characters. `city` is optional, but when present after normalization it must be `1` through `120` characters.
+
+`starts_from` and `starts_before` must be RFC 3339 timestamps with `Z` or an explicit numeric offset. When both bounds are supplied, `starts_from` must be earlier than `starts_before`. A valid time range entirely before the current upcoming-event window may return an empty page; it is not malformed.
+
+#### Search And Filter Matching
+
+`q` performs a case-insensitive literal substring match across `events.name`, `events.venue`, and `events.city`. Characters such as `%`, `_`, and the database query's chosen escape character must be escaped before use in `LIKE`; client input must not become a wildcard expression.
+
+`city` performs a case-insensitive exact match after normalization. When both `q` and `city` are supplied, both predicates must match.
+
+Time predicates apply to `events.starts_at`:
+
+```text
+event.starts_at >= starts_from     when supplied
+event.starts_at < starts_before    when supplied
+```
+
+These optional predicates do not replace the existing requirement that returned events remain upcoming at request time.
+
+#### Filter, Aggregate, And Pagination Behavior
+
+All supplied filters must be applied in the database inside the existing aggregate query before grouping, counting, ordering, and pagination. Do not load broad event or listing sets for application-memory filtering.
+
+The existing shared browse-eligible listing predicate, active eligible VND listing scope, server-derived lowest price and listing count, safe event-summary fields, and deterministic `starts_at ASC, id ASC` ordering remain unchanged. Requests without filters must retain the existing browse behavior.
+
+A valid page with no matches returns `200 OK` with an empty `events` array and accurate pagination metadata.
 
 #### Browse-Eligible Listing Rule
 
@@ -989,6 +1024,12 @@ The public browse events response must not include:
 - Barcodes.
 - Ownership information.
 - Buyer-specific or seller-specific state.
+
+#### Error Behavior
+
+Return a controlled `400 Bad Request` for malformed pagination, an overlong text value, a one-character `q`, malformed timestamps, or an invalid time range. Errors must not expose SQL, JPQL, repository details, stack traces, or normalized internal query strings.
+
+The response shape remains unchanged for filtered and unfiltered requests.
 
 #### Currency Scope
 
