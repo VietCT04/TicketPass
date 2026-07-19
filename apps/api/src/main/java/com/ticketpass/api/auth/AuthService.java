@@ -51,7 +51,7 @@ public class AuthService {
         UserEntity user = new UserEntity();
         user.setEmail(email);
         user.setPasswordHash(passwordEncoder.encode(request.password()));
-        user.setDisplayName(request.displayName().trim());
+        user.setDisplayName(DisplayNameNormalizer.normalizeForStorage(request.displayName()));
         UserEntity savedUser = userRepository.save(user);
 
         return createSession(savedUser);

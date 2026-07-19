@@ -1,4 +1,4 @@
-const allowedAuthRedirectTargets = new Set(["/sell"]);
+const allowedAuthRedirectTargets = new Set(["/sell", "/my-listings"]);
 const eventDetailPathPattern = /^\/events\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?:\?page=([1-9][0-9]*))?$/i;
 const checkoutPathPattern = /^\/checkout\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
 

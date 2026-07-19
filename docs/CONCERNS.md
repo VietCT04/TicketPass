@@ -1,5 +1,203 @@
 # Concerns
 
+## CONCERN-0033: Draft And Administrative Listing Cancellation Are Undefined
+
+Date: 2026-07-19
+Related User Story: `docs/user-stories/US-0016-cancel-own-listing.md`
+Related GitHub Issues: `#113` - https://github.com/VietCT04/TicketPass/issues/113, `#114` - https://github.com/VietCT04/TicketPass/issues/114, `#115` - https://github.com/VietCT04/TicketPass/issues/115
+
+### Concern
+
+The approved MVP seller-cancellation contract allows only an authenticated owner to transition an `ACTIVE` listing to `CANCELLED`. It intentionally does not define draft cancellation, administrative action, terminal-state recovery, notifications, or a dedicated `cancelled_at` field.
+
+### Risk
+
+Adding a broad cancellation path later could bypass reservation, checkout, paid-sale, audit, or authorization safeguards, or create inconsistent terminal-history semantics.
+
+### Recommendation
+
+Keep issue `#114` limited to the approved `ACTIVE -> CANCELLED` seller transition. Define each additional actor, status transition, timestamp, notification, and recovery behavior in a separately reviewed issue before implementation.
+
+### Status
+
+Open
+
+## CONCERN-0032: Display-Name Moderation And Impersonation Policy Is Deferred
+
+Date: 2026-07-19
+Related User Story: `docs/user-stories/US-0023-update-account-profile.md`
+Related GitHub Issues: `#141` - https://github.com/VietCT04/TicketPass/issues/141, `#142` - https://github.com/VietCT04/TicketPass/issues/142, `#143` - https://github.com/VietCT04/TicketPass/issues/143
+
+### Concern
+
+The approved MVP display-name contract accepts broad Unicode text after trimming. It does not case-fold, Unicode-normalize, enforce uniqueness, or apply reserved-name, impersonation, moderation, or history rules.
+
+### Risk
+
+Users can choose visually similar or misleading names. Unicode-equivalent values may behave differently, and support or trust-and-safety operations lack a controlled way to restrict abusive profile names.
+
+### Recommendation
+
+Before exposing profiles publicly or relying on display names for trust decisions, define a separately reviewed policy for rendering, moderation, reserved names, Unicode normalization, impersonation handling, and any retention needed for enforcement. Continue rendering every display name as untrusted text.
+
+### Status
+
+Open
+
+## CONCERN-0028: Build-Time Web API Origin Limits Image Portability
+
+Date: 2026-07-19
+Related User Story: `docs/user-stories/US-0014-reproducible-container-stack.md`
+Related GitHub Issue: `#104` - https://github.com/VietCT04/TicketPass/issues/104
+
+### Concern
+
+`NEXT_PUBLIC_API_BASE_URL` is embedded in the browser bundle at web-image build time.
+
+### Risk
+
+The same image cannot move between environments with different public API origins without a rebuild. Supplying the internal Compose address to the browser would also make browser requests fail.
+
+### Recommendation
+
+Build each deployment image with its explicit externally reachable API origin. Evaluate runtime-neutral API discovery only as a separately reviewed change.
+
+### Status
+
+Open
+
+## CONCERN-0029: Container Base-Image Maintenance Needs An Update Process
+
+Date: 2026-07-19
+Related User Story: `docs/user-stories/US-0014-reproducible-container-stack.md`
+Related GitHub Issues: `#104` - https://github.com/VietCT04/TicketPass/issues/104, `#105` - https://github.com/VietCT04/TicketPass/issues/105, `#106` - https://github.com/VietCT04/TicketPass/issues/106
+
+### Concern
+
+Explicit Java, Maven, and Node image versions improve reproducibility, while permanent digest pins can prevent security updates without an ownership and update process.
+
+### Risk
+
+Container images may retain known vulnerabilities or receive unreviewed base-image changes.
+
+### Recommendation
+
+Before production deployment, establish image ownership, review cadence, vulnerability handling, and a documented policy for version and digest updates.
+
+### Status
+
+Open
+
+## CONCERN-0030: Single-Host Compose Does Not Provide Resilience
+
+Date: 2026-07-19
+Related User Story: `docs/user-stories/US-0014-reproducible-container-stack.md`
+Related GitHub Issues: `#104` - https://github.com/VietCT04/TicketPass/issues/104, `#107` - https://github.com/VietCT04/TicketPass/issues/107
+
+### Concern
+
+The first container stack is intentionally one host with one API instance, one web instance, and one PostgreSQL instance.
+
+### Risk
+
+Host, database, or application failure causes service interruption, and the baseline does not include backups, monitoring, disaster recovery, or high availability.
+
+### Recommendation
+
+Use the stack only for local integration, demonstrations, and explicitly accepted single-host deployment work. Design resilience, backup/restore, observability, and high availability separately before relying on it for critical production operations.
+
+### Status
+
+Open
+
+## CONCERN-0031: Flyway Replica Coordination Is Undefined
+
+Date: 2026-07-19
+Related User Story: `docs/user-stories/US-0014-reproducible-container-stack.md`
+Related GitHub Issues: `#104` - https://github.com/VietCT04/TicketPass/issues/104, `#107` - https://github.com/VietCT04/TicketPass/issues/107
+
+### Concern
+
+The approved container baseline runs a single API instance and relies on Flyway during API startup. Multi-replica migration coordination and rollback are not defined.
+
+### Risk
+
+Scaling the API without a migration strategy could cause startup contention, incomplete rollout behavior, or unsafe manual recovery.
+
+### Recommendation
+
+Keep the initial stack single-instance. Define replica-safe migration ownership, rollout sequencing, rollback boundaries, and recovery procedures before introducing multiple API replicas.
+
+### Status
+
+Open
+
+## CONCERN-0027: Paid-Order Fulfilment Backfill And Deadline Reconciliation
+
+Date: 2026-07-19
+Related User Story: `docs/user-stories/US-0011-seller-transfers-paid-ticket.md`
+Related GitHub Issues: `#92` - https://github.com/VietCT04/TicketPass/issues/92, `#93` - https://github.com/VietCT04/TicketPass/issues/93, `#98` - https://github.com/VietCT04/TicketPass/issues/98, `#99` - https://github.com/VietCT04/TicketPass/issues/99
+
+### Concern
+
+Issue `#93` creates one fulfilment record for every existing paid order from its trusted `paid_at`, including orders whose derived 15-minute deadline has already elapsed. Those elapsed records remain durably awaiting transfer until separately approved timeout handling changes them.
+
+### Risk
+
+Inventing a missing payment timestamp would create an unauditable deadline. Leaving a backfilled elapsed deadline untreated could expose stale awaiting-transfer progress until timeout reconciliation runs.
+
+### Recommendation
+
+Issue `#93` fails migration if a paid order lacks `paid_at`, backfills only from that trusted timestamp, and preserves the deadline without extension. Issue `#99` should process eligible past-due backfilled records through the separately approved timeout transition before operational rollout.
+
+### Status
+
+Open
+
+## CONCERN-0026: Public Event Search Performance And Time Semantics
+
+Date: 2026-07-19
+Related User Story: `docs/user-stories/US-0015-search-filter-events.md`
+Related GitHub Issues: `#109` - https://github.com/VietCT04/TicketPass/issues/109, `#110` - https://github.com/VietCT04/TicketPass/issues/110, `#111` - https://github.com/VietCT04/TicketPass/issues/111
+
+### Concern
+
+The approved public search contract uses case-insensitive substring matching across event name, venue, and free-text city data. Event timestamps are stored as instants, while future calendar-day controls use a user-supplied UTC offset rather than an event-local timezone. Results retain deterministic upcoming-event ordering rather than relevance ranking.
+
+### Risk
+
+Substring matching may become slow as the event catalogue grows, city spelling and normalization may fragment exact-city results, and a user-supplied offset can differ from the venue's local time. Buyers may also expect search relevance that the intentionally unranked MVP does not provide.
+
+### Recommendation
+
+Implement issue `#110` with database-side predicates and measure production query behavior before adding indexes or dedicated search infrastructure. Keep offset selection explicit in issue `#111`, do not imply stored event-local timezone data, and treat stronger normalization, locale-aware matching, deduplication, and relevance ranking as separate product work.
+
+### Status
+
+Open
+
+## CONCERN-0025: Buyer Order-Progress Snapshot Freshness
+
+Date: 2026-07-19
+Related User Story: `docs/user-stories/US-0010-view-own-orders.md`
+Related GitHub Issues: `#87` - https://github.com/VietCT04/TicketPass/issues/87, `#88` - https://github.com/VietCT04/TicketPass/issues/88, `#98` - https://github.com/VietCT04/TicketPass/issues/98
+
+### Concern
+
+The future `GET /api/me/orders` endpoint is intentionally a read-only paginated snapshot. It does not reconcile every returned order against payment, transfer, or settlement deadlines.
+
+### Risk
+
+A persisted status can be briefly stale after a deadline until the scheduled reconciliation path or an authoritative single-order refresh processes it. Per-row reconciliation would instead create unbounded database and provider work for an account-history page and could make pagination inconsistent.
+
+### Recommendation
+
+Keep bulk lifecycle reconciliation scheduled and bounded. Return `status_refresh_required` only when the server can identify a passed persisted deadline, and require the browser to use the protected single-order read for authoritative refresh. Add focused freshness, pagination, and multi-instance reconciliation coverage during the later verification phase.
+
+### Status
+
+Open
+
 ## CONCERN-0024: Own-Listings Query Performance And Future Mutations
 
 Date: 2026-07-18

@@ -118,6 +118,64 @@ Returns the authenticated user for the current session.
 
 Returns `401` when the session is missing, malformed, unknown, expired, or revoked.
 
+### Update Profile
+
+Issue `#141` defines this contract and issue `#142` implements the backend. The protected browser form remains issue `#143`.
+
+```http
+PUT /api/me/profile
+```
+
+Replaces the authenticated user's currently supported mutable profile resource. Authentication is required. The server derives the user ID only from the immutable `AuthenticatedUser` principal and reloads the current user row under a pessimistic write lock before making a decision. Clients cannot submit or change email, password, roles, permissions, user ID, account status, session state, timestamps, or any other server-controlled value.
+
+The request accepts exactly `display_name`; unknown fields are rejected.
+
+#### Request Body
+
+```json
+{
+  "display_name": "Avery Nguyen"
+}
+```
+
+#### Request Fields
+
+| Field | Type | Required | Notes |
+|---|---|---:|---|
+| `display_name` | string | Yes | Required, maximum 120 raw-input characters, trimmed before comparison and persistence, and nonblank after trimming. Internal whitespace is preserved. |
+
+Display names are not lowercased, case-folded, Unicode-normalized, made unique, or checked against reserved names in MVP. They remain untrusted text and clients must render them as text rather than HTML.
+
+The service captures one injected-clock timestamp while processing the request. When the normalized submitted name equals the stored name, it returns `200 OK` without changing `users.updated_at`, flushing an update, writing an audit event, or touching cookies or sessions. An effective update changes only `users.display_name` and `users.updated_at`; all existing sessions remain valid.
+
+#### Response Body
+
+Both an effective update and a normalized no-op return `200 OK` using the same safe authenticated-user representation as signup, login, and `GET /api/me`:
+
+```json
+{
+  "user": {
+    "id": "usr_123",
+    "email": "user@example.com",
+    "display_name": "Avery Nguyen",
+    "created_at": "2026-07-10T10:00:00Z"
+  }
+}
+```
+
+Successful responses send `Cache-Control: no-store`. They never include password hashes, roles, permissions, session IDs, token hashes, cookie values, audit data, internal timestamps, or marketplace-private information.
+
+#### Errors
+
+| Status | Meaning |
+|---:|---|
+| `400` | Malformed JSON, unknown field, missing or non-string `display_name`, blank value, or value longer than 120 raw-input characters. |
+| `401` | Session is missing or invalid, or its authenticated user row no longer exists. |
+| `403` | Existing unsafe cookie-authenticated request-origin protection rejected the request. |
+| `5xx` | Controlled unexpected persistence failure without entity, SQL, stack-trace, credential, session, role, or account-metadata disclosure. |
+
+This `PUT` is subject to the existing cookie-authenticated unsafe-request origin protection.
+
 ### Session Cookie
 
 - Cookie name is `ticketpass_session`.
@@ -283,9 +341,11 @@ The listing API does not define dedicated request or response fields for raw QR 
 GET /api/me/listings
 ```
 
-Returns the authenticated seller's stored listing metadata and current marketplace statuses. Issue `#82` defines this contract; backend implementation belongs to issue `#83` and the protected `/my-listings` page belongs to issue `#84`.
+Returns the authenticated seller's stored listing metadata and current marketplace statuses. Issue `#82` defines this contract, issue `#83` implements the backend, and the protected `/my-listings` page belongs to issue `#84`.
 
 Authentication is required. Seller ownership is derived exclusively from `AuthenticatedUser.id()`; the endpoint accepts no seller or user identifier in its path, query string, or request body. As a safe `GET`, it does not require the unsafe-request origin check, but credentialed browser requests continue to use the existing cookie and CORS model.
+
+Successful responses send `Cache-Control: no-store`.
 
 #### Query Parameters
 
@@ -361,7 +421,61 @@ A valid page beyond the final page also returns `200 OK` with an empty `items` a
 - `400 Bad Request`: malformed or out-of-range pagination, or unsupported status filter.
 - `401 Unauthorized`: authentication is required.
 
-Errors must not reveal SQL, repository details, seller identifiers, enum internals, or stack traces. Listing editing, cancellation, deletion, renewal, relisting, and all buyer, reservation, checkout, payment, payout, transfer, reveal, refund, dispute, analytics, and bulk-action behavior remain out of scope.
+Errors must not reveal SQL, repository details, seller identifiers, enum internals, or stack traces. Listing editing, deletion, renewal, relisting, and all buyer, reservation, checkout, payment, payout, transfer, reveal, refund, dispute, analytics, and bulk-action behavior remain out of scope.
+
+### Cancel Own Listing
+
+Issue `#113` defines this documentation-only contract. Backend implementation remains issue `#114`; the seller control remains issue `#115`.
+
+```http
+POST /api/listings/{listingId}/cancel
+```
+
+Cancels an authenticated seller's own unsold listing. The request has no body and must not accept seller, ownership, status, reservation, order, payment, or ticket fields. Seller identity is derived only from `AuthenticatedUser.id()`.
+
+Only the terminal transition `ACTIVE -> CANCELLED` is eligible. The endpoint never deletes a listing or modifies reservation, order, payment, provider, or ticket-payload records. A seller may cancel an `ACTIVE` listing even when historical expired reservations or terminal unpaid orders exist, because those retained records are not changed.
+
+#### Response Body
+
+The first successful transition and an owning seller's idempotent retry against an already `CANCELLED` listing both return `200 OK` with `Cache-Control: no-store`:
+
+```json
+{
+  "id": "33333333-3333-3333-3333-333333333333",
+  "status": "CANCELLED",
+  "updated_at": "2026-07-19T10:00:00Z"
+}
+```
+
+The response must not include seller identity, buyer or reservation information, order, payment, provider, payout, refund, dispute, audit, public-note, or ticket-payload data.
+
+#### Authorization, Eligibility, And Idempotency
+
+The service parses the listing UUID, captures one timestamp from the injected application clock, and pessimistically locks the listing row before checking ownership or status. A missing listing and a listing owned by another seller both return the same controlled `404 Not Found` response.
+
+| Current status | Result |
+|---|---|
+| `ACTIVE` | Transition to `CANCELLED`, set `updated_at` to the captured timestamp, and return `200 OK`. |
+| `CANCELLED` | Owning seller receives the unchanged safe response with `200 OK`; do not update `updated_at` or create another audit record. |
+| `RESERVED`, `SOLD`, `EXPIRED`, or `DRAFT` | Return `409 Conflict` without mutation. |
+
+The `409` response uses the generic message `Listing cannot be cancelled in its current state`. It must not disclose buyer identity, reservation expiry, order state, payment state, or the cause of the conflict.
+
+Cancellation and reservation creation use the same listing-first pessimistic lock. Exactly one concurrent transition can win: cancellation first makes later reservation eligibility fail; reservation first makes cancellation return `409`. Cancellation must not query or lock a reservation before the listing, reconcile a stale reservation, or introduce another lock order.
+
+#### Audit And Errors
+
+On the first successful transition only, the same transaction writes an immutable `LISTING_CANCELLED` audit event with the authenticated seller ID, entity type `LISTING`, listing ID, and the same captured timestamp used for `listings.updated_at`. Audit persistence is mandatory: an audit failure rolls back cancellation. Audit rows must not contain metadata, seller notes, buyer identity, reservation/order/payment data, request bodies, IP addresses, credentials, or ticket payload data.
+
+| Status | Meaning |
+|---:|---|
+| `400` | Malformed listing UUID. |
+| `401` | Authentication is required. |
+| `404` | Listing is missing or is not owned by the authenticated seller. |
+| `409` | Owned listing is ineligible for cancellation. |
+| `5xx` | Controlled unexpected persistence failure without SQL, entity, lock, audit, credential, session, or stack-trace disclosure. |
+
+This unsafe cookie-authenticated request remains subject to the existing exact trusted-origin protection.
 
 ### Create Listing Reservation
 
@@ -571,6 +685,122 @@ Returns a safe order representation only to its authenticated buyer. It supports
 Before responding, the server processes a matching verified `DEFERRED` failure/cancellation receipt when safe, reconciles an overdue `PAYMENT_PENDING` order with the injected `Clock`, and then reloads the server-authoritative result. Scheduled cleanup not having run is not a reason to return stale pending state. An unresolved `REQUIRES_ACTION` receipt blocks automated release and makes `payment_review_required` `true`. The response uses the safe order representation above but never includes a stored provider checkout URL. A new or recovered payable URL belongs only to checkout-start or later approved session recovery.
 
 Malformed `orderId` returns `400 Bad Request`; missing, non-owned, or otherwise inaccessible orders return `404 Not Found`; missing or invalid authentication returns `401 Unauthorized`.
+
+### Seller Transfer Confirmation
+
+Issue `#92` defines this post-payment lifecycle contract. Issue `#93` implements the persistence and backend endpoint; the seller browser flow remains issue `#94`.
+
+```http
+POST /api/seller/orders/{orderId}/transfer-confirmation
+```
+
+The endpoint has no request body. It derives the authenticated seller solely from `AuthenticatedUser`; clients cannot submit a seller or buyer ID, transfer status, timestamp, or settlement state. It requires authentication and sends `Cache-Control: no-store` on a successful response.
+
+A verified payment success must atomically retain the existing payment transition and create the one-to-one fulfilment state:
+
+```text
+order.status                 PAYMENT_PENDING -> PAID
+listing.status               RESERVED -> SOLD
+transfer_status              AWAITING_SELLER_TRANSFER
+settlement_status            FUNDS_HELD
+transfer_deadline_at         paid_at + 15 minutes
+```
+
+The server captures one trusted `Instant` for `paid_at`, fulfilment creation, and deadline calculation. Browser time, countdowns, provider redirects, provider-event `occurred_at`, and seller requests cannot choose or extend the deadline.
+
+Under the established lock order `listing -> reservation -> order -> fulfilment`, the implementation revalidates seller ownership, `PAID` payment status, `SOLD` listing status, fulfilment ownership, deadline consistency, and coherent timestamps and statuses. A first eligible confirmation transitions `AWAITING_SELLER_TRANSFER -> SELLER_CONFIRMED_TRANSFER`, sets immutable `seller_confirmed_at` and `updated_at` to the captured server time, and leaves settlement `FUNDS_HELD`. A coherent repeated seller confirmation returns `200 OK` with the existing immutable timestamp and makes no write, including after the deadline. A later coherent buyer-confirmed or released state may also be returned idempotently without reversal.
+
+At `now >= transfer_deadline_at`, an awaiting seller confirmation is ineligible and returns a controlled conflict without writing a timeout state. Timeout transition and request-time reconciliation remain deferred to issues `#98` and `#99`. Timed-out, review-required, unpaid, failed, cancelled, expired, missing, and inconsistent orders must never be reactivated.
+
+The seller-safe response contains only `order_id`, payment/transfer/settlement statuses, `paid_at`, `transfer_deadline_at`, `seller_confirmed_at`, and approved event and ticket summaries. It excludes buyer identity or contact data, provider IDs, checkout URLs, webhook records, settlement-provider details, public notes, ticket files, QR codes, barcodes, credentials, and private transfer links. Seller confirmation is only a claim that transfer was performed: it does not prove buyer receipt, authorize payout, or release held settlement.
+
+Malformed order IDs return `400 Bad Request`; missing authentication returns `401 Unauthorized`; missing and non-owned orders return the same `404 Not Found`; and unpaid, expired, timed-out, review-required, or otherwise ineligible states return controlled `409 Conflict` responses without payment, provider, review, buyer, or database details.
+
+### Browse Buyer Order Progress
+
+```http
+GET /api/me/orders
+```
+
+Issue `#87` defines this authenticated, read-only account-history contract. Backend implementation is deferred to issue `#88`, after the approved post-payment lifecycle persistence work. The server derives buyer ownership solely from `AuthenticatedUser`; clients must not supply a buyer ID or any ownership, payment, transfer, or settlement state.
+
+The endpoint accepts these query parameters:
+
+| Parameter | Required | Rules |
+|---|---:|---|
+| `page` | No | 1-based; default `1`; minimum `1`. |
+| `page_size` | No | Default `20`; minimum `1`; maximum `50`. |
+| `payment_status` | No | Exact approved payment lifecycle value. |
+| `transfer_status` | No | Exact approved transfer lifecycle value. |
+| `settlement_status` | No | Exact approved settlement lifecycle value. |
+
+The server applies buyer ownership and every supplied exact filter in the database before pagination. Results are ordered by `created_at DESC, id DESC`. Empty results, including pages beyond the final page, return `200 OK` with an empty `items` collection and accurate totals. Invalid pagination or a status value outside its approved lifecycle returns controlled `400 Bad Request`; missing or invalid authentication returns `401 Unauthorized`.
+
+Each order exposes three distinct status dimensions. They must never be collapsed into one client-derived order status:
+
+```text
+payment_status
+transfer_status
+settlement_status
+```
+
+Before post-payment fulfilment exists, the future response representation uses `NOT_STARTED` for transfer and `NOT_FUNDED` for settlement. The approved post-payment values are:
+
+```text
+transfer_status: AWAITING_SELLER_TRANSFER, SELLER_CONFIRMED_TRANSFER,
+                 BUYER_CONFIRMED_RECEIPT, TRANSFER_TIMED_OUT, REQUIRES_REVIEW
+settlement_status: FUNDS_HELD, RELEASED_TO_SELLER, REFUND_REQUIRED, REVIEW_REQUIRED
+```
+
+`PAID` means only that trusted payment confirmation succeeded. Seller transfer confirmation is only the seller's claim that transfer was performed; it neither proves buyer receipt nor releases funds. Only the approved buyer confirmation flow may authorize release on the happy path. Timeout and review states block release.
+
+The safe paginated response shape is:
+
+```json
+{
+  "items": [
+    {
+      "id": "11111111-1111-1111-1111-111111111111",
+      "payment_status": "PAID",
+      "transfer_status": "AWAITING_SELLER_TRANSFER",
+      "settlement_status": "FUNDS_HELD",
+      "amount_minor": 1250000,
+      "currency": "VND",
+      "expires_at": "2026-07-20T10:00:00Z",
+      "paid_at": "2026-07-20T09:01:00Z",
+      "transfer_deadline_at": "2026-07-20T09:16:00Z",
+      "seller_confirmed_transfer_at": null,
+      "buyer_confirmed_receipt_at": null,
+      "settlement_released_at": null,
+      "payment_review_required": false,
+      "fulfilment_review_required": false,
+      "status_refresh_required": false,
+      "buyer_action": "WAIT_FOR_SELLER_TRANSFER",
+      "event": {
+        "name": "Example Concert",
+        "starts_at": "2026-10-17T11:30:00Z",
+        "venue": "National Stadium",
+        "city": "Singapore"
+      },
+      "ticket": {
+        "ticket_type": "General Admission",
+        "seat_info": "Section A, Row 2, Seat 4",
+        "transfer_method": "PLATFORM_TRANSFER"
+      }
+    }
+  ],
+  "page": 1,
+  "page_size": 20,
+  "total_items": 1,
+  "total_pages": 1
+}
+```
+
+`buyer_action` is bounded, server-derived presentation guidance only: `NONE`, `CONTINUE_PAYMENT`, `WAIT_FOR_SELLER_TRANSFER`, `CONFIRM_TICKET_RECEIPT`, `OPEN_ORDER_FOR_REFRESH`, or `REVIEW_REQUIRED`. It does not authorize a mutation. Checkout and later fulfilment endpoints remain the mutation authorities.
+
+The list read is a persisted snapshot. It must not reconcile every row, call a payment provider, or perform bulk timeout processing. Scheduled reconciliation owns bulk expiry and timeout handling; `GET /api/orders/{orderId}` remains the request-time authoritative route for one selected order. `status_refresh_required` is `true` only when persisted state may be stale against a passed server deadline; the browser must open or refresh that single-order route instead of inventing a local status.
+
+Successful responses send `Cache-Control: no-store`. Responses must exclude seller identity and contact data, listing or reservation identifiers, hosted payment URLs, payment-provider records and webhook receipts, credentials, public notes, QR codes, barcodes, ticket files, and all private ticket-transfer data.
 
 ### Payment Completion Authority
 
@@ -801,18 +1031,53 @@ Returns event summaries for events with at least one browse-eligible listing.
 
 This endpoint is public, but all event availability, visibility, aggregate calculation, pagination, and ordering must be enforced server-side.
 
-Issue `#26` implements this endpoint using a database-side grouped query over events and browse-eligible listings.
+Issue `#26` implements the original paginated endpoint using a database-side grouped query over events and browse-eligible listings. Issue `#109` defines the optional search and filter contract below; backend implementation belongs to issue `#110` and frontend controls belong to issue `#111`.
 
 #### Query Parameters
 
 | Field | Type | Required | Default | Notes |
 |---|---|---:|---:|---|
 | `page` | integer | No | `1` | 1-based page number. Minimum `1`. |
-| `page_size` | integer | No | `20` | Minimum `1`. Maximum `50`. |
+| `page_size` | integer | No | `20` | Minimum `1`. Maximum `100`. |
+| `q` | string | No | None | Event text query. After normalization, must contain `2` to `100` characters. |
+| `city` | string | No | None | Exact city filter. After normalization, must contain `1` to `120` characters. |
+| `starts_from` | RFC 3339 timestamp | No | None | Inclusive lower event-time bound. Must include `Z` or an explicit numeric offset. |
+| `starts_before` | RFC 3339 timestamp | No | None | Exclusive upper event-time bound. Must include `Z` or an explicit numeric offset. |
 
-Invalid pagination values return `400 Bad Request`.
+Invalid pagination or filter values return `400 Bad Request`.
 
 Non-integer pagination values return `400 Bad Request` with a controlled API error message.
+
+#### Search And Filter Normalization
+
+For `q` and `city`, the server must trim leading and trailing Unicode whitespace, then collapse each internal Unicode whitespace run to one space before validation and matching. An empty normalized value is treated as omitted.
+
+`q` is optional, but when present after normalization it must be `2` through `100` characters. `city` is optional, but when present after normalization it must be `1` through `120` characters.
+
+`starts_from` and `starts_before` must be RFC 3339 timestamps with `Z` or an explicit numeric offset. When both bounds are supplied, `starts_from` must be earlier than `starts_before`. A valid time range entirely before the current upcoming-event window may return an empty page; it is not malformed.
+
+#### Search And Filter Matching
+
+`q` performs a case-insensitive literal substring match across `events.name`, `events.venue`, and `events.city`. Characters such as `%`, `_`, and the database query's chosen escape character must be escaped before use in `LIKE`; client input must not become a wildcard expression.
+
+`city` performs a case-insensitive exact match after normalization. When both `q` and `city` are supplied, both predicates must match.
+
+Time predicates apply to `events.starts_at`:
+
+```text
+event.starts_at >= starts_from     when supplied
+event.starts_at < starts_before    when supplied
+```
+
+These optional predicates do not replace the existing requirement that returned events remain upcoming at request time.
+
+#### Filter, Aggregate, And Pagination Behavior
+
+All supplied filters must be applied in the database inside the existing aggregate query before grouping, counting, ordering, and pagination. Do not load broad event or listing sets for application-memory filtering.
+
+The existing shared browse-eligible listing predicate, active eligible VND listing scope, server-derived lowest price and listing count, safe event-summary fields, and deterministic `starts_at ASC, id ASC` ordering remain unchanged. Requests without filters must retain the existing browse behavior.
+
+A valid page with no matches returns `200 OK` with an empty `events` array and accurate pagination metadata.
 
 #### Browse-Eligible Listing Rule
 
@@ -901,6 +1166,12 @@ The public browse events response must not include:
 - Barcodes.
 - Ownership information.
 - Buyer-specific or seller-specific state.
+
+#### Error Behavior
+
+Return a controlled `400 Bad Request` for malformed pagination, an overlong text value, a one-character `q`, malformed timestamps, or an invalid time range. Errors must not expose SQL, JPQL, repository details, stack traces, or normalized internal query strings.
+
+The response shape remains unchanged for filtered and unfiltered requests.
 
 #### Currency Scope
 

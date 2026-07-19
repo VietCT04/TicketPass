@@ -53,6 +53,10 @@ After trusted payment completion, TicketPass gives the seller a server-controlle
 - `#93` — Implement seller ticket transfer confirmation backend.
 - `#94` — Build seller ticket transfer confirmation flow.
 
+## Approved Lifecycle Contract
+
+Issue `#92` keeps payment, transfer, and settlement as separate dimensions through a one-to-one fulfilment record. Issue `#93` implements trusted payment initialization to `AWAITING_SELLER_TRANSFER` and `FUNDS_HELD` with an immutable server-derived deadline exactly 15 minutes after `paid_at`. Its bodyless, seller-authorized endpoint is idempotent; it records only the seller's claim and cannot confirm buyer receipt or release settlement.
+
 ## Delivery Order
 
 1. Define and approve the transfer-status, persistence, deadline, authorization, privacy, and API contract in `#92`.

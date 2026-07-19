@@ -12,6 +12,8 @@ Issue `#10` implements this contract with Flyway migration `apps/api/src/main/re
 
 Stores TicketPass user accounts.
 
+Issues `#141` and `#142` define and implement the display-name-only profile replacement without a migration: `display_name` is already `VARCHAR(120) NOT NULL`, and `updated_at` already exists. A normalized no-op must not change `updated_at`; an effective update changes only `display_name` and `updated_at`. No username, alias, profile, moderation, field-history, or per-field timestamp table is introduced.
+
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID/string id | Primary key. |
@@ -43,6 +45,7 @@ Stores server-side opaque login sessions.
 - Expired or revoked sessions must not authenticate requests.
 - Logout sets `auth_sessions.revoked_at` instead of deleting the session row.
 - Business records must reference authenticated `users.id` values derived server-side.
+- The profile-update service must reload and pessimistically lock the authenticated `users` row before mutation so concurrent account changes can serialize without lost updates.
 
 ## Seller Listing Contract
 
@@ -52,7 +55,7 @@ Issue `#3` implements the initial seller listing persistence contract with Flywa
 
 The user-facing seller listing flow is documented in `docs/flows/SELLER_LISTING_FLOW.md`.
 
-Issue `#5` adds the first audit table and records seller listing creation with Flyway migration `apps/api/src/main/resources/db/migration/V3__create_audit_events.sql`.
+Issue `#5` adds the first audit table and records seller listing creation with Flyway migration `apps/api/src/main/resources/db/migration/V3__create_audit_events.sql`. Issue `#113` defines a second future audit action, `LISTING_CANCELLED`, without requiring a schema change; backend implementation remains issue `#114`.
 
 ## Tables
 
@@ -68,7 +71,7 @@ Stores normalized event information shared by listings.
 | `city` | string | Event city. |
 | `starts_at` | timestamp with timezone | Event start date and time. |
 | `created_at` | timestamp | Creation time. |
-| `updated_at` | timestamp | Last update time. |
+| `updated_at` | timestamp | Last update time. For the future seller cancellation contract, the first `ACTIVE -> CANCELLED` transition time. |
 
 ### `event_requests`
 
@@ -177,6 +180,26 @@ Provider customer, payment, session, and event references belong in operational 
 
 The only permitted transitions are from `PAYMENT_PENDING` to one terminal status. A failed, cancelled, or expired order cannot return to `PAYMENT_PENDING`. The database enforces the `reservation_id` uniqueness invariant. Issue `#67` implements transaction-safe create-or-return behavior by reloading the existing order when a concurrent insert reaches the unique constraint.
 
+### `order_fulfillments`
+
+Issue `#92` defines a separate one-to-one post-payment fulfilment record; issue `#93` implements it through `V10__create_order_fulfillments.sql`. The payment `orders.status`, ticket-transfer status, and settlement status are separate state dimensions. Before payment, the absence of a fulfilment row represents `NOT_STARTED` transfer and `NOT_FUNDED` settlement; these are response representations, not persisted fulfilment values.
+
+| Column | Type | Notes |
+|---|---|---|
+| `order_id` | UUID/string id | Primary key and non-cascading foreign key to `orders.id`. |
+| `transfer_status` | enum/string | Bounded ticket-transfer lifecycle value. |
+| `settlement_status` | enum/string | Bounded settlement lifecycle value. |
+| `transfer_deadline_at` | timestamp with timezone | Trusted `paid_at + 15 minutes`; immutable after creation. |
+| `seller_confirmed_at` | timestamp with timezone nullable | Immutable first seller-transfer confirmation time. |
+| `buyer_confirmed_at` | timestamp with timezone nullable | Reserved for later buyer receipt confirmation. |
+| `settlement_released_at` | timestamp with timezone nullable | Reserved for later approved settlement release. |
+| `created_at` | timestamp with timezone | Server-generated creation time. |
+| `updated_at` | timestamp with timezone | Server-generated last-update time. |
+
+The approved transfer values are `AWAITING_SELLER_TRANSFER`, `SELLER_CONFIRMED_TRANSFER`, `BUYER_CONFIRMED_RECEIPT`, `TRANSFER_TIMED_OUT`, and `REQUIRES_REVIEW`. The approved settlement values are `FUNDS_HELD`, `RELEASED_TO_SELLER`, `REFUND_REQUIRED`, and `REVIEW_REQUIRED`. Issue `#93` initially writes only `AWAITING_SELLER_TRANSFER`, `SELLER_CONFIRMED_TRANSFER`, and `FUNDS_HELD`; later transitions remain separately controlled by issues `#95` through `#99`.
+
+The migration constrains bounded persisted statuses, `updated_at >= created_at`, and `transfer_deadline_at = created_at + 15 minutes`; it also constrains the two states written by issue `#93` so awaiting transfer is held and unconfirmed, while seller-confirmed transfer is held and timestamped before its deadline. It adds an index on `(transfer_status, transfer_deadline_at, order_id)` for bounded timeout scans. The table does not duplicate buyer, seller, listing, reservation, amount, or currency fields because their order relationships remain authoritative. Trusted payment completion creates the row atomically using the same captured server instant as `orders.paid_at`. Existing `PAID` orders are backfilled from trusted non-null `orders.paid_at`; a missing value fails the migration instead of inventing a deadline. Later timeout reconciliation may process a backfilled deadline that has already passed.
+
 ### `payment_sessions`
 
 Issue `#67` adds `V6__create_payment_sessions.sql` with provider-neutral operational session rows. Each row references one order without cascade deletion and stores provider name, opaque provider session id, bounded status, inherited expiry, and explicit application-clock timestamps. `provider_session_id` is unique; the partial unique index permits only one usable `CREATING` or `PENDING` session per order while retaining terminal history. The initial provider set contains `MOCK` only and session statuses are `CREATING`, `PENDING`, `PAID`, `FAILED`, `CANCELLED`, and `EXPIRED`.
@@ -193,13 +216,13 @@ The same migration persists an isolated mock-provider session record with amount
 
 Stores immutable audit records for security-sensitive business actions.
 
-Issue `#5` emits only `LISTING_CREATED` records when an authenticated seller creates a listing.
+Issue `#5` emits `LISTING_CREATED` records when an authenticated seller creates a listing. Issue `#113` defines a future `LISTING_CANCELLED` record for the first seller-owned `ACTIVE -> CANCELLED` transition; issue `#114` will implement it.
 
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID/string id | Primary key. |
 | `actor_user_id` | UUID/string id | Authenticated user who performed the action. References `users.id` and must not cascade delete. |
-| `action` | string | Bounded action value. Issue `#5` supports `LISTING_CREATED` only. |
+| `action` | string | Bounded application action value. Existing migration has no database action check constraint; `LISTING_CREATED` and future `LISTING_CANCELLED` are application-defined values. |
 | `entity_type` | string | Bounded entity type value. Issue `#5` supports `LISTING` only. |
 | `entity_id` | UUID/string id | Identifier of the affected entity. Generic value; no foreign key is declared to `listings`. |
 | `created_at` | timestamp with timezone | Server-generated audit timestamp. |
@@ -214,7 +237,7 @@ Detailed transition rules and duplicate-sale invariants are documented in `docs/
 | `ACTIVE` | Listing is visible and available for purchase. |
 | `RESERVED` | Listing is temporarily held for a purchase attempt. |
 | `SOLD` | Listing has completed sale flow and must not be sold again. |
-| `CANCELLED` | Seller or admin cancelled the listing. |
+| `CANCELLED` | Terminal unavailable listing. Issue `#113` defines seller-owned `ACTIVE -> CANCELLED`; separate future rules are required for draft or admin cancellation. |
 | `EXPIRED` | Listing is unavailable because the event or listing window expired. |
 
 Status transition implementation belongs to backend/database work after issue `#4`.
@@ -243,6 +266,7 @@ These values describe the expected transfer path only. Raw ticket payload storag
 - For VND, `asking_price_minor` represents whole dong, not cents.
 - `is_transferable_confirmed` must be `true` before a listing can become `ACTIVE`.
 - Only `ACTIVE` listings can be reserved or purchased.
+- Issue `#113` defines seller cancellation only as a listing-first locked `ACTIVE -> CANCELLED` transition. It never modifies historical reservations, orders, payments, provider records, or ticket payload data; an owning seller retry against `CANCELLED` is a no-write idempotent read of the existing terminal state.
 - Reservation creation atomically writes an `ACTIVE` reservation record and transitions its listing from `ACTIVE` to `RESERVED` under a pessimistic listing lock.
 - A reservation is valid only while its status is `ACTIVE` and `expires_at` has not been reached according to server time.
 - A reservation without an order expires through the generic reservation-expiry path. A reservation with an order is owned exclusively by checkout reconciliation, preventing generic expiry from releasing inventory while payment uncertainty remains.
@@ -266,8 +290,9 @@ These values describe the expected transfer path only. Raw ticket payload storag
 ## Audit Constraints
 
 - Listing creation and its `LISTING_CREATED` audit record must be written in the same transaction.
-- A listing creation failure must not leave an audit record without the listing.
-- An audit insertion failure must roll back listing creation.
+- The future seller `ACTIVE -> CANCELLED` transition and its first `LISTING_CANCELLED` audit record must be written in the same transaction with the same captured application-clock timestamp.
+- A listing creation or cancellation failure must not leave an audit record without its listing transition.
+- An audit insertion failure must roll back the associated listing mutation.
 - `audit_events.created_at` must be generated server-side with the injected application clock.
 - Application code may insert audit records, but existing audit records must not be updated or deleted as part of normal product workflows.
 - Audit records must not contain request bodies, seller contact data, public notes, seat information, ticket type, asking price, QR codes, barcodes, ticket files, private transfer links, platform credentials, passwords, session tokens, cookies, or email addresses.

@@ -16,6 +16,18 @@ public interface OrderRepository extends JpaRepository<OrderEntity, UUID> {
 
     Optional<OrderEntity> findByIdAndBuyerUserId(UUID orderId, UUID buyerUserId);
 
+    @Query("""
+            select new com.ticketpass.api.order.SellerTransferLockTarget(
+                checkoutOrder.listing.id,
+                checkoutOrder.reservation.id
+            )
+            from OrderEntity checkoutOrder
+            where checkoutOrder.id = :orderId and checkoutOrder.sellerUserId = :sellerId
+            """)
+    Optional<SellerTransferLockTarget> findSellerTransferLockTarget(
+            @Param("orderId") UUID orderId,
+            @Param("sellerId") UUID sellerId);
+
     @Query(value = """
             select checkout_order.id
             from orders checkout_order

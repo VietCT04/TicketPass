@@ -4,6 +4,17 @@
 
 TicketPass uses email/password authentication with server-side opaque sessions for MVP.
 
+## Container Deployment Configuration
+
+Issue `#104` defines the container configuration contract, and issue `#105` implements the API image and `container` profile. Issue `#107` will provide the full Compose wiring. These values must remain external to images, Compose files, and committed environment files.
+
+- Database access uses `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, and `SPRING_DATASOURCE_PASSWORD`. On the internal Compose network, the JDBC host is the PostgreSQL service name, not `localhost`.
+- Browser security uses `TICKETPASS_SECURITY_ALLOWED_ORIGINS_0`, `TICKETPASS_AUTH_COOKIE_SECURE`, optional `TICKETPASS_AUTH_COOKIE_DOMAIN`, and `TICKETPASS_FRONTEND_BASE_URL`. The frontend origin must exactly match CORS and trusted-origin validation.
+- `NEXT_PUBLIC_API_BASE_URL` is browser-visible build-time configuration, not a secret. It must be explicitly supplied with a browser-reachable API URL and requires a web-image rebuild when it changes.
+- Mock payment is local-stack-only. `MOCK_PAYMENT_ENABLED` and `MOCK_PAYMENT_ALLOW_NON_LOOPBACK` default to `false` in the API container profile. `MOCK_PAYMENT_WEBHOOK_SECRET`, `MOCK_PAYMENT_PROVIDER_BASE_URL`, and `MOCK_PAYMENT_WEBHOOK_URL` remain external configuration. The webhook secret belongs only in an untracked environment file; missing required secrets fail startup while mock payment is enabled. Disabled mock payment makes checkout unavailable rather than silently enabling it or selecting another provider.
+- Non-local deployment requires HTTPS, `TICKETPASS_AUTH_COOKIE_SECURE=true`, exact configured origins, externally supplied credentials, and `MOCK_PAYMENT_ENABLED=false` until a production payment provider exists.
+- The API image uses a non-root runtime user with a read-only application directory and jar. Build contexts and images must exclude `.env*`, credentials, private keys, database dumps, ticket files, payment secrets, caches, logs, and build tooling not required at runtime. Do not print secret values at container startup or in operating instructions.
+
 ## Password Handling
 
 - Passwords must be hashed with BCrypt before storage.
@@ -56,6 +67,19 @@ Credentialed CORS uses the same normalized trusted-origin source as the CSRF ori
 - Seller, buyer, order, payment, ticket, reveal, and dispute ownership checks must use the authenticated user.
 - Frontend route protection is a usability layer only; backend authorization remains required.
 
+## Account Profile Update Security
+
+Issues `#141` and `#142` define and implement the display-name-only profile-update contract; issue `#143` will implement the protected browser form.
+
+- `PUT /api/me/profile` must explicitly require authentication before the final deny rule. The controller receives `AuthenticatedUser`; it must never accept a client-supplied user or ownership identifier.
+- The endpoint accepts exactly one field, `display_name`. Email, password, roles, permissions, account status, sessions, cookies, timestamps, and any other server-controlled fields are rejected through controlled validation; they must never be mutable through this route.
+- Because this is an unsafe cookie-authenticated request, the existing exact trusted-origin filter remains authoritative. Successful responses send `Cache-Control: no-store`.
+- The transactional service must capture the authenticated ID and one injected-clock timestamp, pessimistically lock and reload the user row, and return the standard `401` result when the row no longer exists. It must not mutate or return the request-snapshot principal as current database state.
+- A normalized display-name no-op returns the safe current-user response without changing `updated_at`, flushing a meaningless update, writing an audit event, rotating cookies, or changing any active session.
+- An effective change updates only `users.display_name` and `users.updated_at`. It does not modify credentials, authorization, account status, marketplace records, sessions, cookies, or audit records. A later authenticated request reloads current user data and can therefore expose the new display name without session rotation.
+- Display names remain untrusted text. Operational logs may include only the authenticated user ID and a broad outcome; they must not include display-name values, request or response bodies, email, cookies, session values, credentials, or authentication headers.
+- The browser form must submit the complete one-field payload with credentials, prevent duplicate submissions, replace in-memory current-user state from the authoritative safe response, and retain profile form data only in component memory. It must not persist profile data in URLs, `localStorage`, `sessionStorage`, or IndexedDB.
+
 ## Frontend Protected Routes
 
 Issue `#13` protects the existing `/sell` frontend route with a small reusable client-side auth guard.
@@ -106,17 +130,31 @@ Issue `#3` implements seller listing creation through a Spring Security-protecte
 
 ## Seller Own-Listings Security
 
-Issue `#82` defines the future authenticated `GET /api/me/listings` contract; issue `#83` implements it and issue `#84` consumes it through the protected seller page.
+Issue `#82` defines the authenticated `GET /api/me/listings` contract; issue `#83` implements it and issue `#84` consumes it through the protected seller page.
 
-- Spring Security must explicitly require authentication for `GET /api/me/listings`.
+- Spring Security explicitly requires authentication for `GET /api/me/listings`.
 - The database query must constrain `listing.seller_id` to `AuthenticatedUser.id()` before status filtering, counting, or pagination. Clients cannot select another seller through any request value.
 - The optional status filter is one exact bounded `ListingStatus` value and must be applied in the database.
 - Responses must use explicit safe DTOs or projections, never direct entity or relationship serialization.
-- Seller-entered listing metadata remains untrusted display content and must be escaped and visually bounded by the future frontend.
+- The protected `/my-listings` frontend added by issue `#84` requests this endpoint with credentials and `cache: no-store`, validates the full approved response shape before display, and keeps page/status state only in the URL.
+- Seller-entered listing metadata remains untrusted display content. The `/my-listings` page renders it only as escaped React text, bounds long content, and does not automatically linkify or interpret it as HTML.
 - The response must exclude seller identity/contact information, buyer and reservation ownership, reservation IDs or expiry, order/payment/provider/payout/refund/dispute data, audit records, ticket payload data, credentials, cookies, sessions, and internal fields.
 - `SOLD` is a stored listing lifecycle status only. It must not be presented as proof of payout, transfer, reveal, refund finality, or dispute completion.
 - Logs may contain only authenticated request outcome, page parameters, status filter, and controlled error category. They must exclude seller-entered text, public notes, email, cookies, tokens, ticket details, buyer/payment data, and full response bodies.
 - This safe `GET` does not use the unsafe-request origin check. Credentialed browser requests still use the configured cookie and CORS protections.
+- The frontend access guard is a usability control only: the backend remains the sole authority for session authentication, seller ownership, filtering, and pagination. A later `401` redirects through the allowlisted `/my-listings` login-return path.
+
+## Seller Listing Cancellation Security
+
+Issue `#113` defines the documentation-only contract for `POST /api/listings/{listingId}/cancel`; issue `#114` will implement the backend and issue `#115` the seller UI.
+
+- Spring Security must explicitly require authentication for `POST /api/listings/*/cancel` before the final deny rule. The controller receives `AuthenticatedUser`; the request has no body and accepts no client-provided seller, ownership, lifecycle, reservation, order, payment, or ticket values.
+- The service must pessimistically lock the listing first, then compare `listing.seller.id` with `AuthenticatedUser.id()`. A missing listing and one owned by another seller use the same controlled `404` response.
+- Only an owned `ACTIVE` listing may transition to `CANCELLED`. An owned `CANCELLED` listing is an idempotent no-write response; `RESERVED`, `SOLD`, `EXPIRED`, and `DRAFT` return a generic `409` without disclosing buyer, reservation, order, or payment state.
+- The listing-first lock order is shared with reservation creation, so cancellation must not query or lock reservation state first. Exactly one racing `ACTIVE -> CANCELLED` or `ACTIVE -> RESERVED` transition may win.
+- The first successful transition writes only the actor ID, `LISTING_CANCELLED`, `LISTING`, listing ID, and captured server timestamp to the immutable audit table in the same transaction. Failed audit persistence must roll back cancellation.
+- Successful responses use `Cache-Control: no-store` and expose only listing ID, `CANCELLED` status, and `updated_at`. Responses and operational logs must exclude seller and buyer identities, public notes, reservation/order/payment/provider/audit details, cookies, sessions, credentials, and ticket payload data.
+- This unsafe cookie-authenticated route remains protected by the existing exact trusted-origin filter. The frontend may not treat a visible `ACTIVE` status as authorization or optimistically persist a cancelled state.
 
 ## Authentication And Ownership
 
@@ -181,6 +219,16 @@ Public event browse responses must not include:
 - Buyer-specific or seller-specific state.
 
 `image_url` is nullable in the API contract. Until trusted event image source and moderation rules exist, clients should render safe placeholders when `image_url` is `null`.
+
+### Public Event Browse Search And Filter Security
+
+Issue `#109` defines optional public `q`, `city`, `starts_from`, and `starts_before` filters for `GET /api/events`; issue `#110` will implement them. The route remains public and read-only.
+
+The server must normalize, validate, and apply every supplied filter before database grouping, counting, ordering, and pagination. Client state must not determine event visibility, listing eligibility, aggregate values, or matching results.
+
+Text search is literal, case-insensitive matching. Query implementations must escape `%`, `_`, and their selected escape character before using `LIKE`, and controlled errors must not disclose raw normalized queries, SQL, repository details, or stack traces.
+
+Search and filtering must not relax the existing browse-eligible listing rule or add seller, ticket, ownership, reservation, order, payment, or other user-specific data to the public response. The frontend URL may carry shareable filters for issue `#111`, but browser persistence is not an authority for the public result set.
 
 ## Public Event Detail Security
 
@@ -270,6 +318,25 @@ Issue `#65` defines the checkout security contract for `US-0007`. Issues `#66` a
 - Provider replay/deduplication records and provider references are restricted operational payment records. They are not automatically added to generic `audit_events`; current lifecycle records provide the mock operational record, while broader immutable financial audit design remains deferred.
 - The implemented core `orders` row stores only reservation, listing, buyer and seller UUID snapshots, amount, currency, status, expiry, and timestamps. `payment_sessions` stores only operational provider session metadata; both exclude provider secrets, raw provider payloads, seller contact information, public notes, private transfer data, QR codes, barcodes, ticket files, credentials, and other sensitive ticket payloads.
 
+## Buyer Order-Progress Security
+
+Issue `#87` defines the future authenticated `GET /api/me/orders` contract; backend implementation remains issue `#88`. `SecurityConfig` must explicitly require authentication for this route. Buyer ownership must be derived only from `AuthenticatedUser`, applied in the database before status filtering and pagination, and never accepted from query parameters, request bodies, browser state, or storage.
+
+- The response keeps `payment_status`, `transfer_status`, and `settlement_status` separate. `PAID` proves payment only; a seller transfer confirmation is not buyer receipt and cannot release funds. Browser labels and `buyer_action` are presentation guidance, never authorization for a payment, fulfilment, settlement, refund, or dispute mutation.
+- The endpoint accepts only bounded 1-based pagination and exact approved lifecycle filters. Invalid bounds or unknown status values return controlled `400`; unauthenticated access returns `401`. Empty pages return a safe `200` response with accurate totals.
+- List reads are read-only snapshots. They must not perform row-by-row reconciliation, provider calls, locks, writes, release funds, refresh inventory, or create audit records. If a passed server deadline may make persisted state stale, `status_refresh_required` can only direct the browser to the protected single-order read; client clocks and cached state cannot decide status.
+- Successful responses send `Cache-Control: no-store` and exclude seller identity/contact data, listing and reservation identifiers, hosted payment URLs, provider/session/webhook records, credentials, public notes, QR codes, barcodes, ticket files, and private transfer information. Event and ticket summaries include only the documented safe fields.
+
+## Seller Transfer Confirmation Security
+
+Issue `#92` defines the seller transfer-confirmation boundary; issue `#93` implements its backend. `POST /api/seller/orders/{orderId}/transfer-confirmation` requires authenticated server-side session validation and remains protected by the existing unsafe cookie-authenticated request-origin filter. Seller ownership is derived solely from `AuthenticatedUser`, revalidated under the marketplace lock order `listing -> reservation -> order -> fulfilment`, and never accepted from the path beyond the order ID, a request body, browser state, storage, redirects, or provider events.
+
+- Trusted payment completion alone creates the fulfilment row with `AWAITING_SELLER_TRANSFER`, `FUNDS_HELD`, and `transfer_deadline_at = paid_at + 15 minutes` from one captured server `Instant`. Browser clocks, client countdowns, seller requests, hosted-provider redirects, and provider-event timestamps cannot create, change, or extend that deadline.
+- The endpoint accepts no status, timestamp, seller, buyer, settlement, or ticket data from the client. It revalidates paid/sold/held/eligible state and requires `now < transfer_deadline_at` for a first confirmation. At or after the deadline, it does not confirm, reactivate, or mutate transfer; separately approved timeout handling owns the transition. A coherent already seller-confirmed row remains a no-write idempotent success even after the deadline.
+- A first confirmation may only record the seller's claim and its immutable server timestamp. Repeated eligible confirmation is idempotent and cannot alter that timestamp. Seller confirmation does not establish buyer receipt, reveal a ticket, authorize settlement release, or initiate payout.
+- Missing and non-owned orders return the same controlled `404`. Malformed IDs return `400`; missing authentication returns `401`; ineligible lifecycle states return controlled `409`. Responses and logs must not reveal buyer identity/contact data, payment/provider records, review internals, ticket payloads, QR codes, barcodes, credentials, private transfer links, cookies, or raw exception text.
+- Successful responses use `Cache-Control: no-store` and contain only the documented seller-safe progress metadata plus approved event/ticket summaries. They exclude private seller-to-buyer communication and all ticket transfer payloads.
+
 ## Seller Event Autocomplete Security
 
 The authenticated `GET /api/events/autocomplete` endpoint exposes seller-safe existing event summaries only.
@@ -306,6 +373,8 @@ Issue `#78` implements `POST /api/event-requests` as an authenticated seller req
 - An event request does not create, approve, or modify an event. Its ID cannot be used as `event_id` for listing creation and does not weaken seller listing eligibility checks.
 - Safe responses exclude requester identity, normalized fields, duplicate details, moderation internals, ticket data, sessions, credentials, and fabricated event identifiers.
 - Logs may contain only safe operational request IDs, creation/recovery outcome, and controlled error category. They must not contain request bodies, raw submitted text, raw official URLs, requester email, cookies, session tokens, credentials, ticket data, or moderation internals.
+
+Issue `#79` adds the authenticated seller UI for this endpoint within `/sell`. Request state stays only in React memory, and the client sends only the five documented metadata fields with included credentials and no-store caching. It bounds client-side input and renders only strict, safe response fields. It must never render an official URL as a link, expose raw error bodies, persist request details, or treat a pending request as an event selection or listing authorization.
 
 ## Event-Linked Listing Creation Security
 

@@ -2,9 +2,168 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with authenticated seller listings, event browsing/detail, buyer reservations, protected browser checkout recovery, authenticated missing-event request persistence, and a defined seller own-listings contract backed by a mock hosted payment provider. Mock payment events are delivered through signed HTTP webhooks and an atomic receipt ledger; verified, timely payment success completes the order and sells the reserved listing. Checkout reconciliation handles trusted failure, cancellation, and expiry without releasing inventory when payment requires manual action, and authenticated buyers can reload their safe server-authoritative order state. The mock lifecycle is fail-closed at the route boundary, startup-validated, and bounded for webhook input and network delivery. Issue `#79` adds the seller missing-event request UI; issue `#83` implements the own-listings API, while issue `#84` adds its protected seller page.
+TicketPass is an early monorepo scaffold with authenticated seller listings, event browsing/detail, buyer reservations, protected browser checkout recovery, authenticated missing-event requests from the `/sell` fallback, a protected read-only seller own-listings page, and an authenticated display-name-only profile API backed by server-authoritative state. Mock payment events are delivered through signed HTTP webhooks and an atomic receipt ledger; verified, timely payment success completes the order, sells the reserved listing, and atomically creates held post-payment fulfilment with a 15-minute seller-transfer deadline. Authenticated sellers can make a safe, idempotent transfer confirmation before that deadline; buyer receipt, settlement release, and timeout reconciliation remain separately deferred. Checkout reconciliation handles trusted failure, cancellation, and expiry without releasing inventory when payment requires manual action, and authenticated buyers can reload their safe server-authoritative order state. The approved seller listing-cancellation contract now limits seller action to atomic, auditable `ACTIVE -> CANCELLED`; backend and browser work remain issues `#114` and `#115`. The public event-search contract now defines optional server-authoritative text, city, and time-window filters for the existing browse endpoint; its backend and frontend work remain issues `#110` and `#111`. The buyer order-progress contract defines a read-only, server-owned account-history view with separate payment, transfer, and settlement dimensions. The mock lifecycle is fail-closed at the route boundary, startup-validated, and bounded for webhook input and network delivery. The API now has a Java 21 multi-stage container image and fail-closed external container profile; the web image and health-aware full-stack Compose wiring remain issues `#106` and `#107`. The protected account form remains issue `#143`.
 
 ## Latest Completed Work
+
+- Date: 2026-07-19
+- GitHub Issue: `#105` - https://github.com/VietCT04/TicketPass/issues/105
+- Summary: Added the API-only multi-stage Java 21 container image, non-root read-only runtime payload, OCI identity labels, non-sensitive Actuator health check, graceful shutdown, and a fail-closed external `container` profile. Required database, origin, cookie-security, and frontend-origin configuration has no image default. Mock payment is disabled by default in container mode; disabled mock checkout returns provider unavailable, while enabled mock payment retains its existing secret, URL, loopback, and cookie-security validation. Web packaging and full-stack Compose remain separate issues.
+- Files changed:
+  - `apps/api/Dockerfile`
+  - `apps/api/.dockerignore`
+  - `apps/api/src/main/resources/application-container.yml`
+  - `apps/api/src/main/java/com/ticketpass/api/payment/PaymentConfigurationValidator.java`
+  - `apps/api/src/main/java/com/ticketpass/api/payment/mock/MockPaymentProvider.java`
+  - `apps/api/src/main/java/com/ticketpass/api/payment/mock/MockPaymentDeliveryScheduler.java`
+  - `README.md`
+  - `docs/DEPLOYMENT.md`
+  - `docs/SECURITY.md`
+  - `docs/CONTINUITY.md`
+  - `docs/user-stories/US-0014-reproducible-container-stack.md`
+
+- Date: 2026-07-19
+- GitHub Issue: `#142` - https://github.com/VietCT04/TicketPass/issues/142
+- Summary: Implemented authenticated `PUT /api/me/profile`. The endpoint accepts only `display_name`, derives ownership from the session principal, shares signup-compatible normalization, locks and reloads the user row, preserves normalized no-op idempotency, and uses the injected clock for effective `display_name` and `updated_at` changes. It returns the existing safe no-store user response and leaves sessions, cookies, credentials, authorization, marketplace records, and audit data unchanged. The protected browser form remains issue `#143`.
+- Files changed:
+  - `apps/api/src/main/java/com/ticketpass/api/auth/AuthService.java`
+  - `apps/api/src/main/java/com/ticketpass/api/auth/DisplayNameNormalizer.java`
+  - `apps/api/src/main/java/com/ticketpass/api/auth/ProfileController.java`
+  - `apps/api/src/main/java/com/ticketpass/api/auth/ProfileService.java`
+  - `apps/api/src/main/java/com/ticketpass/api/auth/SecurityConfig.java`
+  - `apps/api/src/main/java/com/ticketpass/api/auth/UpdateProfileRequest.java`
+  - `apps/api/src/main/java/com/ticketpass/api/user/UserEntity.java`
+  - `apps/api/src/main/java/com/ticketpass/api/user/UserRepository.java`
+  - `docs/API.md`
+  - `docs/DATABASE.md`
+  - `docs/SECURITY.md`
+  - `docs/flows/ACCOUNT_PROFILE_FLOW.md`
+  - `docs/user-stories/US-0023-update-account-profile.md`
+  - `docs/CONTINUITY.md`
+
+- Date: 2026-07-19
+- GitHub Issue: `#113` - https://github.com/VietCT04/TicketPass/issues/113
+- Summary: Defined the documentation-only seller listing-cancellation contract. The future no-body authenticated endpoint permits only an owning seller's atomic `ACTIVE -> CANCELLED` transition under the shared listing-first lock, returns a safe no-store idempotent response, and writes one transactional `LISTING_CANCELLED` audit event. Backend and seller UI implementation remain issues `#114` and `#115`; no schema migration or application code was added.
+- Files changed:
+  - `docs/API.md`
+  - `docs/DATABASE.md`
+  - `docs/SECURITY.md`
+  - `docs/flows/LISTING_STATUS_FLOW.md`
+  - `docs/flows/SELLER_LISTING_FLOW.md`
+  - `docs/CONCERNS.md`
+  - `docs/CONTINUITY.md`
+
+- Date: 2026-07-19
+- GitHub Issue: `#93` - https://github.com/VietCT04/TicketPass/issues/93
+- Summary: Implemented durable one-to-one order fulfilment persistence, paid-order backfill, atomic trusted-payment initialization, and the authenticated seller transfer-confirmation endpoint. The endpoint locks and revalidates marketplace state, records only the seller claim before the fixed deadline, returns safe no-store progress, and never releases settlement. Buyer receipt, settlement release, timeout transitions, and the seller UI remain separate issues.
+- Files changed:
+  - `apps/api/src/main/java/com/ticketpass/api/auth/SecurityConfig.java`
+  - `apps/api/src/main/java/com/ticketpass/api/order/*`
+  - `apps/api/src/main/java/com/ticketpass/api/payment/webhook/MockWebhookService.java`
+  - `apps/api/src/main/resources/db/migration/V10__create_order_fulfillments.sql`
+  - `docs/API.md`
+  - `docs/DATABASE.md`
+  - `docs/SECURITY.md`
+  - `docs/flows/POST_PAYMENT_TICKET_TRANSFER_FLOW.md`
+  - `docs/user-stories/US-0011-seller-transfers-paid-ticket.md`
+  - `docs/CONCERNS.md`
+  - `docs/CONTINUITY.md`
+
+- Date: 2026-07-19
+- GitHub Issue: `#141` - https://github.com/VietCT04/TicketPass/issues/141
+- Summary: Defined the documentation-only authenticated profile-update contract. The future `PUT /api/me/profile` accepts only a trimmed display name, derives ownership from the authenticated principal, reloads and locks the user row, preserves no-op idempotency without timestamp noise, returns the existing safe user response with no-store caching, and leaves sessions, credentials, and marketplace data unchanged. Backend and browser implementation remain issues `#142` and `#143`.
+- Files changed:
+  - `docs/API.md`
+  - `docs/DATABASE.md`
+  - `docs/SECURITY.md`
+  - `docs/flows/ACCOUNT_PROFILE_FLOW.md`
+  - `docs/user-stories/US-0023-update-account-profile.md`
+  - `docs/CONCERNS.md`
+  - `docs/CONTINUITY.md`
+
+- Date: 2026-07-19
+- GitHub Issue: `#104` - https://github.com/VietCT04/TicketPass/issues/104
+- Summary: Defined the documentation-only contract for the first reproducible single-host TicketPass container stack. It separates browser-reachable and internal networking, API and web image requirements, external configuration, mock-payment restrictions, health/readiness, named-volume persistence, secret/build-context exclusions, and the future operations runbook. No Dockerfile, Compose, image, CI/CD, or cloud implementation was added.
+- Files changed:
+  - `README.md`
+  - `docs/DEPLOYMENT.md`
+  - `docs/SECURITY.md`
+  - `docs/CONCERNS.md`
+  - `docs/CONTINUITY.md`
+
+- Date: 2026-07-19
+- GitHub Issue: `#84` - https://github.com/VietCT04/TicketPass/issues/84
+- Summary: Implemented the protected read-only `/my-listings` page. It uses the server-authoritative own-listings API with credentials and no-store caching, strictly validates safe response fields, keeps pagination and exact status filtering in the URL, handles controlled states, and shows only seller-owned listing/event metadata with non-misleading status language. It adds no listing mutation, browser persistence, buyer data, payment data, or ticket payload display.
+- Files changed:
+  - `apps/web/src/app/my-listings/page.tsx`
+  - `apps/web/src/components/SellerOwnListings.tsx`
+  - `apps/web/src/components/AuthStatus.tsx`
+  - `apps/web/src/components/RequireAuth.tsx`
+  - `apps/web/src/lib/redirects.ts`
+  - `apps/web/src/lib/sellerListings.ts`
+  - `docs/SECURITY.md`
+  - `docs/flows/SELLER_LISTING_FLOW.md`
+  - `docs/user-stories/US-0009-view-own-listings.md`
+  - `docs/CONTINUITY.md`
+
+- Date: 2026-07-19
+- GitHub Issue: `#92` - https://github.com/VietCT04/TicketPass/issues/92
+- Summary: Defined the documentation-only post-payment ticket-transfer lifecycle. Trusted payment success will create separate awaiting-transfer and held-settlement state with a server-derived 15-minute deadline; seller confirmation is seller-only, idempotent, and cannot prove buyer receipt or release funds. Persistence and the endpoint remain issue `#93`; buyer confirmation and timeout resolution remain separate work.
+- Files changed:
+  - `docs/API.md`
+  - `docs/DATABASE.md`
+  - `docs/SECURITY.md`
+  - `docs/flows/POST_PAYMENT_TICKET_TRANSFER_FLOW.md`
+  - `docs/user-stories/US-0011-seller-transfers-paid-ticket.md`
+  - `docs/CONCERNS.md`
+  - `docs/CONTINUITY.md`
+
+- Date: 2026-07-19
+- GitHub Issue: `#109` - https://github.com/VietCT04/TicketPass/issues/109
+- Summary: Defined the documentation-only, backward-compatible public event search and filter contract for `GET /api/events`. The contract adds normalized optional text, exact-city, and offset-bearing time-window parameters; requires literal database-side matching before aggregates and pagination; preserves the existing public eligibility, safe response, and upcoming ordering rules; and defines shareable frontend URL behavior without browser persistence. Backend implementation remains `#110`; frontend controls remain `#111`.
+- Files changed:
+  - `docs/API.md`
+  - `docs/SECURITY.md`
+  - `docs/flows/BUYER_EVENT_BROWSE_FLOW.md`
+  - `docs/CONCERNS.md`
+  - `docs/CONTINUITY.md`
+
+- Date: 2026-07-19
+- GitHub Issue: `#87` - https://github.com/VietCT04/TicketPass/issues/87
+- Summary: Defined the authenticated, read-only buyer order-progress contract for `GET /api/me/orders`, including database-side ownership/filtering/pagination, deterministic ordering, separate payment/transfer/settlement progress, bounded server-derived buyer actions, snapshot freshness behavior, safe response fields, and no-store privacy controls. No endpoint, persistence, or frontend implementation was added.
+- Files changed:
+  - `docs/API.md`
+  - `docs/SECURITY.md`
+  - `docs/CONCERNS.md`
+  - `docs/CONTINUITY.md`
+
+- Date: 2026-07-19
+- GitHub Issue: `#83` - https://github.com/VietCT04/TicketPass/issues/83
+- Summary: Implemented authenticated read-only `GET /api/me/listings`. The endpoint derives seller ownership from the session principal, uses database-side owner and optional exact status filtering before pagination, joins only listing event metadata, returns explicit safe DTOs in deterministic newest-first order, sends `Cache-Control: no-store`, and performs no marketplace reconciliation, locking, writes, or audit creation.
+- Files changed:
+  - `apps/api/src/main/java/com/ticketpass/api/auth/SecurityConfig.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/ListingRepository.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/SellerOwnListingController.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/SellerOwnListingQueryParser.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/SellerOwnListingResponse.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/SellerOwnListingPageResponse.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/SellerOwnListingRow.java`
+  - `apps/api/src/main/java/com/ticketpass/api/listing/SellerOwnListingService.java`
+  - `docs/API.md`
+  - `docs/SECURITY.md`
+  - `docs/CONTINUITY.md`
+
+- Date: 2026-07-19
+- GitHub Issue: `#79` - https://github.com/VietCT04/TicketPass/issues/79
+- Summary: Added the authenticated `/sell` missing-event fallback. An empty autocomplete result opens an inline, non-nested controlled request panel that validates bounded metadata and an explicit UTC offset, submits `POST /api/event-requests` with credentials, preserves fields on controlled failures, and shows a safe pending confirmation. A request never becomes an event selection or listing, and listing submission remains disabled without a real selected event.
+- Files changed:
+  - `apps/web/src/components/EventAutocompleteSelector.tsx`
+  - `apps/web/src/components/MissingEventRequestPanel.tsx`
+  - `apps/web/src/components/SellerListingForm.tsx`
+  - `apps/web/src/lib/event-requests.ts`
+  - `docs/flows/SELLER_LISTING_FLOW.md`
+  - `docs/SECURITY.md`
+  - `docs/CONTINUITY.md`
 
 - Date: 2026-07-18
 - GitHub Issue: `#78` - https://github.com/VietCT04/TicketPass/issues/78
@@ -516,8 +675,8 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 
 ## Active Work
 
-- Current GitHub Issue: `#78` - https://github.com/VietCT04/TicketPass/issues/78
-- Current goal: Review and merge the missing-event request backend implementation.
+- Current GitHub Issue: None.
+- Current goal: Review and merge the completed API container image.
 - Current blocker: None.
 
 ## Important User Stories
@@ -531,6 +690,10 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 - `docs/user-stories/US-0007-complete-checkout-for-reserved-ticket.md`: Authenticated buyer can complete payment for an active reservation through provider-hosted checkout, while only trusted server-to-server confirmation may complete the sale.
 - `docs/user-stories/US-0008-request-missing-event.md`: Authenticated sellers can request a missing future event for future catalogue review without creating or modifying an event or bypassing listing rules.
 - `docs/user-stories/US-0009-view-own-listings.md`: Authenticated sellers can view only their own listings and stored marketplace statuses through a read-only protected API and page.
+- `docs/user-stories/US-0010-view-own-orders.md`: Authenticated buyers can view their own order progress with payment, ticket-transfer, and settlement state kept separate.
+- `docs/user-stories/US-0011-seller-transfers-paid-ticket.md`: Sellers can confirm a paid ticket transfer within a server-controlled deadline without releasing held settlement.
+- `docs/user-stories/US-0023-update-account-profile.md`: Authenticated users can update only their display name through a private server-authoritative account flow without changing credentials, authorization, or sessions.
+- `docs/user-stories/US-0014-reproducible-container-stack.md`: The API image is implemented; the web image and full-stack Compose runbook remain separate work.
 
 ## Known Concerns
 
@@ -549,14 +712,19 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 - Own-listings pagination may need a focused composite-index review at production volume, and all listing mutations remain deferred; see `CONCERN-0024`.
 - Event autocomplete query performance may require indexes or a dedicated search strategy after production-volume review.
 - Event local timezone preservation and display rules are unresolved.
+- Public browse substring search, free-text city matching, and calendar-day offset semantics need measured follow-up; see `CONCERN-0026`.
 - Listing availability can change between event-detail page load and a future reservation attempt; `GET /api/events/{eventId}` is only a marketplace snapshot.
 - Reservation creation, expiry cleanup, guarded listing reactivation, CSRF origin protection, and browser reservation actions are implemented in issues `#54` through `#57`.
 - Browser reservation state is intentionally in-memory only; see `CONCERN-0020`.
 - Hosted payment deadline support and late successful payment handling remain unresolved; see `CONCERN-0021`.
 - Audit retention, deletion, export, and compliance rules are not defined.
+- Buyer order-progress lists are intentionally read-only snapshots; deadline freshness must remain owned by bounded reconciliation and the authoritative single-order read; see `CONCERN-0025`.
+- Elapsed transfer deadlines require the controlled timeout work in issue `#99`; see `CONCERN-0027`.
+- Container image portability, image maintenance, single-host resilience, and Flyway replica coordination need follow-up; see `CONCERN-0028` through `CONCERN-0031`. No new concern was identified by issue `#105`.
+- Display-name moderation, impersonation, reserved-name, and stronger Unicode policy are deferred; see `CONCERN-0032`.
 
 ## Next Recommended Steps
 
-1. Review and merge the issue `#78` missing-event request backend pull request.
-2. Build the seller missing-event request UI in issue `#79`.
-3. Implement the authenticated database-backed own-listings API in issue `#83`.
+1. Containerize the web application in issue `#106`.
+2. Add health-aware full-stack Compose wiring and the operations runbook in issue `#107`.
+3. Build the protected account profile form in issue `#143`.
