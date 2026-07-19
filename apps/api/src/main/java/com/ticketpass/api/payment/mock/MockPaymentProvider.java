@@ -26,6 +26,7 @@ public class MockPaymentProvider implements PaymentProvider {
     private final MockPaymentEventRepository eventRepository;
     private final Clock clock;
     private final URI providerBaseUrl;
+    private final boolean enabled;
 
     public MockPaymentProvider(
             MockProviderSessionRepository sessionRepository,
@@ -36,6 +37,7 @@ public class MockPaymentProvider implements PaymentProvider {
         this.eventRepository = eventRepository;
         this.clock = clock;
         this.providerBaseUrl = paymentProperties.mock().providerBaseUrl();
+        this.enabled = paymentProperties.mock().enabled();
     }
 
     @Override
@@ -45,12 +47,14 @@ public class MockPaymentProvider implements PaymentProvider {
 
     @Override
     public String newProviderSessionId() {
+        requireEnabled();
         return UUID.randomUUID().toString();
     }
 
     @Override
     @Transactional
     public PaymentSessionResult createSession(PaymentSessionRequest request) {
+        requireEnabled();
         MockProviderSessionEntity existing = sessionRepository
                 .findByProviderSessionIdForUpdate(request.providerSessionId())
                 .orElse(null);
@@ -78,6 +82,7 @@ public class MockPaymentProvider implements PaymentProvider {
     @Override
     @Transactional
     public PaymentSessionResult getSession(String providerSessionId) {
+        requireEnabled();
         MockProviderSessionEntity session = sessionRepository.findByProviderSessionIdForUpdate(providerSessionId)
                 .orElseThrow(MockProviderSessionNotFoundException::new);
         return toResult(expireIfNeeded(session, clock.instant()));
@@ -86,11 +91,13 @@ public class MockPaymentProvider implements PaymentProvider {
     @Override
     @Transactional
     public void cancelSession(String providerSessionId) {
+        requireEnabled();
         transition(providerSessionId, MockProviderSessionStatus.CANCELLED);
     }
 
     @Transactional
     public PaymentSessionResult transition(String providerSessionId, MockProviderSessionStatus targetStatus) {
+        requireEnabled();
         MockProviderSessionEntity session = sessionRepository.findByProviderSessionIdForUpdate(providerSessionId)
                 .orElseThrow(() -> new MockProviderSessionNotFoundException());
         Instant now = clock.instant();
@@ -110,6 +117,7 @@ public class MockPaymentProvider implements PaymentProvider {
 
     @Transactional(readOnly = true)
     public java.util.UUID orderIdForRedirect(String providerSessionId) {
+        requireEnabled();
         return sessionRepository.findByProviderSessionId(providerSessionId)
                 .orElseThrow(MockProviderSessionNotFoundException::new)
                 .getOrderId();
@@ -159,6 +167,12 @@ public class MockPaymentProvider implements PaymentProvider {
 
     private static boolean isTerminal(MockProviderSessionStatus status) {
         return status != MockProviderSessionStatus.PENDING;
+    }
+
+    private void requireEnabled() {
+        if (!enabled) {
+            throw new PaymentProviderUnavailableException();
+        }
     }
 
 }

@@ -1,5 +1,6 @@
 package com.ticketpass.api.payment.mock;
 
+import com.ticketpass.api.payment.PaymentProperties;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
@@ -15,15 +16,24 @@ class MockPaymentDeliveryScheduler {
     private final MockPaymentEventRepository eventRepository;
     private final MockPaymentDeliveryService deliveryService;
     private final Clock clock;
+    private final PaymentProperties paymentProperties;
 
-    MockPaymentDeliveryScheduler(MockPaymentEventRepository eventRepository, MockPaymentDeliveryService deliveryService, Clock clock) {
+    MockPaymentDeliveryScheduler(
+            MockPaymentEventRepository eventRepository,
+            MockPaymentDeliveryService deliveryService,
+            Clock clock,
+            PaymentProperties paymentProperties) {
         this.eventRepository = eventRepository;
         this.deliveryService = deliveryService;
         this.clock = clock;
+        this.paymentProperties = paymentProperties;
     }
 
     @Scheduled(fixedDelayString = "${ticketpass.payments.mock.delivery-interval-ms:5000}")
     void deliverPendingEvents() {
+        if (!paymentProperties.mock().enabled()) {
+            return;
+        }
         Instant now = clock.instant();
         List<MockPaymentEventEntity> events = eventRepository.findDeliveryCandidates("PENDING", now, PageRequest.of(0, 100));
         for (MockPaymentEventEntity event : events) {

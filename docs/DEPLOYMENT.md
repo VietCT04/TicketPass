@@ -2,7 +2,7 @@
 
 ## Status
 
-This document defines the approved container-stack contract from GitHub issue `#104`. It is documentation only. The current `docker-compose.yml` starts PostgreSQL only; API and web images, full-stack Compose wiring, and the operational commands described here remain follow-up work in issues `#105`, `#106`, and `#107`.
+This document defines the approved container-stack contract from GitHub issue `#104`. GitHub issue `#105` implements the API image and its container runtime profile. The current `docker-compose.yml` still starts PostgreSQL only; the web image, full-stack Compose wiring, and the remaining operational commands are follow-up work in issues `#106` and `#107`.
 
 ## Supported Baseline
 
@@ -17,21 +17,21 @@ The browser uses the externally reachable API URL. A Docker service address such
 
 This is not a high-availability or production-complete architecture. Kubernetes, cloud infrastructure, TLS, DNS, reverse proxies, monitoring, backup/restore, disaster recovery, image publishing, and CI/CD are separate work.
 
-## API Image Contract
+## API Image
 
-Issue `#105` will add a multi-stage Java 21 image built from `apps/api/pom.xml`:
+GitHub issue `#105` adds a multi-stage Java 21 image at `apps/api/Dockerfile`. Build it from the API-only context so unrelated workspace files and root environment files never enter the image build:
 
-```text
-build stage: Maven 3.9 with JDK 21
-runtime stage: JRE 21 only
+```bash
+docker build -f apps/api/Dockerfile -t ticketpass-api:<git-sha> apps/api
 ```
 
-- Use a deterministic Maven dependency/package flow. Image packaging may skip tests under the standing verification direction.
-- The runtime image contains the packaged Spring Boot artifact only, not source code or Maven.
-- Run as a dedicated non-root user and expose only port `8080`.
-- Retain Spring Boot graceful shutdown behavior and expose a non-sensitive health endpoint, preferably `/actuator/health`.
-- Receive every deployment value from external configuration. Do not include database credentials, cookie values, webhook secrets, or environment files in the image.
-- Use explicit base-image families and versions. Digest pinning needs a documented security-update process before adoption.
+The build stage uses `maven:3.9-eclipse-temurin-21-alpine`; the runtime uses `eclipse-temurin:21-jre-alpine`. The runtime contains only the packaged Spring Boot jar, runs as UID/GID `10001`, keeps `/app` and the jar read-only, and grants write access only to `/tmp/ticketpass`. It exposes port `8080`, invokes Java directly as PID 1, receives `SIGTERM`, and uses Spring's bounded graceful-shutdown phase.
+
+The image emits non-secret OCI source, revision, and version labels. Supply `VCS_REF` and `APP_VERSION` as build arguments when needed. Deploy immutable tags such as `ticketpass-api:<git-sha>`; a release tag may point to the same image, but `latest` is not a rollback identifier.
+
+The container activates `application-container.yml`. It exposes only `/actuator/health`, with details disabled. The image health check uses that endpoint and cannot become healthy until Spring startup, Flyway, and application initialization complete. It does not implement database wait logic; issue `#107` will define health-based Compose ordering.
+
+`apps/api/.dockerignore` excludes build output, environment files, logs, and IDE metadata. Do not add credentials, private keys, database dumps, ticket payloads, or local configuration to the API build context.
 
 ## Web Image Contract
 
@@ -56,12 +56,12 @@ Future container and Compose work must use externally supplied environment value
 | Area | Variables | Rules |
 | --- | --- | --- |
 | PostgreSQL | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` | The Compose-network database host is `postgres`, for example `jdbc:postgresql://postgres:5432/ticketpass`. |
-| API database | `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD` | Values are runtime configuration, never image contents. |
-| API browser and cookie policy | `TICKETPASS_SECURITY_ALLOWED_ORIGINS_0`, `TICKETPASS_AUTH_COOKIE_SECURE`, `TICKETPASS_AUTH_COOKIE_DOMAIN` (optional), `TICKETPASS_FRONTEND_BASE_URL` | The configured frontend origin must exactly match CORS and trusted-origin validation. Additional origins use indexed Spring binding values. |
+| API database | `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD` | Required for the container profile; values are runtime configuration, never image contents. |
+| API browser and cookie policy | `TICKETPASS_SECURITY_ALLOWED_ORIGINS_0`, `TICKETPASS_AUTH_COOKIE_SECURE`, `TICKETPASS_AUTH_COOKIE_DOMAIN` (optional), `TICKETPASS_FRONTEND_BASE_URL` | The first, cookie-security, and frontend URL values are required for the container profile. The configured frontend origin must exactly match CORS and trusted-origin validation. Additional origins use indexed Spring binding values. |
 | Web build | `NEXT_PUBLIC_API_BASE_URL` | Public, explicitly supplied at build time, and browser-reachable. |
 | Mock payment | `MOCK_PAYMENT_ENABLED`, `MOCK_PAYMENT_WEBHOOK_SECRET`, `MOCK_PAYMENT_PROVIDER_BASE_URL`, `MOCK_PAYMENT_WEBHOOK_URL`, `MOCK_PAYMENT_ALLOW_NON_LOOPBACK` | Local-stack only. The secret comes from an untracked environment file. Missing required secrets must fail startup while the mock provider is enabled. |
 
-Scheduler interval and batch-size configuration may retain documented safe defaults unless a future implementation identifies a deployment-specific requirement.
+`PAYMENT_RECONCILIATION_INTERVAL_MS`, `PAYMENT_RECONCILIATION_BATCH_SIZE`, `SPRING_LIFECYCLE_TIMEOUT_PER_SHUTDOWN_PHASE`, `SERVER_PORT`, and the mock-delivery settings have container-safe defaults. `MOCK_PAYMENT_ENABLED` and `MOCK_PAYMENT_ALLOW_NON_LOOPBACK` default to `false`. When mock payment is disabled, checkout fails closed with a provider-unavailable response; the API does not silently select another provider or accept mock checkout work. When it is explicitly enabled, the existing URL, secret, loopback, and cookie-security validation remains in force.
 
 For the local full-stack example only, the expected values are web `http://localhost:3000`, API `http://localhost:8080`, host-only cookies, and `TICKETPASS_AUTH_COOKIE_SECURE=false`. Non-local deployments require HTTPS, secure cookies, exact trusted origins, externally supplied credentials, and `MOCK_PAYMENT_ENABLED=false` until a production provider exists.
 
