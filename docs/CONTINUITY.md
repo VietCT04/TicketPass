@@ -2,9 +2,21 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with authenticated seller listings, event browsing/detail, buyer reservations, protected browser checkout recovery, authenticated missing-event requests from the `/sell` fallback, and a protected read-only seller own-listings page backed by the server-authoritative API. Mock payment events are delivered through signed HTTP webhooks and an atomic receipt ledger; verified, timely payment success completes the order, sells the reserved listing, and atomically creates held post-payment fulfilment with a 15-minute seller-transfer deadline. Authenticated sellers can make a safe, idempotent transfer confirmation before that deadline; buyer receipt, settlement release, and timeout reconciliation remain separately deferred. Checkout reconciliation handles trusted failure, cancellation, and expiry without releasing inventory when payment requires manual action, and authenticated buyers can reload their safe server-authoritative order state. The public event-search contract now defines optional server-authoritative text, city, and time-window filters for the existing browse endpoint; its backend and frontend work remain issues `#110` and `#111`. The buyer order-progress contract defines a read-only, server-owned account-history view with separate payment, transfer, and settlement dimensions. The mock lifecycle is fail-closed at the route boundary, startup-validated, and bounded for webhook input and network delivery. The container-stack contract is documented; API and web image work are next in parallel, followed by health-aware Compose wiring and an operations runbook. The authenticated profile contract now defines a private, display-name-only update; backend and frontend implementation remain separate issues `#142` and `#143`.
+TicketPass is an early monorepo scaffold with authenticated seller listings, event browsing/detail, buyer reservations, protected browser checkout recovery, authenticated missing-event requests from the `/sell` fallback, and a protected read-only seller own-listings page backed by the server-authoritative API. Mock payment events are delivered through signed HTTP webhooks and an atomic receipt ledger; verified, timely payment success completes the order, sells the reserved listing, and atomically creates held post-payment fulfilment with a 15-minute seller-transfer deadline. Authenticated sellers can make a safe, idempotent transfer confirmation before that deadline; buyer receipt, settlement release, and timeout reconciliation remain separately deferred. Checkout reconciliation handles trusted failure, cancellation, and expiry without releasing inventory when payment requires manual action, and authenticated buyers can reload their safe server-authoritative order state. The approved seller listing-cancellation contract now limits seller action to atomic, auditable `ACTIVE -> CANCELLED`; backend and browser work remain issues `#114` and `#115`. The public event-search contract now defines optional server-authoritative text, city, and time-window filters for the existing browse endpoint; its backend and frontend work remain issues `#110` and `#111`. The buyer order-progress contract defines a read-only, server-owned account-history view with separate payment, transfer, and settlement dimensions. The mock lifecycle is fail-closed at the route boundary, startup-validated, and bounded for webhook input and network delivery. The container-stack contract is documented; API and web image work are next in parallel, followed by health-aware Compose wiring and an operations runbook. The authenticated profile contract now defines a private, display-name-only update; backend and frontend implementation remain separate issues `#142` and `#143`.
 
 ## Latest Completed Work
+
+- Date: 2026-07-19
+- GitHub Issue: `#113` - https://github.com/VietCT04/TicketPass/issues/113
+- Summary: Defined the documentation-only seller listing-cancellation contract. The future no-body authenticated endpoint permits only an owning seller's atomic `ACTIVE -> CANCELLED` transition under the shared listing-first lock, returns a safe no-store idempotent response, and writes one transactional `LISTING_CANCELLED` audit event. Backend and seller UI implementation remain issues `#114` and `#115`; no schema migration or application code was added.
+- Files changed:
+  - `docs/API.md`
+  - `docs/DATABASE.md`
+  - `docs/SECURITY.md`
+  - `docs/flows/LISTING_STATUS_FLOW.md`
+  - `docs/flows/SELLER_LISTING_FLOW.md`
+  - `docs/CONCERNS.md`
+  - `docs/CONTINUITY.md`
 
 - Date: 2026-07-19
 - GitHub Issue: `#93` - https://github.com/VietCT04/TicketPass/issues/93
@@ -628,8 +640,8 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 
 ## Active Work
 
-- Current GitHub Issue: `#93` - https://github.com/VietCT04/TicketPass/issues/93
-- Current goal: Review and merge the seller ticket transfer-confirmation backend.
+- Current GitHub Issue: `#113` - https://github.com/VietCT04/TicketPass/issues/113
+- Current goal: Review and merge the seller listing-cancellation contract.
 - Current blocker: None.
 
 ## Important User Stories
@@ -678,5 +690,5 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 ## Next Recommended Steps
 
 1. Build the protected seller transfer-confirmation flow in issue `#94`.
-2. Implement buyer receipt confirmation and settlement release through issues `#95` to `#97`.
-3. Implement timeout and review handling through issues `#98` to `#100`.
+2. Implement the protected seller listing-cancellation backend in issue `#114`, followed by the seller control in issue `#115`.
+3. Implement buyer receipt confirmation and settlement release through issues `#95` to `#97`.

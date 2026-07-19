@@ -144,6 +144,18 @@ Issue `#82` defines the authenticated `GET /api/me/listings` contract; issue `#8
 - This safe `GET` does not use the unsafe-request origin check. Credentialed browser requests still use the configured cookie and CORS protections.
 - The frontend access guard is a usability control only: the backend remains the sole authority for session authentication, seller ownership, filtering, and pagination. A later `401` redirects through the allowlisted `/my-listings` login-return path.
 
+## Seller Listing Cancellation Security
+
+Issue `#113` defines the documentation-only contract for `POST /api/listings/{listingId}/cancel`; issue `#114` will implement the backend and issue `#115` the seller UI.
+
+- Spring Security must explicitly require authentication for `POST /api/listings/*/cancel` before the final deny rule. The controller receives `AuthenticatedUser`; the request has no body and accepts no client-provided seller, ownership, lifecycle, reservation, order, payment, or ticket values.
+- The service must pessimistically lock the listing first, then compare `listing.seller.id` with `AuthenticatedUser.id()`. A missing listing and one owned by another seller use the same controlled `404` response.
+- Only an owned `ACTIVE` listing may transition to `CANCELLED`. An owned `CANCELLED` listing is an idempotent no-write response; `RESERVED`, `SOLD`, `EXPIRED`, and `DRAFT` return a generic `409` without disclosing buyer, reservation, order, or payment state.
+- The listing-first lock order is shared with reservation creation, so cancellation must not query or lock reservation state first. Exactly one racing `ACTIVE -> CANCELLED` or `ACTIVE -> RESERVED` transition may win.
+- The first successful transition writes only the actor ID, `LISTING_CANCELLED`, `LISTING`, listing ID, and captured server timestamp to the immutable audit table in the same transaction. Failed audit persistence must roll back cancellation.
+- Successful responses use `Cache-Control: no-store` and expose only listing ID, `CANCELLED` status, and `updated_at`. Responses and operational logs must exclude seller and buyer identities, public notes, reservation/order/payment/provider/audit details, cookies, sessions, credentials, and ticket payload data.
+- This unsafe cookie-authenticated route remains protected by the existing exact trusted-origin filter. The frontend may not treat a visible `ACTIVE` status as authorization or optimistically persist a cancelled state.
+
 ## Authentication And Ownership
 
 - Listing creation requires authentication.

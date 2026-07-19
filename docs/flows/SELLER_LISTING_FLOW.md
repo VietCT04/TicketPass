@@ -73,6 +73,19 @@ Issue `#35` adds the frontend `/sell` event selector and selected-event summary.
 
 After creating listings, an authenticated seller can use the read-only `/my-listings` page from issue `#84` to review only their stored listing metadata and current listing status. The page relies on the server-authoritative `GET /api/me/listings` ownership, ordering, filtering, and pagination contract; it does not add any listing mutation, payment, payout, transfer, reveal, or buyer details.
 
+## Cancel Own Unsold Listing
+
+Issue `#113` defines the future documentation-only seller cancellation contract. Backend implementation remains `#114`; the confirmation control belongs to `#115`.
+
+1. The seller requests `POST /api/listings/{listingId}/cancel` with credentials and no request body.
+2. The backend derives seller identity from `AuthenticatedUser`, captures one server timestamp, locks the listing first, then checks ownership and current status.
+3. An owned `ACTIVE` listing becomes terminal `CANCELLED`; its `updated_at` and one immutable `LISTING_CANCELLED` audit event use the captured timestamp in the same transaction.
+4. An owned `CANCELLED` listing returns the unchanged safe response without another write or audit event.
+5. `RESERVED`, `SOLD`, `EXPIRED`, and `DRAFT` return a generic conflict without changing reservations, orders, payments, provider records, or ticket data.
+6. A missing or non-owned listing returns the same controlled not-found response. The response exposes only listing ID, `CANCELLED`, and `updated_at` and sends `Cache-Control: no-store`.
+
+Reservation creation and cancellation use the same listing-first lock. If a buyer reservation wins first, seller cancellation cannot bypass the reservation or checkout flow. The seller may retry only after the authoritative flow restores the listing to `ACTIVE`.
+
 ## Public Listing Metadata
 
 The public listing may expose:
@@ -131,6 +144,8 @@ The listing flow must not create a path where a `RESERVED`, `SOLD`, `CANCELLED`,
 Listing creation produces an auditable record showing who created the listing, what listing was created, and when it happened.
 
 GitHub Issue `#5` implements this as a minimal `LISTING_CREATED` audit event.
+
+Issue `#113` defines `LISTING_CANCELLED` for the first future seller-owned cancellation only. It records the seller actor ID, listing entity type and ID, and captured server timestamp; it contains no seller notes, buyer, reservation, order, payment, provider, request, credential, or ticket data.
 
 The listing insert and audit insert must happen in the same transaction. If audit insertion fails, listing creation must roll back.
 

@@ -1,5 +1,27 @@
 # Concerns
 
+## CONCERN-0033: Draft And Administrative Listing Cancellation Are Undefined
+
+Date: 2026-07-19
+Related User Story: `docs/user-stories/US-0016-cancel-own-listing.md`
+Related GitHub Issues: `#113` - https://github.com/VietCT04/TicketPass/issues/113, `#114` - https://github.com/VietCT04/TicketPass/issues/114, `#115` - https://github.com/VietCT04/TicketPass/issues/115
+
+### Concern
+
+The approved MVP seller-cancellation contract allows only an authenticated owner to transition an `ACTIVE` listing to `CANCELLED`. It intentionally does not define draft cancellation, administrative action, terminal-state recovery, notifications, or a dedicated `cancelled_at` field.
+
+### Risk
+
+Adding a broad cancellation path later could bypass reservation, checkout, paid-sale, audit, or authorization safeguards, or create inconsistent terminal-history semantics.
+
+### Recommendation
+
+Keep issue `#114` limited to the approved `ACTIVE -> CANCELLED` seller transition. Define each additional actor, status transition, timestamp, notification, and recovery behavior in a separately reviewed issue before implementation.
+
+### Status
+
+Open
+
 ## CONCERN-0032: Display-Name Moderation And Impersonation Policy Is Deferred
 
 Date: 2026-07-19

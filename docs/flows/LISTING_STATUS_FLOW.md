@@ -10,6 +10,9 @@ Reservation contract: `docs/user-stories/US-0006-reserve-available-ticket-listin
 Checkout contract: `docs/user-stories/US-0007-complete-checkout-for-reserved-ticket.md`
 GitHub Issue: `#53` - https://github.com/VietCT04/TicketPass/issues/53
 
+Seller cancellation contract: `docs/user-stories/US-0016-cancel-own-listing.md`
+GitHub Issue: `#113` - https://github.com/VietCT04/TicketPass/issues/113
+
 ## Goal
 
 Define listing status rules that prevent the same ticket listing from being sold twice.
@@ -38,7 +41,7 @@ Only `ACTIVE` listings can start a buyer purchase or reservation attempt.
 | `DRAFT` | `ACTIVE` | Seller publishes a complete, valid listing. | Requires all listing validation rules. |
 | `DRAFT` | `CANCELLED` | Seller discards draft. | Terminal. |
 | `ACTIVE` | `RESERVED` | Authenticated buyer creates a reservation. | Creates a separate `ACTIVE` reservation with a server-controlled 10-minute expiry; must be atomic server-side. |
-| `ACTIVE` | `CANCELLED` | Seller cancels before reservation or sale. | Terminal. |
+| `ACTIVE` | `CANCELLED` | Authenticated owning seller cancels an unsold listing. | Issue `#113` contract: one transaction locks listing first, then checks ownership and status; first success writes one audit event. An owning `CANCELLED` retry is idempotent. |
 | `ACTIVE` | `EXPIRED` | Event or listing window expires. | Terminal. |
 | `RESERVED` | `ACTIVE` | Reservation expiry or a trusted provider terminal failure/cancellation releases the still-reserved checkout path. | Release only when the listing is still `RESERVED` by that path; never overwrite `SOLD`, `CANCELLED`, `EXPIRED`, or another later state. Browser cancellation redirects are non-authoritative. |
 | `RESERVED` | `SOLD` | Verified provider webhook or equivalent trusted server-to-server confirmation completes payment. | Atomically paired with `PAYMENT_PENDING -> PAID` after server-side revalidation. Terminal. |
@@ -63,6 +66,7 @@ These rules must always hold:
 - Only `ACTIVE` listings can be reserved or purchased.
 - `RESERVED`, `SOLD`, `CANCELLED`, and `EXPIRED` listings must not be purchasable.
 - A transition from `ACTIVE` to `RESERVED` is atomic and server-side under a pessimistic listing lock, with a partial unique active-reservation index as an integrity safeguard.
+- Seller cancellation also locks the listing first. A concurrent `ACTIVE -> CANCELLED` and `ACTIVE -> RESERVED` transition cannot both succeed: the first lock holder determines the authoritative status, and the later operation revalidates it.
 - Concurrent buyers must not be able to reserve the same listing.
 - Reservation ownership must be stored in a separate reservation record linked to the listing and authenticated buyer.
 - Only one valid `ACTIVE` reservation may own a listing at a time.
@@ -93,6 +97,7 @@ Recommended implementation direction:
 - Treat zero updated rows or stale state as a failed reservation.
 - Return the existing active reservation for a same-buyer retry without extending its expiry.
 - Issue `#55` reconciles expired active reservations during both scheduled cleanup and a new reservation attempt. It flushes the expired row before inserting a replacement active row, so the partial active-reservation uniqueness rule remains valid.
+- Issue `#113` defines seller cancellation as `ACTIVE -> CANCELLED` only. It must not lock, cancel, expire, or otherwise reconcile a reservation, order, payment, or ticket payload; a seller retries after the authoritative reservation or checkout flow returns an ineligible listing to `ACTIVE`.
 - Do not allow client-provided status changes for sensitive transitions.
 
 ## Relationship To Other Flows
@@ -100,6 +105,7 @@ Recommended implementation direction:
 - Listing creation starts as `ACTIVE` in the MVP contract from `docs/API.md`.
 - Issue `#53` defines `ACTIVE -> RESERVED` as an authenticated buyer's 10-minute server-controlled reservation. Issues `#54` and `#55` implement creation, expiry, and guarded reactivation, but do not define checkout or payment.
 - Issue `#65` defines provider-neutral checkout and payment authority. Issues `#66` through `#70` own persistence, provider sessions, verified completion, expiry/failure coordination, and payment operations.
+- Issue `#113` defines the seller-owned cancellation contract; issue `#114` will implement the protected atomic transition and issue `#115` will add its UI control.
 - Checkout may drive `RESERVED -> SOLD` only through verified provider confirmation, or `RESERVED -> ACTIVE` only through an approved trusted expiry/failure release flow.
 - Ticket reveal must not occur just because a listing is `RESERVED`.
 - Disputes and admin actions may need additional transitions in later issues.
