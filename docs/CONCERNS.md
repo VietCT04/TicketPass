@@ -118,7 +118,7 @@ Related GitHub Issues: `#92` - https://github.com/VietCT04/TicketPass/issues/92,
 
 ### Concern
 
-The future fulfilment migration must create one record for every existing paid order from its trusted `paid_at`, including orders whose derived 15-minute deadline has already elapsed.
+Issue `#93` creates one fulfilment record for every existing paid order from its trusted `paid_at`, including orders whose derived 15-minute deadline has already elapsed. Those elapsed records remain durably awaiting transfer until separately approved timeout handling changes them.
 
 ### Risk
 
@@ -126,7 +126,7 @@ Inventing a missing payment timestamp would create an unauditable deadline. Leav
 
 ### Recommendation
 
-Issue `#93` must fail migration if a paid order lacks `paid_at`, backfill only from that trusted timestamp, and preserve the deadline without extension. Issue `#99` should process eligible past-due backfilled records through the separately approved timeout transition before operational rollout.
+Issue `#93` fails migration if a paid order lacks `paid_at`, backfills only from that trusted timestamp, and preserves the deadline without extension. Issue `#99` should process eligible past-due backfilled records through the separately approved timeout transition before operational rollout.
 
 ### Status
 

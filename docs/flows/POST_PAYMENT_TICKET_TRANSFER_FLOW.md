@@ -3,7 +3,7 @@
 ## Source
 
 User Story: `docs/user-stories/US-0011-seller-transfers-paid-ticket.md`  
-GitHub Issue: `#92` - https://github.com/VietCT04/TicketPass/issues/92
+GitHub Issues: `#92` - https://github.com/VietCT04/TicketPass/issues/92, `#93` - https://github.com/VietCT04/TicketPass/issues/93
 
 ## Goal
 
@@ -37,7 +37,7 @@ One captured server `Instant` supplies `paid_at`, fulfilment creation time, and 
 
 ## Seller Confirmation
 
-The future bodyless endpoint is:
+The bodyless backend endpoint is:
 
 ```text
 POST /api/seller/orders/{orderId}/transfer-confirmation
@@ -49,13 +49,13 @@ The server derives the seller from the authenticated session and locks in this o
 listing -> reservation -> order -> fulfilment
 ```
 
-It confirms only when the seller owns the paid, sold order; settlement remains `FUNDS_HELD`; transfer is eligible; and captured server time is strictly before the deadline. The first eligible request changes `AWAITING_SELLER_TRANSFER` to `SELLER_CONFIRMED_TRANSFER` and records an immutable `seller_confirmed_at`. A repeat returns the existing progress without writing a new timestamp.
+It confirms only when the seller owns the paid, sold order; the fulfilment deadline matches `paid_at + 15 minutes`; settlement remains `FUNDS_HELD`; transfer is eligible; and captured server time is strictly before the deadline. The first eligible request changes `AWAITING_SELLER_TRANSFER` to `SELLER_CONFIRMED_TRANSFER` and records an immutable `seller_confirmed_at`. A coherent repeat returns the existing progress without writing a new timestamp, including after the deadline.
 
 Seller confirmation is a claim that the transfer was performed. It is not proof that the buyer received a valid ticket, does not reveal ticket data, and cannot release or pay settlement.
 
 ## Deferred Outcomes
 
-At or after the deadline, confirmation is ineligible. Timeout transition and reconciliation are deferred to issues `#98` and `#99`. Buyer receipt confirmation and settlement release are deferred to issues `#95` through `#97`. Timed-out, review-required, unpaid, failed, cancelled, expired, missing, and inconsistent orders must not be reactivated by seller confirmation.
+At or after the deadline, awaiting confirmation is ineligible and the endpoint returns a controlled conflict without writing a timeout state. Timeout transition and reconciliation are deferred to issues `#98` and `#99`. Buyer receipt confirmation and settlement release are deferred to issues `#95` through `#97`. Timed-out, review-required, unpaid, failed, cancelled, expired, missing, and inconsistent orders must not be reactivated by seller confirmation.
 
 ## Privacy And Errors
 

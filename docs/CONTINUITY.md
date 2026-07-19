@@ -2,9 +2,25 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with authenticated seller listings, event browsing/detail, buyer reservations, protected browser checkout recovery, authenticated missing-event requests from the `/sell` fallback, and a protected read-only seller own-listings page backed by the server-authoritative API. Mock payment events are delivered through signed HTTP webhooks and an atomic receipt ledger; verified, timely payment success completes the order and sells the reserved listing. Checkout reconciliation handles trusted failure, cancellation, and expiry without releasing inventory when payment requires manual action, and authenticated buyers can reload their safe server-authoritative order state. The public event-search contract now defines optional server-authoritative text, city, and time-window filters for the existing browse endpoint; its backend and frontend work remain issues `#110` and `#111`. The approved post-payment lifecycle keeps payment, ticket transfer, and settlement separate; persistence and seller confirmation remain issue `#93`, with buyer receipt and timeout handling separately deferred. The buyer order-progress contract defines a read-only, server-owned account-history view with separate payment, transfer, and settlement dimensions. The mock lifecycle is fail-closed at the route boundary, startup-validated, and bounded for webhook input and network delivery. The container-stack contract is documented; API and web image work are next in parallel, followed by health-aware Compose wiring and an operations runbook. The authenticated profile contract now defines a private, display-name-only update; backend and frontend implementation remain separate issues `#142` and `#143`.
+TicketPass is an early monorepo scaffold with authenticated seller listings, event browsing/detail, buyer reservations, protected browser checkout recovery, authenticated missing-event requests from the `/sell` fallback, and a protected read-only seller own-listings page backed by the server-authoritative API. Mock payment events are delivered through signed HTTP webhooks and an atomic receipt ledger; verified, timely payment success completes the order, sells the reserved listing, and atomically creates held post-payment fulfilment with a 15-minute seller-transfer deadline. Authenticated sellers can make a safe, idempotent transfer confirmation before that deadline; buyer receipt, settlement release, and timeout reconciliation remain separately deferred. Checkout reconciliation handles trusted failure, cancellation, and expiry without releasing inventory when payment requires manual action, and authenticated buyers can reload their safe server-authoritative order state. The public event-search contract now defines optional server-authoritative text, city, and time-window filters for the existing browse endpoint; its backend and frontend work remain issues `#110` and `#111`. The buyer order-progress contract defines a read-only, server-owned account-history view with separate payment, transfer, and settlement dimensions. The mock lifecycle is fail-closed at the route boundary, startup-validated, and bounded for webhook input and network delivery. The container-stack contract is documented; API and web image work are next in parallel, followed by health-aware Compose wiring and an operations runbook. The authenticated profile contract now defines a private, display-name-only update; backend and frontend implementation remain separate issues `#142` and `#143`.
 
 ## Latest Completed Work
+
+- Date: 2026-07-19
+- GitHub Issue: `#93` - https://github.com/VietCT04/TicketPass/issues/93
+- Summary: Implemented durable one-to-one order fulfilment persistence, paid-order backfill, atomic trusted-payment initialization, and the authenticated seller transfer-confirmation endpoint. The endpoint locks and revalidates marketplace state, records only the seller claim before the fixed deadline, returns safe no-store progress, and never releases settlement. Buyer receipt, settlement release, timeout transitions, and the seller UI remain separate issues.
+- Files changed:
+  - `apps/api/src/main/java/com/ticketpass/api/auth/SecurityConfig.java`
+  - `apps/api/src/main/java/com/ticketpass/api/order/*`
+  - `apps/api/src/main/java/com/ticketpass/api/payment/webhook/MockWebhookService.java`
+  - `apps/api/src/main/resources/db/migration/V10__create_order_fulfillments.sql`
+  - `docs/API.md`
+  - `docs/DATABASE.md`
+  - `docs/SECURITY.md`
+  - `docs/flows/POST_PAYMENT_TICKET_TRANSFER_FLOW.md`
+  - `docs/user-stories/US-0011-seller-transfers-paid-ticket.md`
+  - `docs/CONCERNS.md`
+  - `docs/CONTINUITY.md`
 
 - Date: 2026-07-19
 - GitHub Issue: `#141` - https://github.com/VietCT04/TicketPass/issues/141
@@ -612,8 +628,8 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 
 ## Active Work
 
-- Current GitHub Issue: `#141` - https://github.com/VietCT04/TicketPass/issues/141
-- Current goal: Review and merge the documentation-only authenticated profile-update contract.
+- Current GitHub Issue: `#93` - https://github.com/VietCT04/TicketPass/issues/93
+- Current goal: Review and merge the seller ticket transfer-confirmation backend.
 - Current blocker: None.
 
 ## Important User Stories
@@ -655,12 +671,12 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 - Hosted payment deadline support and late successful payment handling remain unresolved; see `CONCERN-0021`.
 - Audit retention, deletion, export, and compliance rules are not defined.
 - Buyer order-progress lists are intentionally read-only snapshots; deadline freshness must remain owned by bounded reconciliation and the authoritative single-order read; see `CONCERN-0025`.
-- Paid-order fulfilment backfill and elapsed transfer deadlines require the controlled migration and timeout work in issues `#93` and `#99`; see `CONCERN-0027`.
+- Elapsed transfer deadlines require the controlled timeout work in issue `#99`; see `CONCERN-0027`.
 - Container image portability, image maintenance, single-host resilience, and Flyway replica coordination need follow-up; see `CONCERN-0028` through `CONCERN-0031`.
 - Display-name moderation, impersonation, reserved-name, and stronger Unicode policy are deferred; see `CONCERN-0032`.
 
 ## Next Recommended Steps
 
-1. Implement the authenticated profile-update backend in issue `#142`.
-2. Implement the protected account profile form in issue `#143` after `#142`.
-3. Implement the API image and external runtime configuration in issue `#105`, followed by web image work in `#106` and Compose wiring in `#107`.
+1. Build the protected seller transfer-confirmation flow in issue `#94`.
+2. Implement buyer receipt confirmation and settlement release through issues `#95` to `#97`.
+3. Implement timeout and review handling through issues `#98` to `#100`.
