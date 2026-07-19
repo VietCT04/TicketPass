@@ -50,6 +50,15 @@ public interface EventRepository extends JpaRepository<EventEntity, UUID> {
                     from ListingEntity listing
                     join listing.event event
                     where """ + PublicListingEligibility.JPQL_PREDICATE + """
+                        and (
+                            :queryPattern is null
+                            or lower(event.name) like :queryPattern escape '!'
+                            or lower(event.venue) like :queryPattern escape '!'
+                            or lower(event.city) like :queryPattern escape '!'
+                        )
+                        and (:city is null or lower(event.city) = :city)
+                        and (:startsFrom is null or event.startsAt >= :startsFrom)
+                        and (:startsBefore is null or event.startsAt < :startsBefore)
                     group by event.id, event.name, event.startsAt, event.venue, event.city
                     order by event.startsAt asc, event.id asc
                     """,
@@ -58,11 +67,24 @@ public interface EventRepository extends JpaRepository<EventEntity, UUID> {
                     from ListingEntity listing
                     join listing.event event
                     where """ + PublicListingEligibility.JPQL_PREDICATE + """
+                        and (
+                            :queryPattern is null
+                            or lower(event.name) like :queryPattern escape '!'
+                            or lower(event.venue) like :queryPattern escape '!'
+                            or lower(event.city) like :queryPattern escape '!'
+                        )
+                        and (:city is null or lower(event.city) = :city)
+                        and (:startsFrom is null or event.startsAt >= :startsFrom)
+                        and (:startsBefore is null or event.startsAt < :startsBefore)
                     """)
     Page<EventBrowseRow> browsePublicEvents(
             @Param("status") ListingStatus status,
             @Param("currency") String currency,
             @Param("now") Instant now,
+            @Param("queryPattern") String queryPattern,
+            @Param("city") String city,
+            @Param("startsFrom") Instant startsFrom,
+            @Param("startsBefore") Instant startsBefore,
             Pageable pageable);
 
     @Query("""

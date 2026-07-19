@@ -1143,7 +1143,7 @@ Returns event summaries for events with at least one browse-eligible listing.
 
 This endpoint is public, but all event availability, visibility, aggregate calculation, pagination, and ordering must be enforced server-side.
 
-Issue `#26` implements the original paginated endpoint using a database-side grouped query over events and browse-eligible listings. Issue `#109` defines the optional search and filter contract below; backend implementation belongs to issue `#110` and frontend controls belong to issue `#111`.
+Issue `#26` implements the original paginated endpoint using a database-side grouped query over events and browse-eligible listings. Issue `#109` defines the optional search and filter contract below; issue `#110` implements the backend filters, while frontend controls remain issue `#111`.
 
 #### Query Parameters
 
@@ -1314,7 +1314,7 @@ Issue `#44` defines this contract only. Backend implementation belongs to issue 
 | Field | Type | Required | Default | Notes |
 |---|---|---:|---:|---|
 | `page` | integer | No | `1` | 1-based page number. Minimum `1`. |
-| `page_size` | integer | No | `20` | Minimum `1`. Maximum `50`. |
+| `page_size` | integer | No | `20` | Minimum `1`. Maximum `100`. |
 
 Invalid or non-integer pagination values return `400 Bad Request`.
 

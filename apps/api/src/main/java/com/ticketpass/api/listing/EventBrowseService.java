@@ -18,13 +18,24 @@ public class EventBrowseService {
     }
 
     @Transactional(readOnly = true)
-    public EventBrowseResponse browse(String rawPage, String rawPageSize) {
+    public EventBrowseResponse browse(
+            String rawPage,
+            String rawPageSize,
+            String rawQuery,
+            String rawCity,
+            String rawStartsFrom,
+            String rawStartsBefore) {
         PublicPagination pagination = PublicPagination.parse(rawPage, rawPageSize);
+        EventBrowseFilters filters = EventBrowseFilters.parse(rawQuery, rawCity, rawStartsFrom, rawStartsBefore);
         Instant now = clock.instant();
         Page<EventBrowseRow> events = eventRepository.browsePublicEvents(
                 ListingStatus.ACTIVE,
                 ListingEntity.MVP_CURRENCY,
                 now,
+                filters.queryLikePattern(),
+                filters.normalizedCity(),
+                filters.startsFrom(),
+                filters.startsBefore(),
                 pagination.toPageRequest());
         return EventBrowseResponse.from(events, pagination.page(), pagination.pageSize());
     }

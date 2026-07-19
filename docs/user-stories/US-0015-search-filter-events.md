@@ -52,7 +52,7 @@ TicketPass already has a public event-first browse API and page. They show upcom
 ## Delivery Order
 
 1. Complete `#109`.
-2. Complete `#110`.
+2. Issue `#110` implements database-backed search and filters.
 3. Complete `#111`.
 
 ## Concerns

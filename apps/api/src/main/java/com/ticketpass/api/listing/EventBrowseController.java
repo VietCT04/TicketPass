@@ -18,7 +18,11 @@ public class EventBrowseController {
     @GetMapping
     public EventBrowseResponse browse(
             @RequestParam(name = "page", required = false) String page,
-            @RequestParam(name = "page_size", required = false) String pageSize) {
-        return eventBrowseService.browse(page, pageSize);
+            @RequestParam(name = "page_size", required = false) String pageSize,
+            @RequestParam(name = "q", required = false) String query,
+            @RequestParam(name = "city", required = false) String city,
+            @RequestParam(name = "starts_from", required = false) String startsFrom,
+            @RequestParam(name = "starts_before", required = false) String startsBefore) {
+        return eventBrowseService.browse(page, pageSize, query, city, startsFrom, startsBefore);
     }
 }
