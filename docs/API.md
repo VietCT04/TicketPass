@@ -827,7 +827,7 @@ Issue `#25` defines this public browse contract. Backend implementation belongs 
 
 Issue `#31` defines the authenticated seller event autocomplete contract. Issue `#33` implements the backend endpoint, and frontend autocomplete implementation belongs to issue `#35`.
 
-Issue `#77` defines the authenticated missing-event request contract. Issue `#78` implements the backend endpoint and persistence, and seller UI implementation belongs to issue `#79`.
+Issue `#77` defines the authenticated missing-event request contract. Issue `#78` implements the backend endpoint and persistence, and seller UI implementation belongs to issue `#79`. Issue `#145` defines the future admin-review and seller-tracking contract; backend delivery proceeds through issues `#146` to `#149`, and seller tracking through `#150` and `#151`.
 
 ### Create Missing-Event Request
 
@@ -907,6 +907,47 @@ An obvious duplicate is not a conflict and returns `200 OK`. Errors must not exp
 An event-request ID is never an event ID. `POST /api/listings` continues accepting only an existing `events.id`; a pending request must not bypass the existing seller event-selection and listing-creation rules.
 
 Submitted text and URLs are untrusted metadata. Responses and logs must exclude requester identity, email, session or credential data, ticket data, request bodies, raw submitted text, raw official URLs, normalized values, and moderation internals. Logs may contain only safe operational identifiers, creation/recovery outcome, and controlled error category.
+
+### Admin Event-Request Review
+
+Issue `#145` defines this contract only. All endpoints below require an authenticated persisted `ADMIN` role, are subject to the existing trusted-origin protection when unsafe, send `Cache-Control: no-store`, and never fetch an `official_url`.
+
+```http
+GET  /api/admin/event-requests
+GET  /api/admin/event-requests/{requestId}
+POST /api/admin/event-requests/{requestId}/approve-create
+POST /api/admin/event-requests/{requestId}/approve-link
+POST /api/admin/event-requests/{requestId}/reject
+```
+
+#### Admin Queue And Detail
+
+`GET /api/admin/event-requests` accepts bounded 1-based `page` and `page_size`, an optional exact `status` (`PENDING`, `APPROVED`, or `REJECTED`), and optional bounded literal text `q`. Filtering, counting, ordering, and pagination occur in the database. A pending queue is ordered `created_at ASC, id ASC`; terminal rows are ordered `reviewed_at DESC, id DESC`.
+
+The queue and detail response expose request metadata, the untrusted `official_url`, exact pending-sibling count, status, and safe resolution fields. They exclude requester identity, normalized values, sessions, ticket data, listings, payments, and reviewer identity. The service must not follow, inspect, scrape, or trust the submitted URL.
+
+#### Resolve A Request
+
+`approve-create` accepts corrected `event_name`, an offset-bearing future `starts_at`, `venue`, and `city`. It creates or recovers the one exact normalized event identity. `approve-link` accepts exactly one existing future `event_id`. `reject` accepts one bounded controlled `rejection_reason` and an optional bounded seller-facing `resolution_message` of at most 500 characters.
+
+Resolution captures one server timestamp and completes in one transaction: serialize the exact request identity, lock and revalidate the target and exact pending siblings, create/recover or validate the event, resolve the target and matching siblings, persist the required audit rows, then commit once. The unique event-identity index is the final duplicate guard. Similar but nonexact requests are never automatically resolved.
+
+Repeated identical terminal decisions return the current safe state without changing timestamps or audit history. A conflicting terminal decision returns `409 Conflict`; concurrent decisions allow exactly one winner. Missing, non-admin, and non-owned internal targets must use controlled responses that do not expose request ownership or catalogue internals.
+
+`approve-create` produces `CREATED_EVENT` for the direct request and `EXACT_MATCHED` for resolved pending siblings. `approve-link` produces `LINKED_EVENT` for the direct request and `EXACT_MATCHED` for resolved pending siblings. A direct rejection produces `REJECTED` and never resolves siblings.
+
+### Seller Event-Request Tracking
+
+```http
+GET /api/me/event-requests
+GET /api/me/event-requests/{requestId}
+```
+
+These authenticated seller endpoints return only rows whose `requester_user_id` is the session-derived user. Results are ordered `created_at DESC, id DESC` and support bounded database-side pagination. `PENDING` exposes the seller-safe request metadata. `APPROVED` additionally exposes the safe resolved-event summary. `REJECTED` exposes only the seller-facing reason and optional message.
+
+Seller responses exclude reviewer identity, sibling data, normalized fields, audit rows, other requesters, sessions, ticket data, listings, payments, and moderation internals. A missing or non-owned request returns the same controlled not-found response. All successful responses send `Cache-Control: no-store`.
+
+An approved seller may return to `/sell?event_request_id={owned-request-id}`. The seller form loads the owned request from the server and preselects only its server-returned resolved event. The request ID is never treated as an event ID, and normal listing creation continues to revalidate event and listing rules server-side.
 
 ### Event Autocomplete
 

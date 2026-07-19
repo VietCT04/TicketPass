@@ -376,6 +376,16 @@ Issue `#78` implements `POST /api/event-requests` as an authenticated seller req
 
 Issue `#79` adds the authenticated seller UI for this endpoint within `/sell`. Request state stays only in React memory, and the client sends only the five documented metadata fields with included credentials and no-store caching. It bounds client-side input and renders only strict, safe response fields. It must never render an official URL as a link, expose raw error bodies, persist request details, or treat a pending request as an event selection or listing authorization.
 
+## Administrative Event-Request Review Security
+
+Issue `#145` defines a future persisted `USER`/`ADMIN` role model. An authenticated session identifies a user; the backend then loads the server-controlled `users.account_role` and protects `/api/admin/**` with `ADMIN` authority. New and existing users default to `USER`. There is no application endpoint, request field, browser control, or client claim that can create or change an admin role; operator provisioning is a separate controlled process.
+
+- Admin queue, detail, and review responses must exclude requester identity, reviewer identity, normalized values, sibling ownership, sessions, credentials, listings, payments, and ticket data.
+- Submitted event text and `official_url` remain untrusted. The backend must not fetch, follow, scrape, or use them as external verification. Rendering must treat them as untrusted text.
+- Resolution uses transaction-scoped locks and an exact normalized event-identity unique index. A client cannot choose a sibling set, alter review timestamps, supply an actor, or bypass the one-terminal-decision rule.
+- Audit records retain only actor, action, entity type, entity ID, and server timestamp. They must not retain submitted metadata, URLs, normalized values, rejection reasons, resolution messages, or request bodies.
+- Seller request tracking derives ownership only from the authenticated principal. A seller-supplied request ID cannot select an event, reveal another seller's request, or bypass the existing listing eligibility and event validation rules.
+
 ## Event-Linked Listing Creation Security
 
 Issue `#32` defines listing creation as an event-linked operation, and issue `#34` implements the backend enforcement. Sellers submit `event_id` for an existing TicketPass event and ticket-specific listing data; they do not submit event identity fields that would create or redefine an event record.

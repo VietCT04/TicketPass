@@ -50,7 +50,7 @@ Out of scope:
 2. Frontend requires the seller to search for and select an existing event through the authenticated event autocomplete flow.
 3. The event selector searches `GET /api/events/autocomplete` only after at least three trimmed characters and uses a short debounce.
 4. If autocomplete returns no results, the seller may open the inline missing-event request panel. It collects only event name, local date/time, an editable bounded UTC offset, venue, city, and an optional official HTTPS URL, then submits `POST /api/event-requests` with credentials and no-store caching.
-5. A missing-event request is `PENDING` catalogue-review metadata only. Success shows safe request details and must state that no event or listing was created. It must keep `selectedEvent = null`, never fabricate an `event_id`, and never submit the listing automatically.
+5. A missing-event request is `PENDING` catalogue-review metadata only. Success shows safe request details and must state that no event or listing was created. It must keep `selectedEvent = null`, never fabricate an `event_id`, and never submit the listing automatically. Issue `#145` defines later seller-owned request tracking: an approved request may continue through `/sell?event_request_id={owned-request-id}`, which loads only the server-returned resolved event; pending and rejected requests remain ineligible.
 6. The selected existing event supplies `event_id` for listing creation. Free-text input and an event-request ID do not count as a valid event selection. The create-listing action remains disabled until a real event is selected.
 7. Frontend collects listing metadata:
    - Event platform or ticket provider.
@@ -70,6 +70,8 @@ Out of scope:
 17. Backend returns public listing metadata only.
 
 Issue `#35` adds the frontend `/sell` event selector and selected-event summary. Issue `#6` extends the same page with ticket-specific fields, listing submission, same-page success confirmation, and a create-another-listing action. Issue `#79` adds the missing-event request fallback without changing listing eligibility.
+
+Issue `#145` defines the future approval continuation only. The request ID never becomes an `event_id`; the browser must load the owned request and select only its safe server-returned resolved event. `POST /api/listings` remains independently authoritative for event eligibility and listing validation. Seller request history and the continuation UI remain issues `#150` and `#151`.
 
 After creating listings, an authenticated seller can use the read-only `/my-listings` page from issue `#84` to review only their stored listing metadata and current listing status. The page relies on the server-authoritative `GET /api/me/listings` ownership, ordering, filtering, and pagination contract; it does not add any listing mutation, payment, payout, transfer, reveal, or buyer details.
 
