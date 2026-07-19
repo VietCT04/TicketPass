@@ -1,58 +1,69 @@
-# US-0023: Update Account Profile
+# US-0023 — Update Account Display Name
 
 ## User Story
 
-As an authenticated user, I want to update my display name so that my TicketPass account shows the name I want without changing my login or security settings.
+As an authenticated user, I want to correct my TicketPass display name so that my account shows the name I currently want to use without changing my login credentials or active sessions.
 
 ## Context
 
-TicketPass already stores and returns a display name during signup, login, and current-user reads, but users cannot correct it. This story introduces only a private, server-authoritative display-name update. Email, credentials, authorization, account state, and sessions need separate security contracts.
+TicketPass stores `users.display_name` and returns it through signup, login, and `GET /api/me`. The value is currently fixed after signup even though it is ordinary profile data rather than account identity or authentication state.
+
+A focused profile update should therefore change only the existing display-name field, preserve email and credentials, keep all sessions active, and reuse the current authenticated-user response shape.
 
 ## Scope
 
-- Let an authenticated user replace only their own display name through the approved private profile contract.
-- Validate a required string of at most 120 raw-input characters, trim leading and trailing whitespace, and reject a value empty after trimming.
-- Preserve internal whitespace and keep the name untrusted display text.
-- Make normalized repeats idempotent without changing `updated_at`, session state, cookies, or audit records.
-- Return the existing safe authenticated-user representation as the authoritative result.
-- Keep ownership, locking, timestamps, origin protection, and response privacy server-authoritative.
+- Let an authenticated user replace their own display name through `PUT /api/me/profile`.
+- Accept exactly one mutable field: `display_name`.
+- Derive account ownership exclusively from authenticated server context.
+- Trim the submitted display name, require a non-empty result, and enforce the existing 120-character maximum.
+- Keep user ID, email, password hash, roles, creation time, account state, and session records server-controlled.
+- Serialize the update through the same user-row lock used by other account mutations.
+- Treat normalized no-op requests as idempotent without changing `updated_at`.
+- Return the existing safe authenticated-user representation after success.
+- Keep every valid existing session active and unchanged.
+- Add a focused account-profile form that replaces current-user UI state from the server response.
+- Keep profile-edit state out of browser persistence and URLs.
+- Reuse the existing users table without a migration or audit event.
 
-## Out Of Scope
+## Out of Scope
 
-- Email, password, role, permission, account-status, session, or account-deletion changes.
-- Profile images, usernames, aliases, biographies, contact details, public profiles, moderation, reserved-name rules, notifications, analytics, or profile history.
-- Listing, reservation, order, payment, ticket transfer, reveal, escrow, settlement, dispute, or audit changes.
+- Changing email, password, roles, permissions, ownership, or account status.
+- Session creation, rotation, revocation, device management, or logout changes.
+- Account deletion or recovery.
+- Profile images, usernames, biographies, contact information, or public profile pages.
+- Display-name moderation, uniqueness, reserved-name policy, notifications, or analytics.
 
 ## Acceptance Criteria
 
 - [ ] Only the authenticated user can update their own display name.
-- [ ] The profile request accepts only `display_name`; server-controlled fields are not mutable.
-- [ ] Validation and trimming match the documented signup-compatible rules.
-- [ ] The server reloads and locks the current user before deciding whether to update.
-- [ ] A normalized no-op returns success without changing `updated_at` or active sessions.
-- [ ] An effective update changes only `display_name` and `updated_at`.
-- [ ] The response is the safe current-user representation and sends `Cache-Control: no-store`.
-- [ ] Profile text is not persisted in browser storage or URLs and is rendered as text.
-- [ ] Relevant API, database, security, flow, concern, and continuity documentation is updated.
+- [ ] Only `display_name` is accepted as mutable profile data.
+- [ ] Validation and trimming match the approved signup-compatible rules.
+- [ ] No-op retries do not change timestamps or persistence state.
+- [ ] Effective changes update only `display_name` and `updated_at`.
+- [ ] Email, password, roles, ownership, and sessions remain unchanged.
+- [ ] The response and frontend use only the safe current-user representation.
+- [ ] No schema migration or audit event is added.
+- [ ] Profile-edit state is not stored in browser persistence or URLs.
 
 ## Focused Issues
 
-- `#141` - Define authenticated profile update contract.
-- `#142` - Implement authenticated profile update backend.
-- `#143` - Build account profile update flow.
+1. `#141` — Define authenticated profile update contract.
+2. `#142` — Implement authenticated profile update backend.
+3. `#143` — Build account profile update flow.
 
 ## Delivery Order
 
-1. Complete `#141` to approve the API, ownership, validation, locking, idempotency, privacy, and documentation contract.
-2. Issue `#142` implements the protected backend mutation.
-3. Complete `#143` to add the protected account form after the endpoint exists.
+1. Approve the endpoint, validation, locking, idempotency, response, and privacy contract in `#141`.
+2. Implement the protected backend update in `#142`.
+3. Add the account-profile form after the backend is available in `#143`.
 
-## Risks
+## Concerns
 
-- Display names remain broad untrusted text; moderation, impersonation, reserved-name, and stronger Unicode policy are deferred.
-- Concurrent password and profile changes must use the same user-row locking discipline.
-- The authenticated principal is a request snapshot and must not be treated as a mutable or current persistence entity.
+- Display names remain untrusted text wherever rendered.
+- Existing validation allows broad Unicode text; moderation and reserved-name policy remain future work.
+- The authenticated principal is a request snapshot, so the mutation must reload the user row.
+- Profile, password, and session-management work may share an account surface and should remain composable rather than becoming a broad redesign.
 
 ## Verification Decision
 
-Do not add or run tests, lint, build, compilation, typecheck, formatting, or other verification commands while implementing this story. Complete application implementation first; verification will be handled later as a separate final phase.
+Do not add or run tests, lint, build, compilation, typecheck, formatting, or other verification commands in these issues. Complete application implementation first; verification will be handled later as a separate final phase.
