@@ -1,5 +1,27 @@
 # Concerns
 
+## CONCERN-0034: Admin Bootstrap And Exact Event Identity Limits
+
+Date: 2026-07-19
+Related User Story: `docs/user-stories/US-0024-admin-reviews-event-requests.md`
+Related GitHub Issue: `#145` - https://github.com/VietCT04/TicketPass/issues/145
+
+### Concern
+
+The review contract introduces server-controlled `ADMIN` access and exact normalized event identity, but it does not define an operator bootstrap process, event-local timezone storage, or broader similarity matching. Existing exact duplicate events must be identified before the unique index can be applied.
+
+### Risk
+
+An unsafe role-provisioning process could grant privileged access. Exact matching can leave near-duplicate events unresolved, while a careless migration could merge or break existing events and their listings. Absolute timestamps may still render differently from a venue's local time.
+
+### Recommendation
+
+Define a controlled operational admin-provisioning runbook before enabling review. Report and resolve existing exact duplicates deliberately before adding the unique index. Keep fuzzy matching and event-local timezone design in separate reviewed work.
+
+### Status
+
+Open
+
 ## CONCERN-0033: Draft And Administrative Listing Cancellation Are Undefined
 
 Date: 2026-07-19
@@ -228,15 +250,15 @@ Related GitHub Issues: `#77` - https://github.com/VietCT04/TicketPass/issues/77,
 
 ### Concern
 
-Issue `#78` implements only seller-owned `PENDING` request submission. It intentionally does not define admin roles, review decisions, catalogue insertion, seller notification, cross-user request deduplication, or IANA event-timezone storage.
+Issue `#78` implements only seller-owned `PENDING` request submission. Issue `#145` now defines the future admin roles, review decisions, catalogue insertion/linking, seller tracking, and exact sibling resolution contract; implementation remains split across issues `#146` through `#151`. IANA event-timezone storage remains unresolved.
 
 ### Risk
 
-Pending requests cannot become listing-eligible without a controlled future moderation and catalogue workflow. Exact requester-scoped normalization can leave equivalent requests from different users, while broader matching could incorrectly merge distinct performances or expose ownership. Storing only an absolute instant may render a future event in a timezone different from its venue-local time.
+Pending requests remain ineligible until the follow-up implementation is delivered. Exact matching can leave near-duplicate requests or events unresolved, while broader matching could incorrectly merge distinct performances or expose ownership. Storing only an absolute instant may render a future event in a timezone different from its venue-local time.
 
 ### Recommendation
 
-Before enabling catalogue review, define administrator authorization, auditable review decisions, event creation or linking rules, seller notification, cross-user privacy policy, and event-local timezone preservation. Keep user-provided text and URLs untrusted throughout that work.
+Implement the approved role, review, audit, exact-identity, privacy, and seller-continuation slices without broadening them. Define event-local timezone preservation separately and keep user-provided text and URLs untrusted throughout the work.
 
 ### Status
 

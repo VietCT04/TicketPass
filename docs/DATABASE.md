@@ -20,6 +20,7 @@ Issues `#141` and `#142` define and implement the display-name-only profile repl
 | `email` | string | Unique normalized email address. |
 | `password_hash` | string | Strong password hash. Never store plaintext passwords. |
 | `display_name` | string | User-facing account name. |
+| `account_role` | enum/string | Server-authoritative account role: `USER` or `ADMIN`. Existing and new accounts default to `USER`; no public role-assignment API exists. |
 | `created_at` | timestamp | Creation time. |
 | `updated_at` | timestamp | Last update time. |
 
@@ -45,6 +46,7 @@ Stores server-side opaque login sessions.
 - Expired or revoked sessions must not authenticate requests.
 - Logout sets `auth_sessions.revoked_at` instead of deleting the session row.
 - Business records must reference authenticated `users.id` values derived server-side.
+- `users.account_role` must be constrained to `USER` or `ADMIN` and defaults to `USER`. Administrative access is derived from the persisted role after session authentication, never from a request field, browser state, or client claim.
 - The profile-update service must reload and pessimistically lock the authenticated `users` row before mutation so concurrent account changes can serialize without lost updates.
 
 ## Seller Listing Contract
@@ -67,8 +69,11 @@ Stores normalized event information shared by listings.
 |---|---|---|
 | `id` | UUID/string id | Primary key. |
 | `name` | string | Event display name. |
+| `normalized_name` | string | Server-derived exact identity value: trimmed, internal whitespace collapsed to ASCII spaces, and lowercased locale-independently. |
 | `venue` | string | Venue name. |
+| `normalized_venue` | string | Server-derived exact identity value using the same normalization. |
 | `city` | string | Event city. |
+| `normalized_city` | string | Server-derived exact identity value using the same normalization. |
 | `starts_at` | timestamp with timezone | Event start date and time. |
 | `created_at` | timestamp | Creation time. |
 | `updated_at` | timestamp | Last update time. For the future seller cancellation contract, the first `ACTIVE -> CANCELLED` transition time. |
@@ -89,13 +94,21 @@ Issue `#78` implements this table through Flyway migration `V9__create_event_req
 | `city` | string | Trimmed display value. |
 | `normalized_city` | string | Server-derived exact duplicate-detection value. |
 | `official_url` | string nullable | Untrusted review metadata only. |
-| `status` | enum/string | Initial implementation writes `PENDING` only. |
+| `status` | enum/string | `PENDING`, `APPROVED`, or `REJECTED`. Terminal decisions are immutable. |
+| `resolution_type` | enum/string nullable | `CREATED_EVENT`, `LINKED_EVENT`, or `EXACT_MATCHED` for approved rows; null while pending or rejected. |
+| `resolved_event_id` | UUID nullable | Non-cascading foreign key to the selected or created `events` row for approved requests only. |
+| `reviewed_by_user_id` | UUID nullable | Non-cascading foreign key to the reviewing admin for direct decisions; null for automatic exact-sibling outcomes. |
+| `reviewed_at` | timestamp with timezone nullable | Captured server decision time. |
+| `rejection_reason` | string nullable | Bounded controlled reason visible only to the owning seller after rejection. |
+| `resolution_message` | string nullable | Optional seller-facing message, maximum 500 characters; never audit content. |
 | `created_at` | timestamp with timezone | Server-generated creation time. |
 | `updated_at` | timestamp with timezone | Server-generated last-update time. |
 
-The table has no foreign key to `events` because a request does not create or represent a catalogue event. It must not store ticket, listing, payment, reservation, contact, session, or credential data.
+An event request is not itself an event catalogue record and must not store ticket, listing, payment, reservation, contact, session, or credential data. An approved request can reference an independently maintained existing or newly created event through `resolved_event_id`; it remains distinct from that event.
 
 The requester-scoped partial unique index `uq_event_requests_pending_duplicate` prevents concurrent duplicate `PENDING` requests with the same normalized event name, start time, venue, and city. It excludes `official_url`, permits requests from different users, and does not provide cross-user or fuzzy deduplication.
+
+Issue `#145` defines a separate unique index across `(normalized_name, starts_at, normalized_venue, normalized_city)` on `events` as the final exact-event duplicate guard. Before its migration is applied, existing exact duplicate event rows must be reported and resolved deliberately; they must not be silently merged with events, listings, or requests. Similar but nonexact names, venues, cities, or times are not equal under this rule.
 
 ### `listings`
 
@@ -216,16 +229,18 @@ The same migration persists an isolated mock-provider session record with amount
 
 Stores immutable audit records for security-sensitive business actions.
 
-Issue `#5` emits `LISTING_CREATED` records when an authenticated seller creates a listing. Issue `#113` defines a future `LISTING_CANCELLED` record for the first seller-owned `ACTIVE -> CANCELLED` transition; issue `#114` will implement it.
+Issue `#5` emits `LISTING_CREATED` records when an authenticated seller creates a listing. Issue `#113` defines a future `LISTING_CANCELLED` record for the first seller-owned `ACTIVE -> CANCELLED` transition; issue `#114` will implement it. Issue `#145` defines future `EVENT_CREATED`, `EVENT_REQUEST_APPROVED`, and `EVENT_REQUEST_REJECTED` records for administrative review; implementation remains follow-up work.
 
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID/string id | Primary key. |
 | `actor_user_id` | UUID/string id | Authenticated user who performed the action. References `users.id` and must not cascade delete. |
-| `action` | string | Bounded application action value. Existing migration has no database action check constraint; `LISTING_CREATED` and future `LISTING_CANCELLED` are application-defined values. |
-| `entity_type` | string | Bounded entity type value. Issue `#5` supports `LISTING` only. |
+| `action` | string | Bounded application action value. Existing migration has no database action check constraint; `LISTING_CREATED`, future `LISTING_CANCELLED`, `EVENT_CREATED`, `EVENT_REQUEST_APPROVED`, and `EVENT_REQUEST_REJECTED` are application-defined values. |
+| `entity_type` | string | Bounded entity type value. Issue `#5` supports `LISTING`; event review adds `EVENT` and `EVENT_REQUEST`. |
 | `entity_id` | UUID/string id | Identifier of the affected entity. Generic value; no foreign key is declared to `listings`. |
 | `created_at` | timestamp with timezone | Server-generated audit timestamp. |
+
+Administrative event-review audit rows contain only actor ID, action, entity type, entity ID, and the captured server timestamp. Submitted metadata, URLs, reviewer text, seller-facing messages, normalized values, and request bodies must never be stored in `audit_events`.
 
 ## Listing Statuses
 

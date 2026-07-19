@@ -10,7 +10,7 @@ TicketPass requires sellers to search for and select an existing event before cr
 
 When autocomplete cannot find the event, the seller currently has no structured next step. This story introduces a catalogue-request path without weakening the existing rule that listings must reference an approved event from the `events` table.
 
-Submitting a request does not create an event, approve an event, or create a listing. Admin review, catalogue insertion, and seller notification remain separate future work.
+Submitting a request does not create an event, approve an event, or create a listing. The later controlled review and seller-continuation contract is defined by User Story `US-0024`; implementation remains separate.
 
 ## Acceptance Criteria
 
@@ -46,7 +46,7 @@ Submitting a request does not create an event, approve an event, or create a lis
 - Exact duplicate rules may merge distinct performances if date, venue, and normalized event identity are not considered together.
 - Weak duplicate rules may allow many equivalent pending requests and create moderation noise.
 - User-provided URLs or text may be misleading or unsafe if later rendered without escaping and validation.
-- The project does not yet have an admin role or catalogue-review workflow, so pending requests cannot be completed until a later user story defines that capability.
+- The project has a documented but unimplemented admin-review contract in User Story `US-0024`; pending requests remain incomplete until its focused implementation issues are delivered.
 - Event timezone preservation remains unresolved and must be addressed explicitly in the contract rather than guessed by the frontend.
 
 ## Follow-up Issues
@@ -54,11 +54,13 @@ Submitting a request does not create an event, approve an event, or create a lis
 - GitHub Issue `#77`: Define missing-event request contract - https://github.com/VietCT04/TicketPass/issues/77
 - GitHub Issue `#78`: Implement missing-event request backend - https://github.com/VietCT04/TicketPass/issues/78
 - GitHub Issue `#79`: Add seller missing-event request flow - https://github.com/VietCT04/TicketPass/issues/79
+- GitHub Issue `#145`: Define admin event-request review contract - https://github.com/VietCT04/TicketPass/issues/145
 
 ## Implementation Order
 
 1. Define and approve the API, database, status, validation, privacy, and duplicate contract in `#77`.
 2. Implement authenticated persistence and duplicate-safe request creation in `#78`.
 3. Add the seller autocomplete fallback and pending confirmation in `#79`.
+4. Define the administrative lifecycle, exact-event identity, audit, and seller continuation in `#145`, then implement the focused review and tracking issues.
 
 Issues `#77` through `#79` are independent of checkout reconciliation issue `#69` and may be developed concurrently by another agent.
