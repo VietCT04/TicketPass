@@ -177,6 +177,26 @@ Provider customer, payment, session, and event references belong in operational 
 
 The only permitted transitions are from `PAYMENT_PENDING` to one terminal status. A failed, cancelled, or expired order cannot return to `PAYMENT_PENDING`. The database enforces the `reservation_id` uniqueness invariant. Issue `#67` implements transaction-safe create-or-return behavior by reloading the existing order when a concurrent insert reaches the unique constraint.
 
+### `order_fulfillments`
+
+Issue `#92` defines a separate one-to-one post-payment fulfilment record; issue `#93` will add the coordinated Flyway migration and persistence. The payment `orders.status`, ticket-transfer status, and settlement status are separate state dimensions. Before payment, the absence of a fulfilment row represents `NOT_STARTED` transfer and `NOT_FUNDED` settlement; these are response representations, not persisted fulfilment values.
+
+| Column | Type | Notes |
+|---|---|---|
+| `order_id` | UUID/string id | Primary key and non-cascading foreign key to `orders.id`. |
+| `transfer_status` | enum/string | Bounded ticket-transfer lifecycle value. |
+| `settlement_status` | enum/string | Bounded settlement lifecycle value. |
+| `transfer_deadline_at` | timestamp with timezone | Trusted `paid_at + 15 minutes`; immutable after creation. |
+| `seller_confirmed_at` | timestamp with timezone nullable | Immutable first seller-transfer confirmation time. |
+| `buyer_confirmed_at` | timestamp with timezone nullable | Reserved for later buyer receipt confirmation. |
+| `settlement_released_at` | timestamp with timezone nullable | Reserved for later approved settlement release. |
+| `created_at` | timestamp with timezone | Server-generated creation time. |
+| `updated_at` | timestamp with timezone | Server-generated last-update time. |
+
+The approved transfer values are `AWAITING_SELLER_TRANSFER`, `SELLER_CONFIRMED_TRANSFER`, `BUYER_CONFIRMED_RECEIPT`, `TRANSFER_TIMED_OUT`, and `REQUIRES_REVIEW`. The approved settlement values are `FUNDS_HELD`, `RELEASED_TO_SELLER`, `REFUND_REQUIRED`, and `REVIEW_REQUIRED`. Issue `#93` initially writes only `AWAITING_SELLER_TRANSFER`, `SELLER_CONFIRMED_TRANSFER`, and `FUNDS_HELD`; later transitions remain separately controlled by issues `#95` through `#99`.
+
+The future migration must add an index on `(transfer_status, transfer_deadline_at, order_id)` for bounded timeout scans. It must not duplicate buyer, seller, listing, amount, or currency fields because their order relationships remain authoritative. Trusted payment completion creates the row atomically using the same captured server instant as `orders.paid_at`. Existing `PAID` orders are backfilled from trusted non-null `orders.paid_at`; a missing value must fail the migration instead of inventing a deadline. Later timeout reconciliation may process a backfilled deadline that has already passed.
+
 ### `payment_sessions`
 
 Issue `#67` adds `V6__create_payment_sessions.sql` with provider-neutral operational session rows. Each row references one order without cascade deletion and stores provider name, opaque provider session id, bounded status, inherited expiry, and explicit application-clock timestamps. `provider_session_id` is unique; the partial unique index permits only one usable `CREATING` or `PENDING` session per order while retaining terminal history. The initial provider set contains `MOCK` only and session statuses are `CREATING`, `PENDING`, `PAID`, `FAILED`, `CANCELLED`, and `EXPIRED`.

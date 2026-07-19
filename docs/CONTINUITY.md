@@ -2,9 +2,21 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with authenticated seller listings, event browsing/detail, buyer reservations, protected browser checkout recovery, authenticated missing-event requests from the `/sell` fallback, and authenticated seller own-listings API backed by a mock hosted payment provider. Mock payment events are delivered through signed HTTP webhooks and an atomic receipt ledger; verified, timely payment success completes the order and sells the reserved listing. Checkout reconciliation handles trusted failure, cancellation, and expiry without releasing inventory when payment requires manual action, and authenticated buyers can reload their safe server-authoritative order state. The public event-search contract now defines optional server-authoritative text, city, and time-window filters for the existing browse endpoint; its backend and frontend work remain issues `#110` and `#111`. The buyer order-progress contract defines a read-only, server-owned account-history view with separate payment, transfer, and settlement dimensions; its persistence and backend implementation remain future issues. The mock lifecycle is fail-closed at the route boundary, startup-validated, and bounded for webhook input and network delivery. Issue `#84` adds the protected seller own-listings page.
+TicketPass is an early monorepo scaffold with authenticated seller listings, event browsing/detail, buyer reservations, protected browser checkout recovery, authenticated missing-event requests from the `/sell` fallback, and authenticated seller own-listings API backed by a mock hosted payment provider. Mock payment events are delivered through signed HTTP webhooks and an atomic receipt ledger; verified, timely payment success completes the order and sells the reserved listing. Checkout reconciliation handles trusted failure, cancellation, and expiry without releasing inventory when payment requires manual action, and authenticated buyers can reload their safe server-authoritative order state. The public event-search contract now defines optional server-authoritative text, city, and time-window filters for the existing browse endpoint; its backend and frontend work remain issues `#110` and `#111`. The approved post-payment lifecycle keeps payment, ticket transfer, and settlement separate; persistence and seller confirmation remain issue `#93`, with buyer receipt and timeout handling separately deferred. The buyer order-progress contract defines a read-only, server-owned account-history view with separate payment, transfer, and settlement dimensions. The mock lifecycle is fail-closed at the route boundary, startup-validated, and bounded for webhook input and network delivery. Issue `#84` adds the protected seller own-listings page.
 
 ## Latest Completed Work
+
+- Date: 2026-07-19
+- GitHub Issue: `#92` - https://github.com/VietCT04/TicketPass/issues/92
+- Summary: Defined the documentation-only post-payment ticket-transfer lifecycle. Trusted payment success will create separate awaiting-transfer and held-settlement state with a server-derived 15-minute deadline; seller confirmation is seller-only, idempotent, and cannot prove buyer receipt or release funds. Persistence and the endpoint remain issue `#93`; buyer confirmation and timeout resolution remain separate work.
+- Files changed:
+  - `docs/API.md`
+  - `docs/DATABASE.md`
+  - `docs/SECURITY.md`
+  - `docs/flows/POST_PAYMENT_TICKET_TRANSFER_FLOW.md`
+  - `docs/user-stories/US-0011-seller-transfers-paid-ticket.md`
+  - `docs/CONCERNS.md`
+  - `docs/CONTINUITY.md`
 
 - Date: 2026-07-19
 - GitHub Issue: `#109` - https://github.com/VietCT04/TicketPass/issues/109
@@ -563,8 +575,8 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 
 ## Active Work
 
-- Current GitHub Issue: `#109` - https://github.com/VietCT04/TicketPass/issues/109
-- Current goal: Review and merge the public event-search and filter contract documentation.
+- Current GitHub Issue: `#92` - https://github.com/VietCT04/TicketPass/issues/92
+- Current goal: Review and merge the approved post-payment ticket-transfer lifecycle contract.
 - Current blocker: None.
 
 ## Important User Stories
@@ -579,6 +591,7 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 - `docs/user-stories/US-0008-request-missing-event.md`: Authenticated sellers can request a missing future event for future catalogue review without creating or modifying an event or bypassing listing rules.
 - `docs/user-stories/US-0009-view-own-listings.md`: Authenticated sellers can view only their own listings and stored marketplace statuses through a read-only protected API and page.
 - `docs/user-stories/US-0010-view-own-orders.md`: Authenticated buyers can view their own order progress with payment, ticket-transfer, and settlement state kept separate.
+- `docs/user-stories/US-0011-seller-transfers-paid-ticket.md`: Sellers can confirm a paid ticket transfer within a server-controlled deadline without releasing held settlement.
 
 ## Known Concerns
 
@@ -604,9 +617,10 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 - Hosted payment deadline support and late successful payment handling remain unresolved; see `CONCERN-0021`.
 - Audit retention, deletion, export, and compliance rules are not defined.
 - Buyer order-progress lists are intentionally read-only snapshots; deadline freshness must remain owned by bounded reconciliation and the authoritative single-order read; see `CONCERN-0025`.
+- Paid-order fulfilment backfill and elapsed transfer deadlines require the controlled migration and timeout work in issues `#93` and `#99`; see `CONCERN-0027`.
 
 ## Next Recommended Steps
 
-1. Review and merge the issue `#109` public event-search and filter contract pull request.
-2. Implement the approved database-side public event filters in issue `#110`, then build URL-backed controls in issue `#111`.
-3. Complete the dependent post-payment lifecycle contracts and persistence before implementing issue `#88`.
+1. Review and merge the issue `#92` post-payment ticket-transfer lifecycle pull request.
+2. Implement fulfilment persistence, trusted payment initialization, and seller confirmation in issue `#93`.
+3. Implement the approved database-side public event filters in issue `#110`, then build URL-backed controls in issue `#111`.

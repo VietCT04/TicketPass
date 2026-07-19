@@ -289,6 +289,16 @@ Issue `#87` defines the future authenticated `GET /api/me/orders` contract; back
 - List reads are read-only snapshots. They must not perform row-by-row reconciliation, provider calls, locks, writes, release funds, refresh inventory, or create audit records. If a passed server deadline may make persisted state stale, `status_refresh_required` can only direct the browser to the protected single-order read; client clocks and cached state cannot decide status.
 - Successful responses send `Cache-Control: no-store` and exclude seller identity/contact data, listing and reservation identifiers, hosted payment URLs, provider/session/webhook records, credentials, public notes, QR codes, barcodes, ticket files, and private transfer information. Event and ticket summaries include only the documented safe fields.
 
+## Seller Transfer Confirmation Security
+
+Issue `#92` defines the future seller transfer-confirmation boundary; backend implementation remains issue `#93`. `POST /api/seller/orders/{orderId}/transfer-confirmation` must require authenticated server-side session validation. Seller ownership is derived solely from `AuthenticatedUser`, revalidated under the marketplace lock order `listing -> reservation -> order -> fulfilment`, and never accepted from the path beyond the order ID, a request body, browser state, storage, redirects, or provider events.
+
+- Trusted payment completion alone creates the fulfilment row with `AWAITING_SELLER_TRANSFER`, `FUNDS_HELD`, and `transfer_deadline_at = paid_at + 15 minutes` from one captured server `Instant`. Browser clocks, client countdowns, seller requests, hosted-provider redirects, and provider-event timestamps cannot create, change, or extend that deadline.
+- The endpoint must accept no status, timestamp, seller, buyer, settlement, or ticket data from the client. It revalidates paid/sold/held/eligible state and requires `now < transfer_deadline_at`. At or after the deadline, it must not confirm or reactivate transfer; separately approved timeout handling owns the transition.
+- A first confirmation may only record the seller's claim and its immutable server timestamp. Repeated eligible confirmation is idempotent and cannot alter that timestamp. Seller confirmation does not establish buyer receipt, reveal a ticket, authorize settlement release, or initiate payout.
+- Missing and non-owned orders return the same controlled `404`. Malformed IDs return `400`; missing authentication returns `401`; ineligible lifecycle states return controlled `409`. Responses and logs must not reveal buyer identity/contact data, payment/provider records, review internals, ticket payloads, QR codes, barcodes, credentials, private transfer links, cookies, or raw exception text.
+- Successful responses use `Cache-Control: no-store` and contain only the documented seller-safe progress metadata plus approved event/ticket summaries. They exclude private seller-to-buyer communication and all ticket transfer payloads.
+
 ## Seller Event Autocomplete Security
 
 The authenticated `GET /api/events/autocomplete` endpoint exposes seller-safe existing event summaries only.
