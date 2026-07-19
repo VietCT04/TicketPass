@@ -1,5 +1,27 @@
 # Concerns
 
+## CONCERN-0026: Public Event Search Performance And Time Semantics
+
+Date: 2026-07-19
+Related User Story: `docs/user-stories/US-0015-search-filter-events.md`
+Related GitHub Issues: `#109` - https://github.com/VietCT04/TicketPass/issues/109, `#110` - https://github.com/VietCT04/TicketPass/issues/110, `#111` - https://github.com/VietCT04/TicketPass/issues/111
+
+### Concern
+
+The approved public search contract uses case-insensitive substring matching across event name, venue, and free-text city data. Event timestamps are stored as instants, while future calendar-day controls use a user-supplied UTC offset rather than an event-local timezone. Results retain deterministic upcoming-event ordering rather than relevance ranking.
+
+### Risk
+
+Substring matching may become slow as the event catalogue grows, city spelling and normalization may fragment exact-city results, and a user-supplied offset can differ from the venue's local time. Buyers may also expect search relevance that the intentionally unranked MVP does not provide.
+
+### Recommendation
+
+Implement issue `#110` with database-side predicates and measure production query behavior before adding indexes or dedicated search infrastructure. Keep offset selection explicit in issue `#111`, do not imply stored event-local timezone data, and treat stronger normalization, locale-aware matching, deduplication, and relevance ranking as separate product work.
+
+### Status
+
+Open
+
 ## CONCERN-0025: Buyer Order-Progress Snapshot Freshness
 
 Date: 2026-07-19

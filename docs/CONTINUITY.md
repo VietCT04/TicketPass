@@ -2,9 +2,19 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with authenticated seller listings, event browsing/detail, buyer reservations, protected browser checkout recovery, authenticated missing-event requests from the `/sell` fallback, and authenticated seller own-listings API backed by a mock hosted payment provider. Mock payment events are delivered through signed HTTP webhooks and an atomic receipt ledger; verified, timely payment success completes the order and sells the reserved listing. Checkout reconciliation handles trusted failure, cancellation, and expiry without releasing inventory when payment requires manual action, and authenticated buyers can reload their safe server-authoritative order state. The buyer order-progress contract now defines a read-only, server-owned account-history view with separate payment, transfer, and settlement dimensions; its persistence and backend implementation remain future issues. The mock lifecycle is fail-closed at the route boundary, startup-validated, and bounded for webhook input and network delivery. Issue `#84` adds the protected seller own-listings page.
+TicketPass is an early monorepo scaffold with authenticated seller listings, event browsing/detail, buyer reservations, protected browser checkout recovery, authenticated missing-event requests from the `/sell` fallback, and authenticated seller own-listings API backed by a mock hosted payment provider. Mock payment events are delivered through signed HTTP webhooks and an atomic receipt ledger; verified, timely payment success completes the order and sells the reserved listing. Checkout reconciliation handles trusted failure, cancellation, and expiry without releasing inventory when payment requires manual action, and authenticated buyers can reload their safe server-authoritative order state. The public event-search contract now defines optional server-authoritative text, city, and time-window filters for the existing browse endpoint; its backend and frontend work remain issues `#110` and `#111`. The buyer order-progress contract defines a read-only, server-owned account-history view with separate payment, transfer, and settlement dimensions; its persistence and backend implementation remain future issues. The mock lifecycle is fail-closed at the route boundary, startup-validated, and bounded for webhook input and network delivery. Issue `#84` adds the protected seller own-listings page.
 
 ## Latest Completed Work
+
+- Date: 2026-07-19
+- GitHub Issue: `#109` - https://github.com/VietCT04/TicketPass/issues/109
+- Summary: Defined the documentation-only, backward-compatible public event search and filter contract for `GET /api/events`. The contract adds normalized optional text, exact-city, and offset-bearing time-window parameters; requires literal database-side matching before aggregates and pagination; preserves the existing public eligibility, safe response, and upcoming ordering rules; and defines shareable frontend URL behavior without browser persistence. Backend implementation remains `#110`; frontend controls remain `#111`.
+- Files changed:
+  - `docs/API.md`
+  - `docs/SECURITY.md`
+  - `docs/flows/BUYER_EVENT_BROWSE_FLOW.md`
+  - `docs/CONCERNS.md`
+  - `docs/CONTINUITY.md`
 
 - Date: 2026-07-19
 - GitHub Issue: `#87` - https://github.com/VietCT04/TicketPass/issues/87
@@ -553,8 +563,8 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 
 ## Active Work
 
-- Current GitHub Issue: `#87` - https://github.com/VietCT04/TicketPass/issues/87
-- Current goal: Review and merge the buyer order-progress contract documentation.
+- Current GitHub Issue: `#109` - https://github.com/VietCT04/TicketPass/issues/109
+- Current goal: Review and merge the public event-search and filter contract documentation.
 - Current blocker: None.
 
 ## Important User Stories
@@ -587,6 +597,7 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 - Own-listings pagination may need a focused composite-index review at production volume, and all listing mutations remain deferred; see `CONCERN-0024`.
 - Event autocomplete query performance may require indexes or a dedicated search strategy after production-volume review.
 - Event local timezone preservation and display rules are unresolved.
+- Public browse substring search, free-text city matching, and calendar-day offset semantics need measured follow-up; see `CONCERN-0026`.
 - Listing availability can change between event-detail page load and a future reservation attempt; `GET /api/events/{eventId}` is only a marketplace snapshot.
 - Reservation creation, expiry cleanup, guarded listing reactivation, CSRF origin protection, and browser reservation actions are implemented in issues `#54` through `#57`.
 - Browser reservation state is intentionally in-memory only; see `CONCERN-0020`.
@@ -596,6 +607,6 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 
 ## Next Recommended Steps
 
-1. Review and merge the issue `#87` buyer order-progress contract pull request.
-2. Complete the dependent post-payment lifecycle contracts and persistence before implementing issue `#88`.
-3. Add the protected seller own-listings page in issue `#84`.
+1. Review and merge the issue `#109` public event-search and filter contract pull request.
+2. Implement the approved database-side public event filters in issue `#110`, then build URL-backed controls in issue `#111`.
+3. Complete the dependent post-payment lifecycle contracts and persistence before implementing issue `#88`.

@@ -182,6 +182,16 @@ Public event browse responses must not include:
 
 `image_url` is nullable in the API contract. Until trusted event image source and moderation rules exist, clients should render safe placeholders when `image_url` is `null`.
 
+### Public Event Browse Search And Filter Security
+
+Issue `#109` defines optional public `q`, `city`, `starts_from`, and `starts_before` filters for `GET /api/events`; issue `#110` will implement them. The route remains public and read-only.
+
+The server must normalize, validate, and apply every supplied filter before database grouping, counting, ordering, and pagination. Client state must not determine event visibility, listing eligibility, aggregate values, or matching results.
+
+Text search is literal, case-insensitive matching. Query implementations must escape `%`, `_`, and their selected escape character before using `LIKE`, and controlled errors must not disclose raw normalized queries, SQL, repository details, or stack traces.
+
+Search and filtering must not relax the existing browse-eligible listing rule or add seller, ticket, ownership, reservation, order, payment, or other user-specific data to the public response. The frontend URL may carry shareable filters for issue `#111`, but browser persistence is not an authority for the public result set.
+
 ## Public Event Detail Security
 
 Issue `#45` implements the public `GET /api/events/{eventId}` detail endpoint. The endpoint exposes one public event summary and browse-eligible listing summaries only.
