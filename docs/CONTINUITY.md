@@ -2,9 +2,19 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with authenticated seller listings, event browsing/detail, buyer reservations, protected browser checkout recovery, authenticated missing-event requests from the `/sell` fallback, and a protected read-only seller own-listings page backed by the server-authoritative API. Mock payment events are delivered through signed HTTP webhooks and an atomic receipt ledger; verified, timely payment success completes the order and sells the reserved listing. Checkout reconciliation handles trusted failure, cancellation, and expiry without releasing inventory when payment requires manual action, and authenticated buyers can reload their safe server-authoritative order state. The public event-search contract now defines optional server-authoritative text, city, and time-window filters for the existing browse endpoint; its backend and frontend work remain issues `#110` and `#111`. The approved post-payment lifecycle keeps payment, ticket transfer, and settlement separate; persistence and seller confirmation remain issue `#93`, with buyer receipt and timeout handling separately deferred. The buyer order-progress contract defines a read-only, server-owned account-history view with separate payment, transfer, and settlement dimensions. The mock lifecycle is fail-closed at the route boundary, startup-validated, and bounded for webhook input and network delivery.
+TicketPass is an early monorepo scaffold with authenticated seller listings, event browsing/detail, buyer reservations, protected browser checkout recovery, authenticated missing-event requests from the `/sell` fallback, and a protected read-only seller own-listings page backed by the server-authoritative API. Mock payment events are delivered through signed HTTP webhooks and an atomic receipt ledger; verified, timely payment success completes the order and sells the reserved listing. Checkout reconciliation handles trusted failure, cancellation, and expiry without releasing inventory when payment requires manual action, and authenticated buyers can reload their safe server-authoritative order state. The public event-search contract now defines optional server-authoritative text, city, and time-window filters for the existing browse endpoint; its backend and frontend work remain issues `#110` and `#111`. The approved post-payment lifecycle keeps payment, ticket transfer, and settlement separate; persistence and seller confirmation remain issue `#93`, with buyer receipt and timeout handling separately deferred. The buyer order-progress contract defines a read-only, server-owned account-history view with separate payment, transfer, and settlement dimensions. The mock lifecycle is fail-closed at the route boundary, startup-validated, and bounded for webhook input and network delivery. The container-stack contract is documented; API and web image work are next in parallel, followed by health-aware Compose wiring and an operations runbook.
 
 ## Latest Completed Work
+
+- Date: 2026-07-19
+- GitHub Issue: `#104` - https://github.com/VietCT04/TicketPass/issues/104
+- Summary: Defined the documentation-only contract for the first reproducible single-host TicketPass container stack. It separates browser-reachable and internal networking, API and web image requirements, external configuration, mock-payment restrictions, health/readiness, named-volume persistence, secret/build-context exclusions, and the future operations runbook. No Dockerfile, Compose, image, CI/CD, or cloud implementation was added.
+- Files changed:
+  - `README.md`
+  - `docs/DEPLOYMENT.md`
+  - `docs/SECURITY.md`
+  - `docs/CONCERNS.md`
+  - `docs/CONTINUITY.md`
 
 - Date: 2026-07-19
 - GitHub Issue: `#84` - https://github.com/VietCT04/TicketPass/issues/84
@@ -590,8 +600,8 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 
 ## Active Work
 
-- Current GitHub Issue: `#84` - https://github.com/VietCT04/TicketPass/issues/84
-- Current goal: Review and merge the protected seller own-listings page.
+- Current GitHub Issue: `#104` - https://github.com/VietCT04/TicketPass/issues/104
+- Current goal: Review and merge the documentation-only container-stack contract.
 - Current blocker: None.
 
 ## Important User Stories
@@ -633,9 +643,10 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 - Audit retention, deletion, export, and compliance rules are not defined.
 - Buyer order-progress lists are intentionally read-only snapshots; deadline freshness must remain owned by bounded reconciliation and the authoritative single-order read; see `CONCERN-0025`.
 - Paid-order fulfilment backfill and elapsed transfer deadlines require the controlled migration and timeout work in issues `#93` and `#99`; see `CONCERN-0027`.
+- Container image portability, image maintenance, single-host resilience, and Flyway replica coordination need follow-up; see `CONCERN-0028` through `CONCERN-0031`.
 
 ## Next Recommended Steps
 
-1. Review and merge the issue `#84` protected seller own-listings page pull request.
-2. Review and merge the issue `#92` post-payment ticket-transfer lifecycle pull request.
-3. Implement fulfilment persistence, trusted payment initialization, and seller confirmation in issue `#93`.
+1. Implement the API image and external runtime configuration in issue `#105`.
+2. Implement the web image and explicit build-time API-origin configuration in issue `#106`.
+3. After both images are ready, implement Compose wiring and the operations runbook in issue `#107`.
