@@ -1,5 +1,27 @@
 # Concerns
 
+## CONCERN-0032: Display-Name Moderation And Impersonation Policy Is Deferred
+
+Date: 2026-07-19
+Related User Story: `docs/user-stories/US-0023-update-account-profile.md`
+Related GitHub Issues: `#141` - https://github.com/VietCT04/TicketPass/issues/141, `#142` - https://github.com/VietCT04/TicketPass/issues/142, `#143` - https://github.com/VietCT04/TicketPass/issues/143
+
+### Concern
+
+The approved MVP display-name contract accepts broad Unicode text after trimming. It does not case-fold, Unicode-normalize, enforce uniqueness, or apply reserved-name, impersonation, moderation, or history rules.
+
+### Risk
+
+Users can choose visually similar or misleading names. Unicode-equivalent values may behave differently, and support or trust-and-safety operations lack a controlled way to restrict abusive profile names.
+
+### Recommendation
+
+Before exposing profiles publicly or relying on display names for trust decisions, define a separately reviewed policy for rendering, moderation, reserved names, Unicode normalization, impersonation handling, and any retention needed for enforcement. Continue rendering every display name as untrusted text.
+
+### Status
+
+Open
+
 ## CONCERN-0028: Build-Time Web API Origin Limits Image Portability
 
 Date: 2026-07-19

@@ -67,6 +67,19 @@ Credentialed CORS uses the same normalized trusted-origin source as the CSRF ori
 - Seller, buyer, order, payment, ticket, reveal, and dispute ownership checks must use the authenticated user.
 - Frontend route protection is a usability layer only; backend authorization remains required.
 
+## Account Profile Update Security
+
+Issue `#141` defines the display-name-only profile-update contract; issue `#142` will implement the backend and issue `#143` will implement the protected browser form.
+
+- `PUT /api/me/profile` must explicitly require authentication before the final deny rule. The controller receives `AuthenticatedUser`; it must never accept a client-supplied user or ownership identifier.
+- The endpoint accepts exactly one field, `display_name`. Email, password, roles, permissions, account status, sessions, cookies, timestamps, and any other server-controlled fields are rejected through controlled validation; they must never be mutable through this route.
+- Because this is an unsafe cookie-authenticated request, the existing exact trusted-origin filter remains authoritative. Successful responses send `Cache-Control: no-store`.
+- The transactional service must capture the authenticated ID and one injected-clock timestamp, pessimistically lock and reload the user row, and return the standard `401` result when the row no longer exists. It must not mutate or return the request-snapshot principal as current database state.
+- A normalized display-name no-op returns the safe current-user response without changing `updated_at`, flushing a meaningless update, writing an audit event, rotating cookies, or changing any active session.
+- An effective change updates only `users.display_name` and `users.updated_at`. It does not modify credentials, authorization, account status, marketplace records, sessions, cookies, or audit records. A later authenticated request reloads current user data and can therefore expose the new display name without session rotation.
+- Display names remain untrusted text. Operational logs may include only the authenticated user ID and a broad outcome; they must not include display-name values, request or response bodies, email, cookies, session values, credentials, or authentication headers.
+- The browser form must submit the complete one-field payload with credentials, prevent duplicate submissions, replace in-memory current-user state from the authoritative safe response, and retain profile form data only in component memory. It must not persist profile data in URLs, `localStorage`, `sessionStorage`, or IndexedDB.
+
 ## Frontend Protected Routes
 
 Issue `#13` protects the existing `/sell` frontend route with a small reusable client-side auth guard.
