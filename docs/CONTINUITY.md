@@ -2,9 +2,24 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with authenticated seller listings, event browsing/detail, buyer reservations, protected browser checkout recovery, authenticated missing-event requests from the `/sell` fallback, and authenticated seller own-listings API backed by a mock hosted payment provider. Mock payment events are delivered through signed HTTP webhooks and an atomic receipt ledger; verified, timely payment success completes the order and sells the reserved listing. Checkout reconciliation handles trusted failure, cancellation, and expiry without releasing inventory when payment requires manual action, and authenticated buyers can reload their safe server-authoritative order state. The public event-search contract now defines optional server-authoritative text, city, and time-window filters for the existing browse endpoint; its backend and frontend work remain issues `#110` and `#111`. The approved post-payment lifecycle keeps payment, ticket transfer, and settlement separate; persistence and seller confirmation remain issue `#93`, with buyer receipt and timeout handling separately deferred. The buyer order-progress contract defines a read-only, server-owned account-history view with separate payment, transfer, and settlement dimensions. The mock lifecycle is fail-closed at the route boundary, startup-validated, and bounded for webhook input and network delivery. Issue `#84` adds the protected seller own-listings page.
+TicketPass is an early monorepo scaffold with authenticated seller listings, event browsing/detail, buyer reservations, protected browser checkout recovery, authenticated missing-event requests from the `/sell` fallback, and a protected read-only seller own-listings page backed by the server-authoritative API. Mock payment events are delivered through signed HTTP webhooks and an atomic receipt ledger; verified, timely payment success completes the order and sells the reserved listing. Checkout reconciliation handles trusted failure, cancellation, and expiry without releasing inventory when payment requires manual action, and authenticated buyers can reload their safe server-authoritative order state. The public event-search contract now defines optional server-authoritative text, city, and time-window filters for the existing browse endpoint; its backend and frontend work remain issues `#110` and `#111`. The approved post-payment lifecycle keeps payment, ticket transfer, and settlement separate; persistence and seller confirmation remain issue `#93`, with buyer receipt and timeout handling separately deferred. The buyer order-progress contract defines a read-only, server-owned account-history view with separate payment, transfer, and settlement dimensions. The mock lifecycle is fail-closed at the route boundary, startup-validated, and bounded for webhook input and network delivery.
 
 ## Latest Completed Work
+
+- Date: 2026-07-19
+- GitHub Issue: `#84` - https://github.com/VietCT04/TicketPass/issues/84
+- Summary: Implemented the protected read-only `/my-listings` page. It uses the server-authoritative own-listings API with credentials and no-store caching, strictly validates safe response fields, keeps pagination and exact status filtering in the URL, handles controlled states, and shows only seller-owned listing/event metadata with non-misleading status language. It adds no listing mutation, browser persistence, buyer data, payment data, or ticket payload display.
+- Files changed:
+  - `apps/web/src/app/my-listings/page.tsx`
+  - `apps/web/src/components/SellerOwnListings.tsx`
+  - `apps/web/src/components/AuthStatus.tsx`
+  - `apps/web/src/components/RequireAuth.tsx`
+  - `apps/web/src/lib/redirects.ts`
+  - `apps/web/src/lib/sellerListings.ts`
+  - `docs/SECURITY.md`
+  - `docs/flows/SELLER_LISTING_FLOW.md`
+  - `docs/user-stories/US-0009-view-own-listings.md`
+  - `docs/CONTINUITY.md`
 
 - Date: 2026-07-19
 - GitHub Issue: `#92` - https://github.com/VietCT04/TicketPass/issues/92
@@ -575,8 +590,8 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 
 ## Active Work
 
-- Current GitHub Issue: `#92` - https://github.com/VietCT04/TicketPass/issues/92
-- Current goal: Review and merge the approved post-payment ticket-transfer lifecycle contract.
+- Current GitHub Issue: `#84` - https://github.com/VietCT04/TicketPass/issues/84
+- Current goal: Review and merge the protected seller own-listings page.
 - Current blocker: None.
 
 ## Important User Stories
@@ -621,6 +636,6 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 
 ## Next Recommended Steps
 
-1. Review and merge the issue `#92` post-payment ticket-transfer lifecycle pull request.
-2. Implement fulfilment persistence, trusted payment initialization, and seller confirmation in issue `#93`.
-3. Implement the approved database-side public event filters in issue `#110`, then build URL-backed controls in issue `#111`.
+1. Review and merge the issue `#84` protected seller own-listings page pull request.
+2. Review and merge the issue `#92` post-payment ticket-transfer lifecycle pull request.
+3. Implement fulfilment persistence, trusted payment initialization, and seller confirmation in issue `#93`.

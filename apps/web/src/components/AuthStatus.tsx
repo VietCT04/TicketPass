@@ -70,6 +70,18 @@ export function AuthStatus() {
           </p>
         ) : null}
         <div className="mt-4 flex flex-wrap gap-3">
+          <Link
+            href="/my-listings"
+            className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-800 transition hover:border-slate-400 hover:bg-slate-50"
+          >
+            My listings
+          </Link>
+          <Link
+            href="/sell"
+            className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-800 transition hover:border-slate-400 hover:bg-slate-50"
+          >
+            Sell tickets
+          </Link>
           <button
             type="button"
             onClick={handleLogout}
@@ -78,12 +90,6 @@ export function AuthStatus() {
           >
             {isLoggingOut ? "Logging out..." : "Log out"}
           </button>
-          <Link
-            href="/sell"
-            className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-800 transition hover:border-slate-400 hover:bg-slate-50"
-          >
-            Sell a ticket
-          </Link>
         </div>
       </div>
     );
