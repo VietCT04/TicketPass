@@ -12,19 +12,19 @@ This story exposes server-authoritative listing state only. It does not add any 
 
 ## Acceptance Criteria
 
-- [ ] Only an authenticated user can access the own-listings API and page.
-- [ ] Seller ownership is derived from the authenticated session and is never accepted from the client.
-- [ ] A seller can retrieve only listings they own.
-- [ ] Results use 1-based pagination and deterministic newest-first ordering.
-- [ ] The seller can optionally filter by one exact current listing status.
-- [ ] All current listing lifecycle statuses can be represented without misleading payment, delivery, or payout claims.
-- [ ] Each result includes approved seller-owned listing metadata and safe event metadata.
-- [ ] Responses exclude buyer identity, reservation ownership, order/payment records, provider data, session data, credentials, and QR/barcode/PDF/private transfer payloads.
-- [ ] Empty results return a normal empty page rather than an error.
-- [ ] The frontend renders loading, empty, unauthenticated, validation, and unexpected-error states safely.
-- [ ] Seller-entered text is treated as untrusted when rendered.
-- [ ] Listing data is not persisted in `localStorage` or `sessionStorage`.
-- [ ] Relevant API, security, seller-flow, concern, and continuity documentation is updated by the focused issues.
+- [x] Only an authenticated user can access the own-listings API and page.
+- [x] Seller ownership is derived from the authenticated session and is never accepted from the client.
+- [x] A seller can retrieve only listings they own.
+- [x] Results use 1-based pagination and deterministic newest-first ordering.
+- [x] The seller can optionally filter by one exact current listing status.
+- [x] All current listing lifecycle statuses can be represented without misleading payment, delivery, or payout claims.
+- [x] Each result includes approved seller-owned listing metadata and safe event metadata.
+- [x] Responses exclude buyer identity, reservation ownership, order/payment records, provider data, session data, credentials, and QR/barcode/PDF/private transfer payloads.
+- [x] Empty results return a normal empty page rather than an error.
+- [x] The frontend renders loading, empty, unauthenticated, validation, and unexpected-error states safely.
+- [x] Seller-entered text is treated as untrusted when rendered.
+- [x] Listing data is not persisted in `localStorage` or `sessionStorage`.
+- [x] Relevant API, security, seller-flow, concern, and continuity documentation is updated by the focused issues.
 
 ## Out of Scope
 

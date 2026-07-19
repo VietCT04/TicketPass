@@ -112,11 +112,13 @@ Issue `#82` defines the authenticated `GET /api/me/listings` contract; issue `#8
 - The database query must constrain `listing.seller_id` to `AuthenticatedUser.id()` before status filtering, counting, or pagination. Clients cannot select another seller through any request value.
 - The optional status filter is one exact bounded `ListingStatus` value and must be applied in the database.
 - Responses must use explicit safe DTOs or projections, never direct entity or relationship serialization.
-- Seller-entered listing metadata remains untrusted display content and must be escaped and visually bounded by the future frontend.
+- The protected `/my-listings` frontend added by issue `#84` requests this endpoint with credentials and `cache: no-store`, validates the full approved response shape before display, and keeps page/status state only in the URL.
+- Seller-entered listing metadata remains untrusted display content. The `/my-listings` page renders it only as escaped React text, bounds long content, and does not automatically linkify or interpret it as HTML.
 - The response must exclude seller identity/contact information, buyer and reservation ownership, reservation IDs or expiry, order/payment/provider/payout/refund/dispute data, audit records, ticket payload data, credentials, cookies, sessions, and internal fields.
 - `SOLD` is a stored listing lifecycle status only. It must not be presented as proof of payout, transfer, reveal, refund finality, or dispute completion.
 - Logs may contain only authenticated request outcome, page parameters, status filter, and controlled error category. They must exclude seller-entered text, public notes, email, cookies, tokens, ticket details, buyer/payment data, and full response bodies.
 - This safe `GET` does not use the unsafe-request origin check. Credentialed browser requests still use the configured cookie and CORS protections.
+- The frontend access guard is a usability control only: the backend remains the sole authority for session authentication, seller ownership, filtering, and pagination. A later `401` redirects through the allowlisted `/my-listings` login-return path.
 
 ## Authentication And Ownership
 

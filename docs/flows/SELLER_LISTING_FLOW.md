@@ -71,6 +71,8 @@ Out of scope:
 
 Issue `#35` adds the frontend `/sell` event selector and selected-event summary. Issue `#6` extends the same page with ticket-specific fields, listing submission, same-page success confirmation, and a create-another-listing action. Issue `#79` adds the missing-event request fallback without changing listing eligibility.
 
+After creating listings, an authenticated seller can use the read-only `/my-listings` page from issue `#84` to review only their stored listing metadata and current listing status. The page relies on the server-authoritative `GET /api/me/listings` ownership, ordering, filtering, and pagination contract; it does not add any listing mutation, payment, payout, transfer, reveal, or buyer details.
+
 ## Public Listing Metadata
 
 The public listing may expose:
