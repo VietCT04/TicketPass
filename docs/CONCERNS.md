@@ -1,5 +1,27 @@
 # Concerns
 
+## CONCERN-0027: Paid-Order Fulfilment Backfill And Deadline Reconciliation
+
+Date: 2026-07-19
+Related User Story: `docs/user-stories/US-0011-seller-transfers-paid-ticket.md`
+Related GitHub Issues: `#92` - https://github.com/VietCT04/TicketPass/issues/92, `#93` - https://github.com/VietCT04/TicketPass/issues/93, `#98` - https://github.com/VietCT04/TicketPass/issues/98, `#99` - https://github.com/VietCT04/TicketPass/issues/99
+
+### Concern
+
+The future fulfilment migration must create one record for every existing paid order from its trusted `paid_at`, including orders whose derived 15-minute deadline has already elapsed.
+
+### Risk
+
+Inventing a missing payment timestamp would create an unauditable deadline. Leaving a backfilled elapsed deadline untreated could expose stale awaiting-transfer progress until timeout reconciliation runs.
+
+### Recommendation
+
+Issue `#93` must fail migration if a paid order lacks `paid_at`, backfill only from that trusted timestamp, and preserve the deadline without extension. Issue `#99` should process eligible past-due backfilled records through the separately approved timeout transition before operational rollout.
+
+### Status
+
+Open
+
 ## CONCERN-0026: Public Event Search Performance And Time Semantics
 
 Date: 2026-07-19
