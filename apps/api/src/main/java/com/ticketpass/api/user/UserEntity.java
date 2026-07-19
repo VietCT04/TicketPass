@@ -8,6 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -34,6 +35,9 @@ public class UserEntity {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    @Transient
+    private boolean explicitUpdatedAt;
+
     @PrePersist
     void prePersist() {
         Instant now = Instant.now();
@@ -43,7 +47,9 @@ public class UserEntity {
 
     @PreUpdate
     void preUpdate() {
-        updatedAt = Instant.now();
+        if (!explicitUpdatedAt) {
+            updatedAt = Instant.now();
+        }
     }
 
     public UUID getId() {
@@ -76,5 +82,14 @@ public class UserEntity {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(Instant updatedAt) {
+        this.updatedAt = updatedAt;
+        this.explicitUpdatedAt = true;
     }
 }
