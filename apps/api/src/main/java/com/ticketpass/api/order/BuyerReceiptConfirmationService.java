@@ -1,12 +1,101 @@
 package com.ticketpass.api.order;
-import com.ticketpass.api.settlement.*;
+
+import com.ticketpass.api.common.ApiException;
+import com.ticketpass.api.settlement.SettlementProvider;
+import com.ticketpass.api.settlement.SettlementReleaseRequest;
+import com.ticketpass.api.settlement.SettlementReleaseResult;
 import java.util.UUID;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+
 @Service
 public class BuyerReceiptConfirmationService {
- private final BuyerReceiptConfirmationCommand command; private final SettlementReleaseOperationRepository operations; private final OrderFulfillmentRepository fulfillments; private final SettlementReleaseClaimService claims; private final SettlementProvider provider; private final SettlementReleaseFinalizer finalizer; private final OrderRepository orders;
- public BuyerReceiptConfirmationService(BuyerReceiptConfirmationCommand c, SettlementReleaseOperationRepository o, OrderFulfillmentRepository fulf, SettlementReleaseClaimService claims, SettlementProvider p, SettlementReleaseFinalizer f, OrderRepository orders){command=c;operations=o;fulfillments=fulf;this.claims=claims;provider=p;finalizer=f;this.orders=orders;}
- public BuyerReceiptConfirmationResponse confirm(UUID buyerId,String rawOrderId){UUID orderId=parse(rawOrderId);command.accept(buyerId,orderId); SettlementReleaseOperationEntity operation=claims.claim(orderId); if(operation!=null){OrderEntity order=orders.findByIdForResponse(orderId).orElseThrow();SettlementReleaseResult result=provider.release(new SettlementReleaseRequest(orderId,order.getAmountMinor(),order.getCurrency(),operation.getIdempotencyKey(),operation.getProviderOperationId()));finalizer.finalizeResult(orderId,result);} return response(orders.findByIdForResponse(orderId).orElseThrow(), fulfillments.findByOrderId(orderId).orElseThrow()); }
- private static UUID parse(String raw){try{return UUID.fromString(raw);}catch(IllegalArgumentException e){throw new com.ticketpass.api.common.ApiException(org.springframework.http.HttpStatus.BAD_REQUEST,"orderId must be a UUID");}}
- private static BuyerReceiptConfirmationResponse response(OrderEntity o, OrderFulfillmentEntity f){return new BuyerReceiptConfirmationResponse(o.getId().toString(),o.getStatus().name(),f.getTransferStatus().name(),f.getSettlementStatus().name(),o.getPaidAt(),f.getTransferDeadlineAt(),f.getSellerConfirmedAt(),f.getBuyerConfirmedAt(),f.getSettlementReleasedAt(),"NONE",f.getSettlementStatus()!=SettlementStatus.RELEASED_TO_SELLER,o.getAmountMinor(),o.getCurrency(),new BuyerReceiptConfirmationResponse.Event(o.getListing().getEvent().getName(),o.getListing().getEvent().getStartsAt(),o.getListing().getEvent().getVenue(),o.getListing().getEvent().getCity()),new BuyerReceiptConfirmationResponse.Ticket(o.getListing().getTicketType(),o.getListing().getSeatInfo(),o.getListing().getTransferMethod().name()));}
+
+    private final BuyerReceiptConfirmationCommand confirmationCommand;
+    private final OrderRepository orderRepository;
+    private final OrderFulfillmentRepository fulfillmentRepository;
+    private final SettlementReleaseClaimService claimService;
+    private final SettlementProvider settlementProvider;
+    private final SettlementReleaseFinalizer finalizer;
+
+    public BuyerReceiptConfirmationService(
+            BuyerReceiptConfirmationCommand confirmationCommand,
+            OrderRepository orderRepository,
+            OrderFulfillmentRepository fulfillmentRepository,
+            SettlementReleaseClaimService claimService,
+            SettlementProvider settlementProvider,
+            SettlementReleaseFinalizer finalizer) {
+        this.confirmationCommand = confirmationCommand;
+        this.orderRepository = orderRepository;
+        this.fulfillmentRepository = fulfillmentRepository;
+        this.claimService = claimService;
+        this.settlementProvider = settlementProvider;
+        this.finalizer = finalizer;
+    }
+
+    public BuyerReceiptConfirmationResponse confirm(UUID buyerId, String rawOrderId) {
+        UUID orderId = parseOrderId(rawOrderId);
+        confirmationCommand.accept(buyerId, orderId);
+        executeClaimedRelease(orderId);
+
+        OrderEntity order = orderRepository.findByIdForResponse(orderId)
+                .orElseThrow(() -> new IllegalStateException("Confirmed order is missing"));
+        OrderFulfillmentEntity fulfillment = fulfillmentRepository.findByOrderId(orderId)
+                .orElseThrow(() -> new IllegalStateException("Confirmed fulfilment is missing"));
+        return response(order, fulfillment);
+    }
+
+    private void executeClaimedRelease(UUID orderId) {
+        SettlementReleaseOperationEntity operation = claimService.claim(orderId);
+        if (operation == null) {
+            return;
+        }
+
+        OrderEntity order = orderRepository.findByIdForResponse(orderId)
+                .orElseThrow(() -> new IllegalStateException("Release order is missing"));
+        SettlementReleaseRequest request = new SettlementReleaseRequest(
+                orderId,
+                order.getAmountMinor(),
+                order.getCurrency(),
+                operation.getIdempotencyKey(),
+                operation.getProviderOperationId());
+        SettlementReleaseResult result = settlementProvider.release(request);
+        finalizer.finalizeResult(orderId, result);
+    }
+
+    private static UUID parseOrderId(String rawOrderId) {
+        try {
+            return UUID.fromString(rawOrderId);
+        } catch (IllegalArgumentException exception) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "orderId must be a UUID");
+        }
+    }
+
+    private static BuyerReceiptConfirmationResponse response(
+            OrderEntity order,
+            OrderFulfillmentEntity fulfillment) {
+        return new BuyerReceiptConfirmationResponse(
+                order.getId().toString(),
+                order.getStatus().name(),
+                fulfillment.getTransferStatus().name(),
+                fulfillment.getSettlementStatus().name(),
+                order.getPaidAt(),
+                fulfillment.getTransferDeadlineAt(),
+                fulfillment.getSellerConfirmedAt(),
+                fulfillment.getBuyerConfirmedAt(),
+                fulfillment.getSettlementReleasedAt(),
+                "NONE",
+                fulfillment.getSettlementStatus() != SettlementStatus.RELEASED_TO_SELLER,
+                order.getAmountMinor(),
+                order.getCurrency(),
+                new BuyerReceiptConfirmationResponse.Event(
+                        order.getListing().getEvent().getName(),
+                        order.getListing().getEvent().getStartsAt(),
+                        order.getListing().getEvent().getVenue(),
+                        order.getListing().getEvent().getCity()),
+                new BuyerReceiptConfirmationResponse.Ticket(
+                        order.getListing().getTicketType(),
+                        order.getListing().getSeatInfo(),
+                        order.getListing().getTransferMethod().name()));
+    }
 }
