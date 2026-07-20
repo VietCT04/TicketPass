@@ -222,7 +222,7 @@ Public event browse responses must not include:
 
 ### Public Event Browse Search And Filter Security
 
-Issue `#109` defines optional public `q`, `city`, `starts_from`, and `starts_before` filters for `GET /api/events`; issue `#110` will implement them. The route remains public and read-only.
+Issue `#109` defines optional public `q`, `city`, `starts_from`, and `starts_before` filters for `GET /api/events`; issue `#110` implements them. The route remains public and read-only.
 
 The server must normalize, validate, and apply every supplied filter before database grouping, counting, ordering, and pagination. Client state must not determine event visibility, listing eligibility, aggregate values, or matching results.
 

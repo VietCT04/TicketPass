@@ -214,7 +214,7 @@ Substring matching may become slow as the event catalogue grows, city spelling a
 
 ### Recommendation
 
-Implement issue `#110` with database-side predicates and measure production query behavior before adding indexes or dedicated search infrastructure. Keep offset selection explicit in issue `#111`, do not imply stored event-local timezone data, and treat stronger normalization, locale-aware matching, deduplication, and relevance ranking as separate product work.
+Issue `#110` applies the approved database-side predicates without a speculative migration or index. Measure production query behavior before adding indexes or dedicated search infrastructure. Keep offset selection explicit in issue `#111`, do not imply stored event-local timezone data, and treat stronger normalization, locale-aware matching, deduplication, and relevance ranking as separate product work.
 
 ### Status
 

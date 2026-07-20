@@ -8,9 +8,9 @@ public record PublicPagination(int page, int pageSize) {
 
     private static final int DEFAULT_PAGE = 1;
     private static final int DEFAULT_PAGE_SIZE = 20;
-    private static final int MAX_PAGE_SIZE = 50;
+    private static final int MAX_PAGE_SIZE = 100;
     private static final String PAGE_ERROR = "page must be an integer greater than or equal to 1";
-    private static final String PAGE_SIZE_ERROR = "page_size must be an integer between 1 and 50";
+    private static final String PAGE_SIZE_ERROR = "page_size must be an integer between 1 and 100";
 
     public static PublicPagination parse(String rawPage, String rawPageSize) {
         return new PublicPagination(parsePage(rawPage), parsePageSize(rawPageSize));
