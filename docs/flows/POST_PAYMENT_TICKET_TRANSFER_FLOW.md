@@ -7,7 +7,7 @@ GitHub Issues: `#92` - https://github.com/VietCT04/TicketPass/issues/92, `#93` -
 
 ## Goal
 
-Define the server-authoritative boundary between trusted payment completion, seller transfer confirmation, buyer receipt confirmation, and eventual settlement.
+Define the server-authoritative boundary between trusted payment completion, seller transfer confirmation, buyer receipt confirmation, and eventual settlement. Issue `#96` implements the buyer confirmation and local provider-neutral release-operation path; production payout and operational recovery remain deferred.
 
 ## Separate State Dimensions
 
