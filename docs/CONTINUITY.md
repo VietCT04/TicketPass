@@ -8,6 +8,13 @@ TicketPass is an early monorepo scaffold with authenticated seller listings, eve
 
 - Date: 2026-07-20
 - GitHub Issue: `#96` - https://github.com/VietCT04/TicketPass/issues/96
+- Summary: Added explicit repository-wide code-formatting rules to `AGENTS.md` after correcting the initial receipt-settlement implementation formatting. Future changes must use readable, conventional layout rather than compressed declarations, statements, conditions, or methods.
+- Files changed:
+  - `AGENTS.md`
+  - `docs/CONTINUITY.md`
+
+- Date: 2026-07-20
+- GitHub Issue: `#96` - https://github.com/VietCT04/TicketPass/issues/96
 - Summary: Implemented the authenticated buyer receipt-confirmation endpoint, immutable buyer confirmation audit, one-to-one private settlement-release operation, stable idempotency key, lease-backed request claim, provider-neutral adapter boundary, local-only mock settlement result, and final locked release or review transition. The endpoint accepts no payload and returns only buyer-safe, no-store progress. Scheduled recovery, production settlement, UI, timeout, refund, dispute, and admin operations remain separate work. No tests, lint, build, compilation, typecheck, formatting, or other verification commands were run by approved issue direction.
 - Files changed:
   - `apps/api/src/main/resources/db/migration/V11__create_settlement_release_operations.sql`
