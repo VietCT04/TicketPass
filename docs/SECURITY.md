@@ -339,7 +339,7 @@ Issue `#92` defines the seller transfer-confirmation boundary; issue `#93` imple
 
 ## Buyer Receipt Confirmation And Settlement Release Security
 
-Issue `#95` defines the future `POST /api/orders/{orderId}/receipt-confirmation` boundary; backend implementation remains issue `#96`. `SecurityConfig` must require an authenticated server-side session and retain the existing unsafe cookie-authenticated request-origin filter for this endpoint. The buyer is derived solely from `AuthenticatedUser`; request bodies, browser state, storage, redirects, provider events, and client clocks have no authorization authority.
+Issue `#95` defines the `POST /api/orders/{orderId}/receipt-confirmation` boundary, implemented by issue `#96`. `SecurityConfig` requires an authenticated server-side session and retains the existing unsafe cookie-authenticated request-origin filter for this endpoint. The buyer is derived solely from `AuthenticatedUser`; request bodies, browser state, storage, redirects, provider events, and client clocks have no authorization authority.
 
 - The endpoint accepts no request body and no client-controlled buyer, seller, amount, currency, status, timestamp, provider, release-operation, or ticket fields. It returns the same controlled `404` for missing and non-owned orders, after locking and revalidating `listing -> reservation -> order -> fulfilment -> release operation`.
 - A first transition is allowed only for the authenticated buyer of a paid and sold order with `SELLER_CONFIRMED_TRANSFER`, `FUNDS_HELD`, a non-null seller confirmation, no buyer confirmation, and no timeout, review, refund, dispute, or conflicting release state. Browser time cannot add or decide a buyer deadline. Seller confirmation alone never authorizes release.

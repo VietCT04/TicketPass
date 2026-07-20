@@ -1,5 +1,6 @@
 package com.ticketpass.api.audit;
 
 public enum AuditEntityType {
-    LISTING
+    LISTING,
+    ORDER
 }

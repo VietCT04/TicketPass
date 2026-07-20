@@ -749,7 +749,7 @@ The first valid request transitions `SELLER_CONFIRMED_TRANSFER -> BUYER_CONFIRME
 
 #### Durable Settlement Operation
 
-Issue `#96` will add a private `settlement_release_operations` record for each order. Its stable unique idempotency key, such as `settlement-release:<order-id>`, is reused across HTTP retries, worker retries, restarts, and uncertain provider responses. The operation stores only provider execution state; amount and currency are always derived from the locked paid order.
+Issue `#96` adds a private `settlement_release_operations` record for each order. Its stable unique idempotency key, `settlement-release:<order-id>`, is reused across HTTP retries, worker retries, restarts, and uncertain provider responses. The operation stores only provider execution state; amount and currency are always derived from the locked paid order. The authenticated endpoint rejects a non-empty body, locks and validates buyer-owned paid/sold fulfilment state, persists buyer confirmation before calling the provider, and returns `202 Accepted` while the release remains held or `200 OK` only when release is confirmed.
 
 The provider-neutral settlement boundary is limited to:
 

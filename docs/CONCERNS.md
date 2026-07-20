@@ -8,7 +8,7 @@ Related GitHub Issues: `#95` - https://github.com/VietCT04/TicketPass/issues/95,
 
 ### Concern
 
-The approved receipt-confirmation contract creates a durable, idempotent settlement-release boundary but intentionally does not select a production settlement provider, define seller onboarding, define retry ownership or operational alerting, or define refund, dispute, timeout, and review resolution after a release operation becomes uncertain or requires review.
+The approved receipt-confirmation contract creates a durable, idempotent settlement-release boundary but intentionally does not select a production settlement provider, define seller onboarding, define retry ownership or operational alerting, or define refund, dispute, timeout, and review resolution after a release operation becomes uncertain or requires review. Issue `#96` supplies the local-only mock adapter and operation record; production settlement remains unimplemented.
 
 ### Risk
 
