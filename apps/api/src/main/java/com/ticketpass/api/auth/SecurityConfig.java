@@ -53,6 +53,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/listings/*/reservations").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/reservations/*/checkout").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/seller/orders/*/transfer-confirmation").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/orders/*/receipt-confirmation").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/orders/*").authenticated()
                         .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
                         .requestMatchers(HttpMethod.GET, "/mock-provider/checkout/*").permitAll()

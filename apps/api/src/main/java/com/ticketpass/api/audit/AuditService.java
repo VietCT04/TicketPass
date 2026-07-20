@@ -28,4 +28,15 @@ public class AuditService {
 
         auditEventRepository.save(event);
     }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void recordOrderAction(UUID actorUserId, UUID orderId, AuditAction action, java.time.Instant occurredAt) {
+        AuditEventEntity event = new AuditEventEntity();
+        event.setActorUserId(actorUserId);
+        event.setAction(action);
+        event.setEntityType(AuditEntityType.ORDER);
+        event.setEntityId(orderId);
+        event.setCreatedAt(occurredAt);
+        auditEventRepository.save(event);
+    }
 }

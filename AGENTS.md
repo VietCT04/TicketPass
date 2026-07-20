@@ -46,6 +46,18 @@ When modifying existing code:
 4. Avoid touching unrelated files.
 5. Avoid dependency additions unless clearly justified.
 
+## Code Formatting Rules
+
+Code must be readable and match the surrounding repository conventions. Do not compress implementation code to reduce line count.
+
+- Use one field, statement, annotation, method declaration, and constructor assignment per logical line.
+- Use explicit imports instead of wildcard imports unless the surrounding module already establishes a different convention.
+- Wrap long constructor signatures, method calls, record construction, and boolean conditions across sensible lines with consistent indentation.
+- Extract compound validation, state checks, response construction, and lifecycle transitions into clearly named private methods when a single line would become difficult to scan.
+- Keep braces, whitespace, accessors, and control flow consistent with nearby files in the same package.
+- Do not place multiple declarations, assignments, methods, or control-flow branches on one line.
+- Preserve normal formatting even when an issue defers automated formatting or verification commands; deferred verification is not permission to write compressed code.
+
 ## Documentation Update Rules
 
 Update these docs when relevant:

@@ -28,6 +28,15 @@ public interface OrderRepository extends JpaRepository<OrderEntity, UUID> {
             @Param("orderId") UUID orderId,
             @Param("sellerId") UUID sellerId);
 
+    @Query("""
+            select new com.ticketpass.api.order.BuyerReceiptLockTarget(
+                checkoutOrder.listing.id, checkoutOrder.reservation.id
+            ) from OrderEntity checkoutOrder
+            where checkoutOrder.id = :orderId and checkoutOrder.buyerUserId = :buyerUserId
+            """)
+    Optional<BuyerReceiptLockTarget> findBuyerReceiptLockTarget(
+            @Param("orderId") UUID orderId, @Param("buyerUserId") UUID buyerUserId);
+
     @Query(value = """
             select checkout_order.id
             from orders checkout_order

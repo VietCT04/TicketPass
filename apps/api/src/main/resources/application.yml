@@ -40,3 +40,14 @@ ticketpass:
       webhook-url: ${MOCK_PAYMENT_WEBHOOK_URL:http://localhost:8080/api/payments/webhooks/mock}
       allow-non-loopback: ${MOCK_PAYMENT_ALLOW_NON_LOOPBACK:false}
       delivery-interval-ms: ${MOCK_PAYMENT_DELIVERY_INTERVAL_MS:5000}
+  settlement:
+    provider: ${SETTLEMENT_PROVIDER:mock}
+    enabled: ${SETTLEMENT_ENABLED:true}
+    claim-batch-size: ${SETTLEMENT_CLAIM_BATCH_SIZE:20}
+    processing-lease-ms: ${SETTLEMENT_PROCESSING_LEASE_MS:120000}
+    initial-retry-delay-ms: ${SETTLEMENT_INITIAL_RETRY_DELAY_MS:30000}
+    maximum-retry-delay-ms: ${SETTLEMENT_MAXIMUM_RETRY_DELAY_MS:1800000}
+    maximum-attempts: ${SETTLEMENT_MAXIMUM_ATTEMPTS:8}
+    mock:
+      enabled: ${MOCK_SETTLEMENT_ENABLED:true}
+      outcome: ${MOCK_SETTLEMENT_OUTCOME:SUCCEEDED}

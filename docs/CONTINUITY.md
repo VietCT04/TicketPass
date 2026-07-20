@@ -2,9 +2,35 @@
 
 ## Current Project State
 
-TicketPass is an early monorepo scaffold with authenticated seller listings, event browsing/detail, buyer reservations, protected browser checkout recovery, authenticated missing-event requests from the `/sell` fallback, a protected read-only seller own-listings page, and an authenticated display-name-only profile API backed by server-authoritative state. Mock payment events are delivered through signed HTTP webhooks and an atomic receipt ledger; verified, timely payment success completes the order, sells the reserved listing, and atomically creates held post-payment fulfilment with a 15-minute seller-transfer deadline. Authenticated sellers can make a safe, idempotent transfer confirmation before that deadline. The buyer receipt and settlement-release contract now defines immutable buyer confirmation, durable idempotent release, and privacy boundaries; implementation and timeout reconciliation remain separately deferred. Checkout reconciliation handles trusted failure, cancellation, and expiry without releasing inventory when payment requires manual action, and authenticated buyers can reload their safe server-authoritative order state. The approved seller listing-cancellation contract now limits seller action to atomic, auditable `ACTIVE -> CANCELLED`; backend and browser work remain issues `#114` and `#115`. The public event-search contract now defines optional server-authoritative text, city, and time-window filters for the existing browse endpoint; its backend and frontend work remain issues `#110` and `#111`. The buyer order-progress contract defines a read-only, server-owned account-history view with separate payment, transfer, and settlement dimensions. The missing-event review contract now defines persisted admin authority, exact event identity, immutable request resolutions, minimal audit records, and seller-owned continuation; implementation remains issues `#146` through `#151`. The mock lifecycle is fail-closed at the route boundary, startup-validated, and bounded for webhook input and network delivery. The API now has a Java 21 multi-stage container image and fail-closed external container profile; the web image and health-aware full-stack Compose wiring remain issues `#106` and `#107`. The protected account form remains issue `#143`.
+TicketPass is an early monorepo scaffold with authenticated seller listings, event browsing/detail, buyer reservations, protected browser checkout recovery, authenticated missing-event requests from the `/sell` fallback, a protected read-only seller own-listings page, and an authenticated display-name-only profile API backed by server-authoritative state. Mock payment events are delivered through signed HTTP webhooks and an atomic receipt ledger; verified, timely payment success completes the order, sells the reserved listing, and atomically creates held post-payment fulfilment with a 15-minute seller-transfer deadline. Authenticated sellers can make a safe, idempotent transfer confirmation before that deadline. Authenticated buyers can now confirm receipt after seller confirmation; the server records immutable buyer confirmation, creates one private stable-key release operation, calls only an explicit local mock adapter outside marketplace locks, and releases settlement only after provider success. Production payout, scheduled recovery, timeout, refund, dispute, and review resolution remain separately deferred. Checkout reconciliation handles trusted failure, cancellation, and expiry without releasing inventory when payment requires manual action, and authenticated buyers can reload their safe server-authoritative order state. The approved seller listing-cancellation contract now limits seller action to atomic, auditable `ACTIVE -> CANCELLED`; backend and browser work remain issues `#114` and `#115`. The public event-search contract now defines optional server-authoritative text, city, and time-window filters for the existing browse endpoint; its backend and frontend work remain issues `#110` and `#111`. The buyer order-progress contract defines a read-only, server-owned account-history view with separate payment, transfer, and settlement dimensions. The missing-event review contract now defines persisted admin authority, exact event identity, immutable request resolutions, minimal audit records, and seller-owned continuation; implementation remains issues `#146` through `#151`. The mock lifecycle is fail-closed at the route boundary, startup-validated, and bounded for webhook input and network delivery. The API now has a Java 21 multi-stage container image and fail-closed external container profile; the web image and health-aware full-stack Compose wiring remain issues `#106` and `#107`. The protected account form remains issue `#143`.
 
 ## Latest Completed Work
+
+- Date: 2026-07-20
+- GitHub Issue: `#96` - https://github.com/VietCT04/TicketPass/issues/96
+- Summary: Added explicit repository-wide code-formatting rules to `AGENTS.md` after correcting the initial receipt-settlement implementation formatting. Future changes must use readable, conventional layout rather than compressed declarations, statements, conditions, or methods.
+- Files changed:
+  - `AGENTS.md`
+  - `docs/CONTINUITY.md`
+
+- Date: 2026-07-20
+- GitHub Issue: `#96` - https://github.com/VietCT04/TicketPass/issues/96
+- Summary: Implemented the authenticated buyer receipt-confirmation endpoint, immutable buyer confirmation audit, one-to-one private settlement-release operation, stable idempotency key, lease-backed request claim, provider-neutral adapter boundary, local-only mock settlement result, and final locked release or review transition. The endpoint accepts no payload and returns only buyer-safe, no-store progress. Scheduled recovery, production settlement, UI, timeout, refund, dispute, and admin operations remain separate work. No tests, lint, build, compilation, typecheck, formatting, or other verification commands were run by approved issue direction.
+- Files changed:
+  - `apps/api/src/main/resources/db/migration/V11__create_settlement_release_operations.sql`
+  - `apps/api/src/main/java/com/ticketpass/api/order/BuyerReceiptConfirmationController.java`
+  - `apps/api/src/main/java/com/ticketpass/api/order/BuyerReceiptConfirmationService.java`
+  - `apps/api/src/main/java/com/ticketpass/api/order/BuyerReceiptConfirmationCommand.java`
+  - `apps/api/src/main/java/com/ticketpass/api/order/SettlementReleaseClaimService.java`
+  - `apps/api/src/main/java/com/ticketpass/api/order/SettlementReleaseFinalizer.java`
+  - `apps/api/src/main/java/com/ticketpass/api/settlement/`
+  - `docs/API.md`
+  - `docs/DATABASE.md`
+  - `docs/SECURITY.md`
+  - `docs/CONCERNS.md`
+  - `docs/flows/POST_PAYMENT_TICKET_TRANSFER_FLOW.md`
+  - `docs/user-stories/US-0012-buyer-confirms-ticket-receipt.md`
+  - `docs/CONTINUITY.md`
 
 - Date: 2026-07-19
 - GitHub Issue: `#95` - https://github.com/VietCT04/TicketPass/issues/95

@@ -217,7 +217,7 @@ For the buyer-confirmation happy path, one transaction will revalidate the autho
 
 ### `settlement_release_operations`
 
-Issue `#95` defines one future private release operation per order; issue `#96` will add its migration and persistence. It makes external settlement execution durable without duplicating marketplace facts already held by `orders` and `order_fulfillments`.
+Issue `#95` defines one private release operation per order; issue `#96` implements it through `V11__create_settlement_release_operations.sql`. It makes external settlement execution durable without duplicating marketplace facts already held by `orders` and `order_fulfillments`.
 
 | Column | Type | Notes |
 |---|---|---|
